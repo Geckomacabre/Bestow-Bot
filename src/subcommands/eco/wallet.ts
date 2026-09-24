@@ -4,7 +4,7 @@ import { writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import type { Sub } from '../../framework/group.js';
 import { db } from '../../utils/db.js';
 import { IS_CV2 } from '../../utils/components.js';
-import { assertPublicUrl, getBuffer } from '../../framework/http.js';
+import { getBufferPublic } from '../../framework/http.js';
 import { getWallet } from '../../eco/core.js';
 import { BUSINESSES } from '../../eco/catalog.js';
 import {
@@ -121,7 +121,7 @@ export const walletEditSubs: Sub[] = [
         if (image.size > 8 * 1024 * 1024) { await i.reply(cv2Err('Image too large (8 MB max).')); return; }
         await i.deferReply();
         try {
-          const raw = await getBuffer(assertPublicUrl(image.url).toString(), { maxBytes: 8 * 1024 * 1024 });
+          const raw = await getBufferPublic(image.url, { maxBytes: 8 * 1024 * 1024 });
           const img = await loadImage(raw);
           // Store a cover-cropped 800×280 copy so rendering is cheap and the file is small.
           const c = createCanvas(800, 280);

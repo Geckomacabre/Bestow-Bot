@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { cv2File } from '../components.js';
 import { selectedImages } from '../imageSelection.js';
-import { assertPublicUrl, getBuffer } from '../../framework/http.js';
+import { getBufferPublic } from '../../framework/http.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ASSETS_DIR = path.join(__dirname, '../../assets');
@@ -23,7 +23,7 @@ export function sniffType(buf: Buffer): string {
 // Every image command funnels through here, so this is where user-supplied URLs get vetted:
 // public http(s) only (no localhost / private ranges) and a hard size cap.
 async function fetchUrl(url: string): Promise<Buffer> {
-  return getBuffer(assertPublicUrl(url).toString(), { maxBytes: 25 * 1024 * 1024, timeoutMs: 20_000 });
+  return getBufferPublic(url, { maxBytes: 25 * 1024 * 1024, timeoutMs: 20_000 });
 }
 
 export async function getImageBuffer(interaction: ChatInputCommandInteraction): Promise<Buffer> {

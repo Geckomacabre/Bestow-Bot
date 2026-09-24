@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Sub, SubGroup } from '../../framework/group.js';
 import { askUser } from '../../framework/confirm.js';
-import { assertPublicUrl, getBuffer } from '../../framework/http.js';
+import { getBufferPublic } from '../../framework/http.js';
 import { COMPANY, PROJECTS } from '../../eco/catalog.js';
 import {
   cancelProject, changeRank, collectProject, companyLeaderboard, companyLogs, completeProject, contributeProject, createCompany,
@@ -48,7 +48,7 @@ const amountOpt = (desc: string) => (s: import('discord.js').SlashCommandSubcomm
   s.addStringOption(o => o.setName('amount').setDescription(`${desc} — ${AMOUNT_HELP}`).setRequired(true));
 
 async function saveIcon(companyId: number, url: string): Promise<void> {
-  const raw = await getBuffer(assertPublicUrl(url).toString(), { maxBytes: 8 * 1024 * 1024 });
+  const raw = await getBufferPublic(url, { maxBytes: 8 * 1024 * 1024 });
   const img = await loadImage(raw);
   const c = createCanvas(128, 128);
   const ctx = c.getContext('2d');

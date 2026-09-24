@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { AttachmentBuilder, type ChatInputCommandInteraction, type SlashCommandSubcommandBuilder } from 'discord.js';
-import { assertPublicUrl, getBuffer } from './http.js';
+import { assertPublicUrl, getBufferPublic } from './http.js';
 import { cv2Err } from '../utils/components.js';
 
 /**
@@ -146,7 +146,7 @@ export async function findMedia(interaction: ChatInputCommandInteraction, kind: 
 
 /** Download into `dir` (size-capped, SSRF-checked) and return the local filename. */
 export async function download(ref: MediaRef, dir: string, base = 'input'): Promise<string> {
-  const buf = await getBuffer(assertPublicUrl(ref.url).toString(), { maxBytes: MAX_INPUT_BYTES, timeoutMs: 30_000 });
+  const buf = await getBufferPublic(ref.url, { maxBytes: MAX_INPUT_BYTES, timeoutMs: 30_000 });
   const ext = path.extname(ref.name).replace(/[^.\w]/g, '').slice(0, 6);
   const file = `${base}${ext || '.bin'}`;
   await writeFile(path.join(dir, file), buf);
