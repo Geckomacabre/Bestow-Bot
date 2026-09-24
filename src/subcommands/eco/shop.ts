@@ -33,12 +33,12 @@ const SHOP_ITEMS = [
   },
   {
     id: 'overtime', name: 'Overtime Permit', emoji: '💼', kind: 'boost',
-    description: 'Half `/work` cooldown (30 min instead of 1 hour) for **4 hours**',
+    description: 'Half `/eco work` cooldown (30 min instead of 1 hour) for **4 hours**',
     price: 20_000, type: 'workcd', multiplier: 0.5, durationMs: 4 * HOUR,
   },
   {
     id: 'coin_magnet', name: 'Coin Magnet', emoji: '🧲', kind: 'boost',
-    description: '1.5× coins from `/work`, `/daily`, and `/beg` for **24 hours**',
+    description: '1.5× coins from `/eco work`, `/eco daily`, and `/eco beg` for **24 hours**',
     price: 40_000, type: 'magnet', multiplier: 1.5, durationMs: DAY,
   },
   {
@@ -48,7 +48,7 @@ const SHOP_ITEMS = [
   },
   {
     id: 'goon_squad', name: 'Goon Squad', emoji: '🥊', kind: 'oneshot',
-    description: 'Your next **failed `/rob`** has no cooldown — one use, keeps for 7 days',
+    description: 'Your next **failed `/eco rob`** has no cooldown — one use, keeps for 7 days',
     price: 25_000, type: 'goon', multiplier: 1.0, durationMs: 7 * DAY,
   },
   {
@@ -58,7 +58,7 @@ const SHOP_ITEMS = [
   },
   {
     id: 'second_chance', name: 'Second Chance', emoji: '🔁', kind: 'oneshot',
-    description: 'If `/crash` busts **below 1.5x**, your bet is refunded — one use, keeps for 7 days',
+    description: 'If `/eco games crash` busts **below 1.5x**, your bet is refunded — one use, keeps for 7 days',
     price: 40_000, type: 'second_chance', multiplier: 1.0, durationMs: 7 * DAY,
   },
   {
@@ -68,7 +68,7 @@ const SHOP_ITEMS = [
   },
   {
     id: 'time_skip', name: 'Time Skip', emoji: '⏩', kind: 'instant',
-    description: 'Instantly reset your `/daily`, `/work`, or `/beg` cooldown (pick one)',
+    description: 'Instantly reset your `/eco daily`, `/eco work`, or `/eco beg` cooldown (pick one)',
     price: 35_000, type: '', multiplier: 1.0, durationMs: 0,
   },
   {
@@ -83,9 +83,9 @@ type ItemId = ShopItem['id'];
 
 // Cooldown windows for Time Skip validation — mirrors each command's constant.
 const SKIPPABLE: Record<string, { label: string; windowMs: number }> = {
-  daily: { label: '/daily', windowMs: 20 * HOUR },
-  work:  { label: '/work',  windowMs: HOUR },
-  beg:   { label: '/beg',   windowMs: 15 * 60_000 },
+  daily: { label: '/eco daily', windowMs: 20 * HOUR },
+  work:  { label: '/eco work',  windowMs: HOUR },
+  beg:   { label: '/eco beg',   windowMs: 15 * 60_000 },
 };
 
 // Mystery Box boost prizes reuse the standard shop boosts.
@@ -138,7 +138,7 @@ const Shop: Command = {
               { name: '🔮 XP Surge — 2× XP for 1 hour (25,000)', value: 'xp_surge' },
               { name: '🍀 Lucky Charm — 1.5× gambling wins 30 min (30,000)', value: 'lucky_charm' },
               { name: '⚡ Hint Rush — skip the shared hint cooldown 15 min (15,000)', value: 'no_cooldown' },
-              { name: '💼 Overtime Permit — half /work cooldown 4h (20,000)', value: 'overtime' },
+              { name: '💼 Overtime Permit — half work cooldown 4h (20,000)', value: 'overtime' },
               { name: '🧲 Coin Magnet — 1.5× work/daily/beg coins 24h (40,000)', value: 'coin_magnet' },
               { name: '🎟️ Loaded Dice — 2× lottery chance next draw (15,000)', value: 'loaded_dice' },
               { name: '🥊 Goon Squad — next failed rob: no cooldown (25,000)', value: 'goon_squad' },
