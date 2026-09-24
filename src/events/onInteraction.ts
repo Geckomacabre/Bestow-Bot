@@ -1,0 +1,74 @@
+import { Interaction, MessageFlags } from 'discord.js';
+import commands from '../handlers/commandHandler';
+import logger from '../utils/logger';
+import * as db from '../utils/db';
+import { checkCommandSpam } from '../features/spamdetect/index.js';
+import { logCommandUsage } from '../features/logs/index.js';
+
+export const onInteraction = async (interaction: Interaction) => {
+  if (interaction.isAutocomplete()) {
+    const command = commands.get(interaction.commandName);
+    if (command?.autocomplete) {
+      try {
+        await command.autocomplete(interaction);
+      } catch (err) {
+        logger.error(`Autocomplete error for ${interaction.commandName}: ${err}`);
+      }
+    }
+    return;
+  }
+
+  if (interaction.isButton()) {
+    if (interaction.customId.startsWith('remove_quote:')) {
+      const ownerId = interaction.customId.split(':')[1];
+      if (interaction.user.id !== ownerId) {
+        await interaction.reply({ content: '❌ Only the person who created this quote can remove it.', flags: MessageFlags.Ephemeral });
+        return;
+      }
+      await interaction.message.delete().catch(() => {});
+      await interaction.reply({ content: '✅ Quote removed.', flags: MessageFlags.Ephemeral }).catch(() => {});
+    }
+    return;
+  }
+
+  if (interaction.isMessageContextMenuCommand()) {
+    const command = commands.get(interaction.commandName);
+    if (command?.runMessage) {
+      try {
+        await command.runMessage(interaction);
+      } catch (err) {
+        logger.error(`Context menu error for ${interaction.commandName}: ${err}`);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ content: 'There was an error.', flags: MessageFlags.Ephemeral }).catch(() => {});
+        }
+      }
+    }
+    return;
+  }
+
+  if (!interaction.isChatInputCommand()) return;
+
+  const command = commands.get(interaction.commandName);
+  if (!command) return;
+
+  // Raid scripts hammer slash commands — catch it before the command even runs.
+  if (interaction.guildId && await checkCommandSpam(interaction, db)) return;
+
+  // Fire-and-forget so logging never adds latency to the command response, and
+  // still fires even if the command itself throws below.
+  logCommandUsage(interaction, db).catch(() => {});
+
+  try {
+    if (typeof command.run === 'function') {
+      await command.run(interaction);
+    }
+  } catch (error) {
+    logger.error(`Error executing command ${interaction.commandName}: ${error}`);
+
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: 'There was an error executing that command.', flags: MessageFlags.Ephemeral }).catch((err) => logger.error(`Error sending error response: ${err}`));
+    } else if (interaction.deferred) {
+      await interaction.editReply({ content: 'There was an error executing that command.' }).catch((err) => logger.error(`Error editing error response: ${err}`));
+    }
+  }
+};
