@@ -3,14 +3,15 @@ import {
   ChatInputCommandInteraction, Colors, ComponentType, ContainerBuilder,
   InteractionContextType, Message, SlashCommandBuilder, TextDisplayBuilder,
 } from 'discord.js';
-import { Command } from '../../interfaces/command';
-import { getOrCreateEconomy, getEconomyConfig, adjustBalance, getGambleMultiplier, recordGameResult } from '../../utils/db';
-import { awardBonusXp } from '../../utils/xpBonus.js';
-import { rand } from '../../utils/random.js';
-import { cv2Err, IS_CV2 } from '../../utils/components.js';
-import { applyLossInsurance, insuranceLine, settleJackpot, jackpotLine } from '../../utils/gamble.js';
-import { renderPlinkoGif, ROWS, PLINKO_REVEAL_MS } from '../../utils/plinkoBoard.js';
-import { postWithReveal, mediaPanel } from '../../utils/casinoReveal.js';
+import { Command } from '../../../interfaces/command';
+import { getEconomyConfig, getGambleMultiplier } from '../../../utils/db';
+import { rand } from '../../../utils/random.js';
+import { cv2Err, IS_CV2 } from '../../../utils/components.js';
+import { stake } from '../../../eco/core.js';
+import { settleRound } from '../../../eco/round.js';
+import { fortuneMultiplier } from '../../../eco/effects.js';
+import { renderPlinkoGif, ROWS, PLINKO_REVEAL_MS } from '../../../utils/plinkoBoard.js';
+import { postWithReveal, mediaPanel } from '../../../utils/casinoReveal.js';
 
 // Landing bucket k follows a binomial distribution: P(k) = C(10,k)/1024, i.e.
 // 0.098% 0.977% 4.395% 11.719% 20.508% 24.609% (then mirrored).
@@ -52,22 +53,17 @@ async function playDrop(
 
   const gif = await renderPlinkoGif(steps, MULTS, bucket);
 
-  const luckMult = await getGambleMultiplier(guildId, userId);
+  const luckMult = (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId));
   const winnings = Math.floor(bet * multiplier * luckMult);
   const profit = winnings > bet;
-  const { newBalance } = await adjustBalance(guildId, userId, winnings - bet);
-  recordGameResult(guildId, userId, 'plinko', winnings >= bet, bet).catch(() => {});
-  // Partial losses count — the worst bucket still returns 0.2x, so insurance
+  // Partial losses count — the worst bucket still returns 0.25x, so insurance
   // covers what was actually lost rather than the whole bet.
-  const refund = winnings < bet ? await applyLossInsurance(guildId, userId, bet - winnings) : 0;
-  const jp = await settleJackpot(guildId, userId, bet, Math.max(0, bet - winnings));
-
-  let xpLine = '';
-  if (profit) {
-    const baseXp = Math.min(50 + Math.floor(multiplier * 5), 200);
-    const xpGiven = await awardBonusXp({ guildId, userId, baseAmount: baseXp, client, channelId, isGame: true });
-    xpLine = xpGiven > 0 ? `\n+**${xpGiven} XP** earned!` : '\n*(Daily XP cap reached)*';
-  }
+  const round = await settleRound({
+    guildId, userId, game: 'plinko', bet, returned: winnings, won: winnings >= bet,
+    insuredLoss: winnings < bet ? bet - winnings : 0,
+    xp: profit ? Math.min(50 + Math.floor(multiplier * 5), 200) : undefined,
+    client, channelId, currencySymbol: sym,
+  });
 
   const label = multiplier >= 48 ? '🚨 **JACKPOT!** Dead on the edge!'
     : multiplier >= 8 ? '🔥 **Huge hit!**'
@@ -78,9 +74,9 @@ async function playDrop(
     ? `**${multiplier}x** — you won **${sym} ${winnings.toLocaleString()}**!${luckMult > 1 ? ' *(🍀 Lucky Charm!)*' : ''}`
     : winnings === bet
       ? `**${multiplier}x** — you broke even.`
-      : `**${multiplier}x** — you got **${sym} ${winnings.toLocaleString()}** back, losing **${sym} ${(bet - winnings).toLocaleString()}**.${insuranceLine(sym, refund)}`;
+      : `**${multiplier}x** — you got **${sym} ${winnings.toLocaleString()}** back, losing **${sym} ${(bet - winnings).toLocaleString()}**.${round.insuranceText}`;
 
-  const content = `**🎲 Plinko** — Bet: ${sym} ${bet.toLocaleString()}\n${label}\n${resultLine}\n**Balance:** ${sym} **${(newBalance + refund + jp.won).toLocaleString()}**${xpLine}${jackpotLine(sym, jp.won)}`;
+  const content = `**🎲 Plinko** — Bet: ${sym} ${bet.toLocaleString()}\n${label}\n${resultLine}\n**Balance:** ${sym} **${round.balance.toLocaleString()}**${round.xpText}${round.jackpotText}`;
   const accentColor = profit ? Colors.Gold : winnings === bet ? Colors.Yellow : Colors.Red;
   return { gif, content, accentColor, bet, sym };
 }
@@ -112,9 +108,10 @@ const Plinko: Command = {
     const guildId = interaction.guildId!;
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
-    const [eco, cfg] = await Promise.all([getOrCreateEconomy(guildId, userId), getEconomyConfig(guildId)]);
-    if (eco.balance < bet) {
-      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Your balance: **${cfg.currency_symbol} ${eco.balance.toLocaleString()}**.`)); return;
+    const cfg = await getEconomyConfig(guildId);
+    const staked = await stake(guildId, userId, bet, 'plinko');
+    if (!staked.success) {
+      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Your balance: **${cfg.currency_symbol} ${staked.newBalance.toLocaleString()}**.`)); return;
     }
 
     await interaction.deferReply();
@@ -133,13 +130,13 @@ const Plinko: Command = {
 
     collector.on('collect', async (btn) => {
       await btn.deferUpdate();
-      const eco2 = await getOrCreateEconomy(guildId, userId);
-      if (eco2.balance < bet) {
+      const staked2 = await stake(guildId, userId, bet, 'plinko');
+      if (!staked2.success) {
         collector.stop('broke');
         // Not cv2Err() — that bakes in the Ephemeral flag, which can't apply
         // after deferUpdate() already committed to a public message edit.
         const container = new ContainerBuilder().setAccentColor(Colors.Red).addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`❌ Not enough ${cfg.currency_name} to drop again — need **${cfg.currency_symbol} ${bet.toLocaleString()}**, you have **${cfg.currency_symbol} ${eco2.balance.toLocaleString()}**.`),
+          new TextDisplayBuilder().setContent(`❌ Not enough ${cfg.currency_name} to drop again — need **${cfg.currency_symbol} ${bet.toLocaleString()}**, you have **${cfg.currency_symbol} ${staked2.newBalance.toLocaleString()}**.`),
         );
         await btn.editReply({ flags: IS_CV2, components: [container], files: [] }).catch(() => {});
         return;

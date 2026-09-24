@@ -220,6 +220,29 @@ function applyJsonOptions(sub: SlashCommandSubcommandBuilder, opts: JsonOption[]
 }
 
 /**
+ * Mount an existing top-level Command that itself has subcommands (e.g. `/shop browse|buy`)
+ * as a subcommand group. Its run() keeps working unchanged because
+ * interaction.options.getSubcommand() still returns the leaf name inside a group.
+ */
+export function groupFromCommand(cmd: Command, name?: string): SubGroup {
+  const json = cmd.data.toJSON() as { name: string; description: string; options?: JsonOption[] };
+  const subs = (json.options ?? []).filter(o => o.type === 1);
+  if (subs.length === 0 || !cmd.run) throw new Error(`[groupFromCommand] ${json.name} has no subcommands or no run()`);
+  const run = cmd.run;
+  return {
+    name: name ?? json.name,
+    description: json.description,
+    subs: subs.map(s => ({
+      name: s.name,
+      description: s.description,
+      options: b => applyJsonOptions(b as SlashCommandSubcommandBuilder, s.options ?? []),
+      run,
+      autocomplete: cmd.autocomplete,
+    })),
+  };
+}
+
+/**
  * Mount an existing top-level Command as a subcommand. `name` renames it (default:
  * the command's own name). The command must not itself use subcommands.
  */

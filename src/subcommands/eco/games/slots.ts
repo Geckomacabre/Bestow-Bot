@@ -3,14 +3,15 @@ import {
   ChatInputCommandInteraction, Colors, ComponentType, ContainerBuilder,
   InteractionContextType, Message, SlashCommandBuilder, TextDisplayBuilder,
 } from 'discord.js';
-import { Command } from '../../interfaces/command';
-import { getOrCreateEconomy, getEconomyConfig, adjustBalance, getGambleMultiplier, recordGameResult } from '../../utils/db';
-import { awardBonusXp } from '../../utils/xpBonus.js';
-import { randInt } from '../../utils/random.js';
-import { cv2Err, IS_CV2 } from '../../utils/components.js';
-import { applyLossInsurance, insuranceLine, settleJackpot, jackpotLine } from '../../utils/gamble.js';
-import { renderSlotsGif, SLOTS_REVEAL_MS } from '../../utils/slotsRender.js';
-import { postWithReveal, mediaPanel } from '../../utils/casinoReveal.js';
+import { Command } from '../../../interfaces/command';
+import { getEconomyConfig, getGambleMultiplier } from '../../../utils/db';
+import { randInt } from '../../../utils/random.js';
+import { cv2Err, IS_CV2 } from '../../../utils/components.js';
+import { stake } from '../../../eco/core.js';
+import { settleRound } from '../../../eco/round.js';
+import { fortuneMultiplier } from '../../../eco/effects.js';
+import { renderSlotsGif, SLOTS_REVEAL_MS } from '../../../utils/slotsRender.js';
+import { postWithReveal, mediaPanel } from '../../../utils/casinoReveal.js';
 
 const GIF_NAME = 'slots.gif';
 
@@ -72,24 +73,15 @@ async function playSpin(
   }
   const multiplier = isTriple ? TRIPLE_MULT[reels[0]!]! : pairSymbol ? PAIR_MULT[pairSymbol]! : 0;
 
-  const luckMult = multiplier > 0 ? await getGambleMultiplier(guildId, userId) : 1;
+  const luckMult = multiplier > 0 ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
   const winnings = Math.floor(bet * multiplier * luckMult);
-  const delta = winnings - bet;
   const profit = winnings > bet;
-  const { newBalance } = await adjustBalance(guildId, userId, delta);
-  recordGameResult(guildId, userId, 'slots', winnings >= bet, bet).catch(() => {});
-  const refund = multiplier === 0 ? await applyLossInsurance(guildId, userId, bet) : 0;
-  const jp = await settleJackpot(guildId, userId, bet, Math.max(0, bet - winnings));
-
-  let xpLine = '';
-  if (profit) {
-    const baseXp = Math.min(50 + Math.floor(multiplier * 20), 200);
-    const xpGiven = await awardBonusXp({
-      guildId, userId, baseAmount: baseXp,
-      client, channelId, isGame: true,
-    });
-    xpLine = xpGiven > 0 ? `\n+**${xpGiven} XP** earned!` : '\n*(Daily XP cap reached)*';
-  }
+  // The stake was taken by the caller before the spin; this pays back whatever the reels returned.
+  const round = await settleRound({
+    guildId, userId, game: 'slots', bet, returned: winnings, won: winnings >= bet,
+    xp: profit ? Math.min(50 + Math.floor(multiplier * 20), 200) : undefined,
+    client, channelId, currencySymbol: sym,
+  });
 
   const label = isTriple
     ? `**JACKPOT!** Triple ${reels[0]}`
@@ -97,12 +89,12 @@ async function playSpin(
       ? `**Pair of ${pairSymbol}!**`
       : 'No match — better luck next time!';
   const resultLine = multiplier === 0
-    ? `You lost **${sym} ${bet.toLocaleString()}**.${insuranceLine(sym, refund)}`
+    ? `You lost **${sym} ${bet.toLocaleString()}**.${round.insuranceText}`
     : winnings >= bet
       ? `**${multiplier}x** — you won **${sym} ${winnings.toLocaleString()}**!${luckMult > 1 ? ' *(🍀 Lucky Charm!)*' : ''}`
       : `**${multiplier}x** — you got **${sym} ${winnings.toLocaleString()}** back.`;
 
-  const content = `**🎰 Slots** — Bet: ${sym} ${bet.toLocaleString()}\n${reels.join(' ｜ ')}\n${label}\n${resultLine}\n**Balance:** ${sym} **${(newBalance + refund + jp.won).toLocaleString()}**\n${LEGEND}${xpLine}${jackpotLine(sym, jp.won)}`;
+  const content = `**🎰 Slots** — Bet: ${sym} ${bet.toLocaleString()}\n${reels.join(' ｜ ')}\n${label}\n${resultLine}\n**Balance:** ${sym} **${round.balance.toLocaleString()}**\n${LEGEND}${round.xpText}${round.jackpotText}`;
   const accentColor = profit ? Colors.Gold : multiplier > 0 ? Colors.Yellow : Colors.Red;
   const gif = await renderSlotsGif(reels as string[], multiplier > 0);
   return { content, accentColor, gif, bet, sym };
@@ -120,9 +112,10 @@ const Slots: Command = {
     const guildId = interaction.guildId!;
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
-    const [eco, cfg] = await Promise.all([getOrCreateEconomy(guildId, userId), getEconomyConfig(guildId)]);
-    if (eco.balance < bet) {
-      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Your balance: **${cfg.currency_symbol} ${eco.balance.toLocaleString()}**.`)); return;
+    const cfg = await getEconomyConfig(guildId);
+    const staked = await stake(guildId, userId, bet, 'slots');
+    if (!staked.success) {
+      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Your balance: **${cfg.currency_symbol} ${staked.newBalance.toLocaleString()}**.`)); return;
     }
 
     await interaction.deferReply();
@@ -142,13 +135,13 @@ const Slots: Command = {
 
     collector.on('collect', async (btn) => {
       await btn.deferUpdate();
-      const eco2 = await getOrCreateEconomy(guildId, userId);
-      if (eco2.balance < bet) {
+      const staked2 = await stake(guildId, userId, bet, 'slots');
+      if (!staked2.success) {
         collector.stop('broke');
         // Not cv2Err() — that bakes in the Ephemeral flag, which can't apply
         // after deferUpdate() already committed to a public message edit.
         const container = new ContainerBuilder().setAccentColor(Colors.Red).addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`❌ Not enough ${cfg.currency_name} to spin again — need **${cfg.currency_symbol} ${bet.toLocaleString()}**, you have **${cfg.currency_symbol} ${eco2.balance.toLocaleString()}**.`),
+          new TextDisplayBuilder().setContent(`❌ Not enough ${cfg.currency_name} to spin again — need **${cfg.currency_symbol} ${bet.toLocaleString()}**, you have **${cfg.currency_symbol} ${staked2.newBalance.toLocaleString()}**.`),
         );
         await btn.editReply({ flags: IS_CV2, components: [container] }).catch(() => {});
         return;

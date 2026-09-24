@@ -9,6 +9,12 @@ export function cv2Text(content: string, accentColor?: number): any {
   return { flags: IS_CV2, components: [c] };
 }
 
+/** A coloured card with text — the standard Onyx reply body. Spread extra fields (files, ephemeral flag) as needed. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function cv2Box(content: string, accentColor: number): any {
+  return cv2Text(content, accentColor);
+}
+
 // Ephemeral Components-V2 text — handy for permission/validation errors.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cv2Err(content: string): any {

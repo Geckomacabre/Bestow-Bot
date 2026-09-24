@@ -9,6 +9,7 @@ import {
 } from '../../utils/db';
 import { cv2Err, IS_CV2 } from '../../utils/components.js';
 import { rand, randInt } from '../../utils/random.js';
+import { withLock } from '../../framework/mutex.js';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -175,7 +176,7 @@ const Shop: Command = {
       const container = new ContainerBuilder()
         .setAccentColor(Colors.Blurple)
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(
-          `🏪 **Shop**\nBuy with \`/shop buy\`.\n\n` +
+          `🏪 **Shop**\nBuy with \`/eco shop buy\`.\n\n` +
           `**⏱️ Boosts** *(timed effects)*\n${section('boost')}\n\n` +
           `**🎫 One-Shots** *(stored until they trigger, expire after 7 days)*\n${section('oneshot')}\n\n` +
           `**⚡ Instant** *(happens right away)*\n${section('instant')}`
@@ -220,13 +221,12 @@ const Shop: Command = {
       }
     }
 
-    const eco = await getOrCreateEconomy(guildId, userId);
-    if (eco.balance < item.price) {
-      await interaction.reply(cv2Err(`You need **${sym} ${item.price.toLocaleString()}** to buy **${item.name}**. Balance: **${sym} ${eco.balance.toLocaleString()}**.`));
+    // Charge atomically — the check and the debit are one statement, so two rapid purchases can't both succeed.
+    const paid = await adjustBalance(guildId, userId, -item.price, `shop:${item.id}`);
+    if (!paid.success) {
+      await interaction.reply(cv2Err(`You need **${sym} ${item.price.toLocaleString()}** to buy **${item.name}**. Cash: **${sym} ${paid.newBalance.toLocaleString()}**.`));
       return;
     }
-
-    await adjustBalance(guildId, userId, -item.price);
 
     let resultLine: string;
     if (item.id === 'mystery_box') {
@@ -250,5 +250,9 @@ const Shop: Command = {
     await interaction.reply({ flags: IS_CV2, components: [container] });
   },
 };
+
+// Serialise purchases per user so the duplicate-boost check and the charge can't interleave.
+const shopRun = Shop.run!;
+Shop.run = (i) => (i.options.getSubcommand(true) === 'buy' ? withLock(`eco:${i.user.id}`, () => shopRun(i)) : shopRun(i));
 
 export default Shop;

@@ -3,14 +3,15 @@ import {
   ChatInputCommandInteraction, Colors, ComponentType, ContainerBuilder, InteractionContextType,
   MediaGalleryBuilder, MediaGalleryItemBuilder, SlashCommandBuilder, TextDisplayBuilder,
 } from 'discord.js';
-import { Command } from '../../interfaces/command';
-import { getOrCreateEconomy, getEconomyConfig, adjustBalance, getGambleMultiplier, recordGameResult } from '../../utils/db';
-import { awardBonusXp } from '../../utils/xpBonus.js';
-import { randInt } from '../../utils/random.js';
-import { cv2Err, IS_CV2 } from '../../utils/components.js';
-import { newDeck, shuffleDeck, handStr, bjHandValue, type Card } from '../../utils/cards.js';
-import { applyLossInsurance, insuranceLine, settleJackpot, jackpotLine } from '../../utils/gamble.js';
-import { renderTable } from '../../utils/cardRender.js';
+import { Command } from '../../../interfaces/command';
+import { getEconomyConfig, getGambleMultiplier } from '../../../utils/db';
+import { randInt } from '../../../utils/random.js';
+import { cv2Err, IS_CV2 } from '../../../utils/components.js';
+import { newDeck, shuffleDeck, handStr, bjHandValue, type Card } from '../../../utils/cards.js';
+import { stake } from '../../../eco/core.js';
+import { settleRound } from '../../../eco/round.js';
+import { fortuneMultiplier } from '../../../eco/effects.js';
+import { renderTable } from '../../../utils/cardRender.js';
 
 type Outcome = 'win' | 'blackjack' | 'push' | 'lose';
 
@@ -83,12 +84,13 @@ const Blackjack: Command = {
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
 
-    const [eco, cfg] = await Promise.all([getOrCreateEconomy(guildId, userId), getEconomyConfig(guildId)]);
-    if (eco.balance < bet) {
-      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${eco.balance.toLocaleString()}**.`)); return;
+    const cfg = await getEconomyConfig(guildId);
+    const staked = await stake(guildId, userId, bet, 'blackjack');
+    if (!staked.success) {
+      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${staked.newBalance.toLocaleString()}**.`)); return;
     }
 
-    const luckMult = await getGambleMultiplier(guildId, userId);
+    const luckMult = (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId));
 
     await interaction.deferReply();
 
@@ -103,34 +105,27 @@ const Blackjack: Command = {
     let canDouble = true;
 
     async function endGame(outcome: Outcome, msg: string): Promise<void> {
-      let delta = 0;
-      if (outcome === 'win')       delta =  Math.floor(activeBet * luckMult);
-      if (outcome === 'blackjack') delta =  Math.floor(activeBet * 1.5 * luckMult);
-      if (outcome === 'lose')      delta = -activeBet;
+      // The stake(s) were taken up-front (and again on a double-down); pay back stake + winnings.
+      let returned = 0;
+      if (outcome === 'win')       returned = activeBet + Math.floor(activeBet * luckMult);
+      if (outcome === 'blackjack') returned = activeBet + Math.floor(activeBet * 1.5 * luckMult);
+      if (outcome === 'push')      returned = activeBet;
 
-      const { newBalance } = await adjustBalance(guildId, userId, delta);
-      if (outcome !== 'push') {
-        recordGameResult(guildId, userId, 'blackjack', outcome === 'win' || outcome === 'blackjack', activeBet).catch(() => {});
-      }
-      const refund = outcome === 'lose' ? await applyLossInsurance(guildId, userId, activeBet) : 0;
-      const jp = await settleJackpot(guildId, userId, activeBet, outcome === 'lose' ? activeBet : 0);
-
-      let xpLine = '';
-      if (outcome === 'win' || outcome === 'blackjack') {
-        const base = outcome === 'blackjack' ? 150 : randInt(75, 125);
-        const xpGiven = await awardBonusXp({
-          guildId, userId, baseAmount: base,
-          client: interaction.client, channelId: interaction.channelId, isGame: true,
-        });
-        xpLine = xpGiven > 0 ? ` +**${xpGiven} XP**!` : '';
-      }
+      const isWin = outcome === 'win' || outcome === 'blackjack';
+      const round = await settleRound({
+        guildId, userId, game: 'blackjack', bet: activeBet, returned, won: isWin,
+        xp: isWin ? (outcome === 'blackjack' ? 150 : randInt(75, 125)) : undefined,
+        client: interaction.client, channelId: interaction.channelId, currencySymbol: sym,
+      });
+      const { insuranceText, xpText, jackpotText } = round;
+      const newBalance = round.balance;
 
       const icon = outcome === 'win' || outcome === 'blackjack' ? '✅' : outcome === 'push' ? '🤝' : '❌';
       const color = outcome === 'win' || outcome === 'blackjack' ? Colors.Green : outcome === 'push' ? Colors.Yellow : Colors.Red;
       await interaction.editReply(bjPanel(
         playerHand, dealerHand, false,
         gameContent(playerHand, dealerHand, activeBet, sym, false) +
-          `\n\n${icon} ${msg}${insuranceLine(sym, refund)}${xpLine}\n**Balance:** ${sym} **${(newBalance + refund + jp.won).toLocaleString()}**${jackpotLine(sym, jp.won)}`,
+          `\n\n${icon} ${msg}${insuranceText}${xpText}\n**Balance:** ${sym} **${newBalance.toLocaleString()}**${jackpotText}`,
         color,
       )).catch(() => {});
     }
@@ -195,8 +190,9 @@ const Blackjack: Command = {
       }
 
       if (btn.customId === 'bj_double') {
-        const eco2 = await getOrCreateEconomy(guildId, userId);
-        if (eco2.balance < activeBet) {
+        // A double-down puts a second, equal stake on the table — taken atomically.
+        const extra = await stake(guildId, userId, activeBet, 'blackjack');
+        if (!extra.success) {
           await interaction.followUp(cv2Err(`❌ Not enough ${cfg.currency_name} to double down.`));
           return;
         }

@@ -2,14 +2,15 @@ import {
   ApplicationIntegrationType, ChatInputCommandInteraction, Colors,
   InteractionContextType, SlashCommandBuilder,
 } from 'discord.js';
-import { Command } from '../../interfaces/command';
-import { getOrCreateEconomy, getEconomyConfig, adjustBalance, getGambleMultiplier, recordGameResult } from '../../utils/db';
-import { awardBonusXp } from '../../utils/xpBonus.js';
-import { randInt } from '../../utils/random.js';
-import { cv2Err } from '../../utils/components.js';
-import { applyLossInsurance, insuranceLine, settleJackpot, jackpotLine } from '../../utils/gamble.js';
-import { renderRouletteGif, ROULETTE_REVEAL_MS } from '../../utils/rouletteRender.js';
-import { postWithReveal } from '../../utils/casinoReveal.js';
+import { Command } from '../../../interfaces/command';
+import { getEconomyConfig, getGambleMultiplier } from '../../../utils/db';
+import { randInt } from '../../../utils/random.js';
+import { cv2Err } from '../../../utils/components.js';
+import { stake } from '../../../eco/core.js';
+import { settleRound } from '../../../eco/round.js';
+import { fortuneMultiplier } from '../../../eco/effects.js';
+import { renderRouletteGif, ROULETTE_REVEAL_MS } from '../../../utils/rouletteRender.js';
+import { postWithReveal } from '../../../utils/casinoReveal.js';
 
 const GIF_NAME = 'roulette.gif';
 
@@ -48,9 +49,11 @@ const Roulette: Command = {
       await interaction.reply(cv2Err('❌ Provide a number (0–36) when using **Single Number** type.')); return;
     }
 
-    const [eco, cfg] = await Promise.all([getOrCreateEconomy(guildId, userId), getEconomyConfig(guildId)]);
-    if (eco.balance < bet) {
-      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${eco.balance.toLocaleString()}**.`)); return;
+    const cfg = await getEconomyConfig(guildId);
+    // The stake leaves the wallet now, atomically — money already riding on another game can't be bet twice.
+    const staked = await stake(guildId, userId, bet, 'roulette');
+    if (!staked.success) {
+      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${staked.newBalance.toLocaleString()}**.`)); return;
     }
 
     await interaction.deferReply();
@@ -78,23 +81,13 @@ const Roulette: Command = {
     const win = wouldWin(result);
 
     const sym = cfg.currency_symbol;
-    const luckMult = win ? await getGambleMultiplier(guildId, userId) : 1;
+    const luckMult = win ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
     const winnings = win ? Math.floor(bet * (multiplier - 1) * luckMult) : 0;
-    const delta = win ? winnings : -bet;
-    const { newBalance } = await adjustBalance(guildId, userId, delta);
-    recordGameResult(guildId, userId, 'roulette', win, bet).catch(() => {});
-    const refund = win ? 0 : await applyLossInsurance(guildId, userId, bet);
-    const jp = await settleJackpot(guildId, userId, bet, win ? 0 : bet);
-
-    let xpLine = '';
-    if (win) {
-      const base = type === 'number' ? 200 : randInt(50, 100);
-      const xpGiven = await awardBonusXp({
-        guildId, userId, baseAmount: base,
-        client: interaction.client, channelId: interaction.channelId, isGame: true,
-      });
-      xpLine = xpGiven > 0 ? `\n+**${xpGiven} XP** earned!` : '\n*(Daily XP cap reached)*';
-    }
+    const round = await settleRound({
+      guildId, userId, game: 'roulette', bet, returned: win ? bet + winnings : 0, won: win,
+      xp: win ? (type === 'number' ? 200 : randInt(50, 100)) : undefined,
+      client: interaction.client, channelId: interaction.channelId, currencySymbol: sym,
+    });
 
     const betLabel: Record<string, string> = {
       red: 'Red', black: 'Black', even: 'Even', odd: 'Odd',
@@ -116,8 +109,8 @@ const Roulette: Command = {
           `Bet on: **${betLabel[type]}**\n` +
           (win
             ? `✅ You won **${sym} ${winnings.toLocaleString()}**!${luckMult > 1 ? ' *(🍀 Lucky Charm!)*' : ''}`
-            : `❌ You lost **${sym} ${bet.toLocaleString()}**.${insuranceLine(sym, refund)}`) +
-          `\n**Balance:** ${sym} **${(newBalance + refund + jp.won).toLocaleString()}**${xpLine}${jackpotLine(sym, jp.won)}`,
+            : `❌ You lost **${sym} ${bet.toLocaleString()}**.${round.insuranceText}`) +
+          `\n**Balance:** ${sym} **${round.balance.toLocaleString()}**${round.xpText}${round.jackpotText}`,
         color: win ? Colors.Green : Colors.Red,
       },
     });

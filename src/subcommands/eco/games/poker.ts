@@ -3,13 +3,14 @@ import {
   ChatInputCommandInteraction, Colors, ComponentType, ContainerBuilder, InteractionContextType,
   MediaGalleryBuilder, MediaGalleryItemBuilder, SlashCommandBuilder, TextDisplayBuilder,
 } from 'discord.js';
-import { Command } from '../../interfaces/command';
-import { getOrCreateEconomy, getEconomyConfig, adjustBalance, getGambleMultiplier, recordGameResult } from '../../utils/db';
-import { awardBonusXp } from '../../utils/xpBonus.js';
-import { cv2Err, IS_CV2 } from '../../utils/components.js';
-import { newDeck, shuffleDeck, cardStr, evaluatePokerHand, type Card } from '../../utils/cards.js';
-import { applyLossInsurance, insuranceLine, settleJackpot, jackpotLine } from '../../utils/gamble.js';
-import { renderTable } from '../../utils/cardRender.js';
+import { Command } from '../../../interfaces/command';
+import { getEconomyConfig, getGambleMultiplier } from '../../../utils/db';
+import { cv2Err, IS_CV2 } from '../../../utils/components.js';
+import { newDeck, shuffleDeck, cardStr, evaluatePokerHand, type Card } from '../../../utils/cards.js';
+import { stake } from '../../../eco/core.js';
+import { settleRound } from '../../../eco/round.js';
+import { fortuneMultiplier } from '../../../eco/effects.js';
+import { renderTable } from '../../../utils/cardRender.js';
 
 const TABLE_NAME = 'poker.png';
 
@@ -81,12 +82,13 @@ const Poker: Command = {
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
 
-    const [eco, cfg] = await Promise.all([getOrCreateEconomy(guildId, userId), getEconomyConfig(guildId)]);
-    if (eco.balance < bet) {
-      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${eco.balance.toLocaleString()}**.`)); return;
+    const cfg = await getEconomyConfig(guildId);
+    const staked = await stake(guildId, userId, bet, 'poker');
+    if (!staked.success) {
+      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${staked.newBalance.toLocaleString()}**.`)); return;
     }
 
-    const luckMult = await getGambleMultiplier(guildId, userId);
+    const luckMult = (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId));
 
     await interaction.deferReply();
 
@@ -126,20 +128,11 @@ const Poker: Command = {
         const result = evaluatePokerHand(hand);
         const isWin = result.multiplier > 0;
         const winAmount = Math.floor(bet * result.multiplier * (isWin ? luckMult : 1));
-        const delta = isWin ? winAmount - bet : -bet;
-        const { newBalance } = await adjustBalance(guildId, userId, delta);
-        recordGameResult(guildId, userId, 'poker', isWin, bet).catch(() => {});
-        const refund = isWin ? 0 : await applyLossInsurance(guildId, userId, bet);
-        const jp = await settleJackpot(guildId, userId, bet, isWin ? Math.max(0, bet - winAmount) : bet);
-
-        let xpLine = '';
-        if (isWin) {
-          const xpGiven = await awardBonusXp({
-            guildId, userId, baseAmount: Math.min(50 * result.multiplier, 200),
-            client: interaction.client, channelId: interaction.channelId, isGame: true,
-          });
-          xpLine = xpGiven > 0 ? ` +**${xpGiven} XP**!` : '';
-        }
+        const round = await settleRound({
+          guildId, userId, game: 'poker', bet, returned: isWin ? winAmount : 0, won: isWin,
+          xp: isWin ? Math.min(50 * result.multiplier, 200) : undefined,
+          client: interaction.client, channelId: interaction.channelId, currencySymbol: sym,
+        });
 
         // Final hand: light up every card (the draw is done, nothing is "held").
         await interaction.editReply(pokerPanel(
@@ -147,9 +140,9 @@ const Poker: Command = {
           `**🃏 Video Poker** — Bet: ${sym} ${bet.toLocaleString()}\n\n` +
             `${hand.map(cardStr).join('  ')}\n\n` +
             (isWin
-              ? `✅ **${result.name}!** You won **${sym} ${winAmount.toLocaleString()}**! *(${result.multiplier}x${luckMult > 1 ? ' 🍀' : ''})*${xpLine}`
-              : `❌ **${result.name}** — You lost **${sym} ${bet.toLocaleString()}**.${insuranceLine(sym, refund)}`) +
-            `\n**Balance:** ${sym} **${(newBalance + refund + jp.won).toLocaleString()}**${jackpotLine(sym, jp.won)}\n${PAYTABLE}`,
+              ? `✅ **${result.name}!** You won **${sym} ${winAmount.toLocaleString()}**! *(${result.multiplier}x${luckMult > 1 ? ' 🍀' : ''})*${round.xpText}`
+              : `❌ **${result.name}** — You lost **${sym} ${bet.toLocaleString()}**.${round.insuranceText}`) +
+            `\n**Balance:** ${sym} **${round.balance.toLocaleString()}**${round.jackpotText}\n${PAYTABLE}`,
           isWin ? Colors.Green : Colors.Red,
           undefined, result.name, false,
         )).catch(() => {});
@@ -177,7 +170,11 @@ const Poker: Command = {
             `⏰ Timed out — you lost **${sym} ${bet.toLocaleString()}**.`,
           Colors.Red, undefined, undefined, false,
         )).catch(() => {});
-        await adjustBalance(guildId, userId, -bet);
+        // Walking away forfeits the stake (already taken); no insurance for AFK.
+        await settleRound({
+          guildId, userId, game: 'poker', bet, returned: 0, won: false, insuredLoss: 0,
+          client: interaction.client, channelId: interaction.channelId, currencySymbol: sym,
+        });
       }
     });
   },

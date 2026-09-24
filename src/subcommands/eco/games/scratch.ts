@@ -3,16 +3,18 @@ import {
   ChatInputCommandInteraction, Colors, ComponentType, InteractionContextType,
   SlashCommandBuilder,
 } from 'discord.js';
-import { Command } from '../../interfaces/command';
-import { getOrCreateEconomy, getEconomyConfig, adjustBalance, getGambleMultiplier, recordGameResult } from '../../utils/db';
-import { awardBonusXp } from '../../utils/xpBonus.js';
-import { randInt } from '../../utils/random.js';
-import { cv2Err } from '../../utils/components.js';
-import { applyLossInsurance, insuranceLine, buildGamePanel, settleJackpot, jackpotLine } from '../../utils/gamble.js';
-import { renderScratchCard } from '../../utils/scratchRender.js';
-import { mediaPanel } from '../../utils/casinoReveal.js';
+import { Command } from '../../../interfaces/command';
+import { getEconomyConfig, getGambleMultiplier } from '../../../utils/db';
+import { randInt } from '../../../utils/random.js';
+import { cv2Err } from '../../../utils/components.js';
+import { buildGamePanel } from '../../../utils/gamble.js';
+import { stake } from '../../../eco/core.js';
+import { settleRound } from '../../../eco/round.js';
+import { fortuneMultiplier } from '../../../eco/effects.js';
+import { renderScratchCard } from '../../../utils/scratchRender.js';
+import { mediaPanel } from '../../../utils/casinoReveal.js';
 import { AttachmentBuilder } from 'discord.js';
-import { IS_CV2 } from '../../utils/components.js';
+import { IS_CV2 } from '../../../utils/components.js';
 
 const CARD_NAME = 'scratch.png';
 
@@ -76,30 +78,23 @@ async function resolveGame(
 ): Promise<{ content: string; win: boolean; winEmoji: string | null }> {
   const win = checkWin(symbols);
   const sym = cfg.currency_symbol;
-  const winAmountForJp = win ? Math.floor(bet * win.mult) : 0;
-  const jp = await settleJackpot(guildId, userId, bet, Math.max(0, bet - winAmountForJp));
+  // The card's price was taken up-front; a winning card pays back price × multiplier.
+  const luckMult = win ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
+  const winAmount = win ? Math.floor(bet * win.mult * luckMult) : 0;
+  const round = await settleRound({
+    guildId, userId, game: 'scratch', bet, returned: winAmount, won: !!win,
+    xp: win ? Math.floor(50 * win.mult) : undefined,
+    client, channelId, currencySymbol: sym,
+  });
   let line = '';
   if (win) {
-    const luckMult = await getGambleMultiplier(guildId, userId);
-    const winAmount = Math.floor(bet * win.mult * luckMult);
-    await adjustBalance(guildId, userId, winAmount);
-    recordGameResult(guildId, userId, 'scratch', true, bet).catch(() => {});
-    const xpGiven = await awardBonusXp({
-      guildId, userId, baseAmount: Math.floor(50 * win.mult),
-      client, channelId, isGame: true,
-    });
-    const xpLine = xpGiven > 0 ? ` +**${xpGiven} XP**!` : '';
-    const boostLine = luckMult > 1.0 ? ` *(🍀 ${luckMult}x boost!)*` : '';
-    line = `\n🎉 **${win.emoji} × ${win.count}!** You won **${sym} ${winAmount.toLocaleString()}**!${boostLine}${xpLine}`;
+    const boostLine = luckMult > 1.0 ? ` *(🍀 ${luckMult.toFixed(2)}x boost!)*` : '';
+    line = `\n🎉 **${win.emoji} × ${win.count}!** You won **${sym} ${winAmount.toLocaleString()}**!${boostLine}${round.xpText}`;
   } else {
-    recordGameResult(guildId, userId, 'scratch', false, bet).catch(() => {});
-    // Insurance runs before the balance refetch below, so the shown total is right.
-    const refund = await applyLossInsurance(guildId, userId, bet);
-    line = `\n😢 No match — better luck next time!${insuranceLine(sym, refund)}`;
+    line = `\n😢 No match — better luck next time!${round.insuranceText}`;
   }
-  const eco2 = await getOrCreateEconomy(guildId, userId);
   return {
-    content: `🎟️ **Scratch Card** — ${sym} ${bet.toLocaleString()}${line}\n**Balance:** ${sym} ${eco2.balance.toLocaleString()}\n${LEGEND}${jackpotLine(sym, jp.won)}`,
+    content: `🎟️ **Scratch Card** — ${sym} ${bet.toLocaleString()}${line}\n**Balance:** ${sym} ${round.balance.toLocaleString()}\n${LEGEND}${round.jackpotText}`,
     win: !!win,
     winEmoji: win?.emoji ?? null,
   };
@@ -129,12 +124,11 @@ const Scratch: Command = {
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
 
-    const [eco, cfg] = await Promise.all([getOrCreateEconomy(guildId, userId), getEconomyConfig(guildId)]);
-    if (eco.balance < bet) {
-      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${eco.balance.toLocaleString()}**.`)); return;
+    const cfg = await getEconomyConfig(guildId);
+    const staked = await stake(guildId, userId, bet, 'scratch');
+    if (!staked.success) {
+      await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${staked.newBalance.toLocaleString()}**.`)); return;
     }
-
-    await adjustBalance(guildId, userId, -bet);
 
     const symbols = generateGrid();
     const revealed = new Array<boolean>(9).fill(false);

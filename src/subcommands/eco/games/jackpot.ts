@@ -2,11 +2,11 @@ import {
   ApplicationIntegrationType, ChatInputCommandInteraction, Colors,
   InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder, TextChannel,
 } from 'discord.js';
-import { Command } from '../../interfaces/command';
-import * as db from '../../utils/db';
-import { cv2Text, cv2Err, IS_CV2 } from '../../utils/components.js';
-import { formatJackpotMessage } from '../../utils/gamble.js';
-import { postStickyNow } from '../../features/sticky/index.js';
+import { Command } from '../../../interfaces/command';
+import * as db from '../../../utils/db';
+import { cv2Text, cv2Err, IS_CV2 } from '../../../utils/components.js';
+import { formatJackpotMessage } from '../../../utils/gamble.js';
+import { postStickyNow } from '../../../features/sticky/index.js';
 
 const Jackpot: Command = {
   data: new SlashCommandBuilder()
