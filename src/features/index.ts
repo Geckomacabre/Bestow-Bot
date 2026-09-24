@@ -16,7 +16,6 @@ import { startFreeGamesPoller } from './freegames';
 import xpModule from './xp';
 import welcomeModule from './welcome';
 import reactionRolesModule from './reactionroles';
-import giveawayModule, { startGiveawayChecker } from './giveaway';
 import { startBirthdayChecker } from './birthday';
 import { startStatChannelUpdater } from './statchannels';
 import { startTopicPoller } from './topics';
@@ -46,7 +45,6 @@ const features = [
   xpModule,
   welcomeModule,
   reactionRolesModule,
-  giveawayModule,
   starboardModule,
   guildActionsModule,
   timezoneModule,
@@ -75,7 +73,6 @@ export function registerFeatures(bot: Client) {
     initModerationScheduler(bot);
     startFeedsPollers(bot);
     startFreeGamesPoller(bot);
-    startGiveawayChecker(bot);
     startBirthdayChecker(bot);
     startStatChannelUpdater(bot);
     startTopicPoller(bot);

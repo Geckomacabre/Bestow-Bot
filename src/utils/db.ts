@@ -401,19 +401,6 @@ export type IStatChannel = {
   label: string;
 };
 
-export type IGiveaway = {
-  id: number;
-  guild_id: string;
-  channel_id: string;
-  message_id: string | null;
-  host_id: string;
-  prize: string;
-  winner_count: number;
-  ends_at: number;
-  ended: number;
-  entries: string;
-};
-
 export type IReactionRole = {
   id: number;
   guild_id: string;
@@ -919,12 +906,6 @@ export async function initDb() {
     UNIQUE (guild_id, name)
   )`;
 
-  await db`CREATE TABLE IF NOT EXISTS music_config (
-    guild_id    TEXT PRIMARY KEY,
-    volume      INTEGER NOT NULL DEFAULT 100,
-    dj_role_id  TEXT
-  )`;
-
   await db`CREATE TABLE IF NOT EXISTS welcome_config (
     guild_id   TEXT PRIMARY KEY,
     channel_id TEXT,
@@ -956,19 +937,6 @@ export async function initDb() {
     channel_id TEXT NOT NULL,
     type       TEXT NOT NULL,
     label      TEXT NOT NULL
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS giveaways (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id     TEXT NOT NULL,
-    channel_id   TEXT NOT NULL,
-    message_id   TEXT,
-    host_id      TEXT NOT NULL,
-    prize        TEXT NOT NULL,
-    winner_count INTEGER NOT NULL DEFAULT 1,
-    ends_at      INTEGER NOT NULL,
-    ended        INTEGER NOT NULL DEFAULT 0,
-    entries      TEXT NOT NULL DEFAULT '[]'
   )`;
 
   await db`CREATE TABLE IF NOT EXISTS reaction_roles (
@@ -1287,9 +1255,9 @@ export async function removeGuild(guild_id: string) {
     'economy_config', 'xp', 'xp_config', 'level_roles',
     'free_game_config', 'free_game_posted', 'birthdays', 'birthday_config',
     'timezone_user', 'timezone_message',
-    'welcome_config', 'stat_channels', 'giveaways', 'reaction_roles',
+    'welcome_config', 'stat_channels', 'reaction_roles',
     'topic_channels', 'topics', 'starboard_config', 'starboard_posts',
-    'tags', 'music_config', 'news_config', 'verify_config',
+    'tags', 'news_config', 'verify_config',
     'streamvc_config', 'streamvc_approvers', 'antiphishing_config', 'mediaguess_rounds', 'mediaguess_config',
     'economy_drought',
   ]) {
@@ -2724,64 +2692,6 @@ export async function removeStatChannelById(id: number, guild_id: string): Promi
   return result.length > 0;
 }
 
-// ─── Giveaways ────────────────────────────────────────────────────────────────
-
-export async function createGiveaway(
-  guild_id: string, channel_id: string, host_id: string,
-  prize: string, winner_count: number, ends_at: number
-): Promise<IGiveaway> {
-  await ensureConfig(guild_id);
-  const [row] = await db`
-    INSERT INTO giveaways (guild_id, channel_id, host_id, prize, winner_count, ends_at)
-    VALUES (${guild_id}, ${channel_id}, ${host_id}, ${prize}, ${winner_count}, ${ends_at})
-    RETURNING *
-  `;
-  return row as IGiveaway;
-}
-
-export async function updateGiveawayMessageId(id: number, message_id: string) {
-  await db`UPDATE giveaways SET message_id = ${message_id} WHERE id = ${id}`;
-}
-
-export async function getGiveaway(id: number, guild_id: string): Promise<IGiveaway | null> {
-  const [row] = await db`SELECT * FROM giveaways WHERE id = ${id} AND guild_id = ${guild_id}`;
-  return (row as IGiveaway) || null;
-}
-
-export async function getActiveGiveaways(guild_id: string): Promise<IGiveaway[]> {
-  const rows = await db`SELECT * FROM giveaways WHERE guild_id = ${guild_id} AND ended = 0 ORDER BY ends_at ASC`;
-  return rows as IGiveaway[];
-}
-
-export async function getExpiredGiveaways(): Promise<IGiveaway[]> {
-  const rows = await db`SELECT * FROM giveaways WHERE ended = 0 AND ends_at <= ${Date.now()}`;
-  return rows as IGiveaway[];
-}
-
-export async function endGiveaway(id: number) {
-  await db`UPDATE giveaways SET ended = 1 WHERE id = ${id}`;
-}
-
-export async function enterGiveaway(id: number, user_id: string): Promise<{ entered: boolean; count: number }> {
-  const [row] = await db`SELECT entries FROM giveaways WHERE id = ${id}`;
-  if (!row) return { entered: false, count: 0 };
-  const entries: string[] = JSON.parse(row.entries as string);
-  if (entries.includes(user_id)) return { entered: false, count: entries.length };
-  entries.push(user_id);
-  await db`UPDATE giveaways SET entries = ${JSON.stringify(entries)} WHERE id = ${id}`;
-  return { entered: true, count: entries.length };
-}
-
-export async function getGiveawayEntries(id: number): Promise<string[]> {
-  const [row] = await db`SELECT entries FROM giveaways WHERE id = ${id}`;
-  return row ? JSON.parse(row.entries as string) : [];
-}
-
-export async function getAllGiveaways(guild_id: string): Promise<IGiveaway[]> {
-  const rows = await db`SELECT * FROM giveaways WHERE guild_id = ${guild_id} ORDER BY ends_at DESC`;
-  return rows as IGiveaway[];
-}
-
 export async function removeLevelRoleByRoleId(guild_id: string, role_id: string): Promise<boolean> {
   const result = await db`DELETE FROM level_roles WHERE guild_id = ${guild_id} AND role_id = ${role_id} RETURNING id`;
   return result.length > 0;
@@ -3087,15 +2997,4 @@ export async function claimJackpot(guild_id: string, user_id: string): Promise<n
     SET amount = seed, last_winner = ${user_id}, last_amount = ${won}, last_won_at = ${Date.now()}
     WHERE guild_id = ${guild_id}`;
   return won;
-}
-
-export async function getMusicConfig(guild_id: string): Promise<{ volume: number; dj_role_id: string | null }> {
-  const [row] = await db`SELECT * FROM music_config WHERE guild_id = ${guild_id}`;
-  return (row as any) ?? { volume: 100, dj_role_id: null };
-}
-
-export async function setMusicVolume(guild_id: string, volume: number) {
-  await ensureConfig(guild_id);
-  await db`INSERT INTO music_config (guild_id, volume) VALUES (${guild_id}, ${volume})
-    ON CONFLICT(guild_id) DO UPDATE SET volume = ${volume}`;
 }

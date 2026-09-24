@@ -22,7 +22,6 @@ import { starboardPage, handleStarboardSave } from './pages/starboard';
 import { automodPage } from './pages/automod';
 import { logsPage, handleLogsSave } from './pages/logs';
 import { reactionRolesPage } from './pages/reactionroles';
-import { giveawaysPage } from './pages/giveaways';
 import { topicsPage } from './pages/topics';
 import { birthdaysPage, handleBirthdaySave } from './pages/birthdays';
 import { timezonesPage } from './pages/timezones';
@@ -350,51 +349,6 @@ export function startWebServer() {
     const body: any = parseBody(await request.text());
     await db.removeReactionRole(parseInt(body.id), params.guildId);
     return flashRedirect(`/servers/${params.guildId}/reaction-roles`, 'Reaction role removed.');
-  });
-
-  // Giveaways
-  app.get('/servers/:guildId/giveaways', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const channels = await getGuildTextChannels(params.guildId);
-    const { flash, flashType } = getFlash(new URL(request.url));
-    return html(await giveawaysPage(auth.user, auth.guild!, channels, flash, flashType));
-  });
-
-  app.post('/servers/:guildId/giveaways/create', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const body: any = parseBody(await request.text());
-    if (!body.channel_id || !body.prize) {
-      return flashRedirect(`/servers/${params.guildId}/giveaways`, 'Prize and channel are required.', 'error');
-    }
-    const mins = Math.max(1, parseInt(body.duration_minutes) || 60);
-    await db.createGiveaway(
-      params.guildId, body.channel_id, auth.user.id,
-      body.prize.trim(), Math.max(1, parseInt(body.winner_count) || 1),
-      Date.now() + mins * 60_000
-    );
-    return flashRedirect(`/servers/${params.guildId}/giveaways`, 'Giveaway created! Use /giveaway in Discord to post it.');
-  });
-
-  app.post('/servers/:guildId/giveaways/end', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const body: any = parseBody(await request.text());
-    await db.endGiveaway(parseInt(body.id));
-    return flashRedirect(`/servers/${params.guildId}/giveaways`, 'Giveaway ended.');
-  });
-
-  app.post('/servers/:guildId/giveaways/reroll', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const body: any = parseBody(await request.text());
-    const giveaway = await db.getGiveaway(parseInt(body.id), params.guildId);
-    if (!giveaway) return flashRedirect(`/servers/${params.guildId}/giveaways`, 'Giveaway not found.', 'error');
-    const entries: string[] = JSON.parse(giveaway.entries ?? '[]');
-    if (!entries.length) return flashRedirect(`/servers/${params.guildId}/giveaways`, 'No entries to reroll.', 'error');
-    const winner = entries[Math.floor(Math.random() * entries.length)];
-    return flashRedirect(`/servers/${params.guildId}/giveaways`, `Rerolled! New winner: <@${winner}>`);
   });
 
   // Topics

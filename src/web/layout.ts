@@ -15,7 +15,6 @@ const guildNav = (guildId: string): NavItem[] => [
   { label: 'Automod',        href: `/servers/${guildId}/automod`,      icon: '🛡️' },
   { label: 'Logs',           href: `/servers/${guildId}/logs`,         icon: '📋' },
   { label: 'Reaction Roles', href: `/servers/${guildId}/reaction-roles`, icon: '🎭' },
-  { label: 'Giveaways',      href: `/servers/${guildId}/giveaways`,    icon: '🎉' },
   { label: 'Topics',         href: `/servers/${guildId}/topics`,       icon: '💬' },
   { label: 'Starboard',      href: `/servers/${guildId}/starboard`,    icon: '⭐' },
   { label: 'Birthdays',      href: `/servers/${guildId}/birthdays`,    icon: '🎂' },

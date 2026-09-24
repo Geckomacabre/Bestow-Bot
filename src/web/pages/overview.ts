@@ -38,7 +38,6 @@ export async function overviewPage(user: SessionUser, guild: APIGuild, flash?: s
           { href: 'automod',       icon: '🛡️', label: 'Automod' },
           { href: 'logs',          icon: '📋', label: 'Logs' },
           { href: 'reaction-roles',icon: '🎭', label: 'Reaction Roles' },
-          { href: 'giveaways',     icon: '🎉', label: 'Giveaways' },
           { href: 'starboard',     icon: '⭐', label: 'Starboard' },
         ].map(item => /* html */`
           <a href="/servers/${guild.id}/${item.href}" class="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-dash-hover transition text-center" style="background:#1a1a2e; border:1px solid #1e3a5f;">
