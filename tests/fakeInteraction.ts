@@ -8,11 +8,15 @@ export interface FakeOpts {
   limit?: number;
   userId?: string;
   guildId?: string | null;
+  /** Make client.rest.post reject (simulates Discord refusing a voice message). */
+  restFails?: boolean;
 }
 
 /** Just enough of a ChatInputCommandInteraction for the media/lookup handlers — records everything they send. */
 export function fakeInteraction(o: FakeOpts = {}) {
   const sent: any[] = [];
+  const restPosts: { route: string; options: any }[] = [];
+  let deleted = false;
   const state = { deferred: false, replied: false };
   const val = (n: string) => (o.options && n in o.options ? o.options[n]! : null);
   const options = {
@@ -34,14 +38,18 @@ export function fakeInteraction(o: FakeOpts = {}) {
     channel: null,
     channelId: 'c-test',
     attachmentSizeLimit: o.limit ?? 10 * 1024 * 1024,
-    client: { users: { fetch: async () => null } },
+    client: {
+      users: { fetch: async () => null },
+      rest: { post: async (route: string, options: unknown) => { if (o.restFails) throw new Error('Missing Permissions'); restPosts.push({ route, options }); return {}; } },
+    },
     options,
     deferReply: async () => { state.deferred = true; },
     reply: async (p: unknown) => { state.replied = true; sent.push(p); return {}; },
     editReply: async (p: unknown) => { sent.push(p); return {}; },
     followUp: async (p: unknown) => { sent.push(p); return {}; },
+    deleteReply: async () => { deleted = true; },
   } as unknown as ChatInputCommandInteraction;
-  return { interaction, sent, last: () => sent.at(-1) };
+  return { interaction, sent, restPosts, wasDeleted: () => deleted, last: () => sent.at(-1) };
 }
 
 /** Text content of whatever the handler last sent (plain content, or CV2 text blocks). */

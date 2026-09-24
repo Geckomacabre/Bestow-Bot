@@ -38,3 +38,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.sqlite
 *.rdb
 *.sqlite-*
+# runtime data (databases, wallet backgrounds, cached voice models)
+/data/

@@ -29,6 +29,8 @@
     "discord.js": "^14.26.4",
     "elysia": "^1.4.29",
     "he": "^1.2.0",
+    "kokoro-js": "^1.2.1",
+    "msedge-tts": "^2.0.8",
     "node-addon-api": "^8.8.0",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3"
