@@ -1,10 +1,11 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
-import type { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from 'discord.js';
+import { AttachmentBuilder, type ChatInputCommandInteraction, type SlashCommandSubcommandBuilder } from 'discord.js';
 import type { Sub } from '../../framework/group.js';
 import {
-  MediaError, download, ffmpeg, findMedia, mediaHandler, mediaOptions, probe, sendBuffer, sendFile, withWorkdir, type Kind,
+  MediaError, download, ffmpeg, findMedia, mediaHandler, mediaOptions, probe, sendBuffer, sendFile, uploadLimit, withWorkdir, type Kind,
 } from '../../framework/media.js';
+import * as dl from '../../media/download.js';
 import { makeZip } from '../../framework/zip.js';
 import { cv2Box } from '../../utils/components.js';
 import * as fx from '../../media/effects.js';
@@ -190,6 +191,19 @@ export const mediaDirectSubs: Sub[] = [
           loop: false, volume: i.options.getInteger('volume') ?? 100, start: i.options.getNumber('start') ?? 0, end: i.options.getNumber('end') ?? 0,
         });
         await sendFile(i, dir, out.file, { name: out.name });
+      });
+    }),
+  },
+  {
+    name: 'download', description: 'Download a video or audio track from YouTube, TikTok, X, Reddit and more (max 10 min)',
+    options: s => s
+      .addStringOption(o => o.setName('link').setDescription('Link to the video').setRequired(true).setMaxLength(500))
+      .addStringOption(o => o.setName('format').setDescription('Video (default) or audio-only MP3').addChoices({ name: 'Video (MP4)', value: 'video' }, { name: 'Audio only (MP3)', value: 'audio' })),
+    run: mediaHandler(async i => {
+      const mode = (i.options.getString('format') ?? 'video') as dl.Mode;
+      await dl.downloadMedia(i.options.getString('link', true), { mode, maxBytes: Math.floor(uploadLimit(i) * 0.98) }, async d => {
+        const data = await readFile(d.file);
+        await i.editReply({ content: `📥 ${mode === 'audio' ? 'Audio' : `Video${d.height ? ` (up to ${d.height}p)` : ''}`} · ${fmtSize(d.bytes)}`, files: [new AttachmentBuilder(data, { name: d.name })], components: [] });
       });
     }),
   },
