@@ -1,4 +1,6 @@
 import { SQL } from 'bun';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -456,7 +458,17 @@ export type IStarboardPost = {
 
 // ─── DB instance ─────────────────────────────────────────────────────────────
 
-export const db = new SQL('sqlite://data/db.sqlite');
+// DB_PATH overrides the location (':memory:' for tests). Default is <project>/data/db.sqlite,
+// absolute so the working directory can never silently point us at an empty database.
+const DB_PATH = Bun.env.DB_PATH ?? path.resolve(import.meta.dir, '../../data/db.sqlite');
+if (DB_PATH !== ':memory:') {
+  // A live SQLite DB (+WAL) inside a synced folder gets corrupted — refuse to start there.
+  if (/onedrive|dropbox|google drive/i.test(DB_PATH) && Bun.env.ALLOW_SYNCED_DB !== '1') {
+    throw new Error(`Refusing to open the database inside a synced folder (${DB_PATH}). Move the project or set DB_PATH.`);
+  }
+  mkdirSync(path.dirname(DB_PATH), { recursive: true });
+}
+export const db = new SQL({ adapter: 'sqlite', filename: DB_PATH });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
@@ -1123,6 +1135,11 @@ export async function initDb() {
     PRIMARY KEY (guild_id, user_id, date)
   )`;
   try { await db`DELETE FROM game_xp_daily WHERE date < date('now', '-7 days')`; } catch {}
+
+  // Onyx additions (ledger, bank, businesses, cards, companies …). Dynamic import: the
+  // schema module needs `db` from this file, so a static import would be circular.
+  const { initEcoSchema } = await import('../eco/schema.js');
+  await initEcoSchema();
 }
 
 export async function closeDb(): Promise<void> {
@@ -2149,14 +2166,31 @@ export async function getOrCreateEconomy(guild_id: string, user_id: string): Pro
   return row as IEconomy;
 }
 
+/**
+ * Add/remove cash atomically. One guarded UPDATE does the check and the write together,
+ * so concurrent commands can neither lose an update nor overdraw the wallet (the old
+ * read → compute → write version did both). Every change is recorded in eco_ledger.
+ */
 export async function adjustBalance(
-  guild_id: string, user_id: string, delta: number
+  guild_id: string, user_id: string, delta: number, reason = 'misc', ref: string | null = null,
 ): Promise<{ success: boolean; newBalance: number }> {
-  const eco = await getOrCreateEconomy(guild_id, user_id);
-  const newBalance = eco.balance + delta;
-  if (newBalance < 0) return { success: false, newBalance: eco.balance };
+  if (!Number.isSafeInteger(delta)) throw new Error(`adjustBalance: delta must be a safe integer (got ${delta})`);
+  await getOrCreateEconomy(guild_id, user_id);
   const earned = delta > 0 ? delta : 0;
-  await db`UPDATE economy SET balance = ${newBalance}, total_earned = total_earned + ${earned} WHERE user_id = ${user_id}`;
+  const rows = await db`
+    UPDATE economy SET balance = balance + ${delta}, total_earned = total_earned + ${earned}
+    WHERE user_id = ${user_id} AND balance + ${delta} >= 0
+    RETURNING balance
+  `;
+  if (rows.length === 0) {
+    const [cur] = await db`SELECT balance FROM economy WHERE user_id = ${user_id}`;
+    return { success: false, newBalance: (cur?.balance as number) ?? 0 };
+  }
+  const newBalance = rows[0].balance as number;
+  if (delta !== 0) {
+    await db`INSERT INTO eco_ledger (user_id, delta, balance_after, reason, ref, ts)
+             VALUES (${user_id}, ${delta}, ${newBalance}, ${reason}, ${ref}, ${Date.now()})`;
+  }
   return { success: true, newBalance };
 }
 
