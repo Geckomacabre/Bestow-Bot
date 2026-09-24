@@ -48,7 +48,7 @@ const isHttp = (u?: string) => !!u && /^(https?:\/\/|attachment:\/\/)/.test(u);
 export function card(o: CardOpts): any {
   const head = `## ${o.url ? `[${trunc(o.title, 200)}](${o.url})` : trunc(o.title, 200)}`;
   const body = [
-    o.description ? trunc(o.description, 1500) : null,
+    o.description ? trunc(o.description, 3300) : null,
     ...(o.fields ?? []).filter((f): f is [string, string | number | null | undefined] => !!f && f[1] != null && f[1] !== '').map(([k, v]) => `**${k}:** ${v}`),
   ].filter(Boolean).join('\n');
   const text = trunc(`${head}${body ? `\n${body}` : ''}`, 3500);

@@ -16,8 +16,25 @@ export function friendlyError(err: unknown): string {
   }
   const m = (err as Error)?.message ?? '';
   if (/timed out|aborted/i.test(m)) return 'That service took too long to answer. Try again in a moment.';
-  if (/not allowed|not a valid|Only http/i.test(m)) return m;
+  if (EXPECTED_MESSAGE.test(m)) return m;
   return 'Something went wrong looking that up.';
+}
+
+/** Plain Errors thrown by the URL/size guards whose message is meant for the user (not worth an error log). */
+const EXPECTED_MESSAGE = /not allowed|not a valid|Only http/i;
+
+function isExpected(err: unknown): boolean {
+  if (err instanceof LookupError || err instanceof MediaError) return true;
+  if (err instanceof HttpError) return [404, 429].includes(err.status);
+  return EXPECTED_MESSAGE.test((err as Error)?.message ?? '');
+}
+
+/** True in DMs and in age-restricted channels (threads inherit from their parent). Used to gate user-generated content like Urban Dictionary. */
+export function nsfwOk(i: ChatInputCommandInteraction): boolean {
+  if (!i.guildId) return true;
+  const ch = i.channel as { nsfw?: boolean; parent?: { nsfw?: boolean } | null; isThread?: () => boolean } | null;
+  if (!ch) return false;
+  return !!(ch.isThread?.() ? ch.parent?.nsfw : ch.nsfw);
 }
 
 /** Defer, run, and turn any failure into a friendly message (details are logged, not shown). */
@@ -27,7 +44,7 @@ export function lookup(fn: (i: ChatInputCommandInteraction) => Promise<unknown>)
     try {
       await fn(i);
     } catch (err) {
-      if (!(err instanceof LookupError) && !(err instanceof MediaError) && !(err instanceof HttpError && [404, 429].includes(err.status))) console.error('[lookup]', err);
+      if (!isExpected(err)) console.error('[lookup]', err);
       await i.editReply({ ...cv2Err(`❌ ${friendlyError(err)}`), files: [] }).catch(() => {});
     }
   };

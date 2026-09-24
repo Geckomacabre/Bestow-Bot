@@ -1108,6 +1108,8 @@ export async function initDb() {
   // schema module needs `db` from this file, so a static import would be circular.
   const { initEcoSchema } = await import('../eco/schema.js');
   await initEcoSchema();
+  const { initFunSchema } = await import('../fun/schema.js');
+  await initFunSchema();
 }
 
 export async function closeDb(): Promise<void> {

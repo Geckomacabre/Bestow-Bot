@@ -10,6 +10,12 @@ export interface FakeOpts {
   guildId?: string | null;
   /** Make client.rest.post reject (simulates Discord refusing a voice message). */
   restFails?: boolean;
+  /** Users returned by getUser(name). */
+  users?: Record<string, { id: string; username: string; displayName?: string }>;
+  /** The channel the command ran in (e.g. { nsfw: true }); null = unknown. */
+  channel?: { nsfw?: boolean } | null;
+  /** Display name of the invoking user (default "Tester"). */
+  displayName?: string;
 }
 
 /** Just enough of a ChatInputCommandInteraction for the media/lookup handlers — records everything they send. */
@@ -25,17 +31,17 @@ export function fakeInteraction(o: FakeOpts = {}) {
     getNumber: (n: string, req?: boolean) => { const v = val(n); if (v == null && req) throw new Error(`missing required option ${n}`); return v == null ? null : Number(v); },
     getBoolean: (n: string) => { const v = val(n); return v == null ? null : Boolean(v); },
     getAttachment: (n: string, req?: boolean) => { const a = o.attachments?.[n] ?? null; if (!a && req) throw new Error(`missing required attachment ${n}`); return a ? { size: 1024, ...a } : null; },
-    getUser: () => null,
+    getUser: (n: string, req?: boolean) => { const u = o.users?.[n] ?? null; if (!u && req) throw new Error(`missing required user ${n}`); return u ? { displayName: u.username, ...u } : null; },
     getSubcommand: () => 'test',
     getSubcommandGroup: () => null,
   };
   const interaction = {
     get deferred() { return state.deferred; },
     get replied() { return state.replied; },
-    user: { id: o.userId ?? 'u-test', username: 'tester', displayName: 'Tester' },
+    user: { id: o.userId ?? 'u-test', username: 'tester', displayName: o.displayName ?? 'Tester' },
     guildId: o.guildId === undefined ? 'g-test' : o.guildId,
     guild: null,
-    channel: null,
+    channel: o.channel ?? null,
     channelId: 'c-test',
     attachmentSizeLimit: o.limit ?? 10 * 1024 * 1024,
     client: {
