@@ -1,5 +1,6 @@
 import { AttachmentBuilder, ContainerBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, TextDisplayBuilder } from 'discord.js';
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { createCanvas } from '@napi-rs/canvas';
+import { safeLoadImage } from '../../framework/imgsafe.js';
 import { writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import type { Sub } from '../../framework/group.js';
 import { db } from '../../utils/db.js';
@@ -122,7 +123,7 @@ export const walletEditSubs: Sub[] = [
         await i.deferReply();
         try {
           const raw = await getBufferPublic(image.url, { maxBytes: 8 * 1024 * 1024 });
-          const img = await loadImage(raw);
+          const img = await safeLoadImage(raw, { maxSide: 1600 }); // user-supplied bytes: see framework/imgsafe.ts
           // Store a cover-cropped 800×280 copy so rendering is cheap and the file is small.
           const c = createCanvas(800, 280);
           const ctx = c.getContext('2d');

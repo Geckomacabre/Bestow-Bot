@@ -1,6 +1,8 @@
 import QRCode from 'qrcode';
 import jsQR from 'jsqr';
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { createCanvas } from '@napi-rs/canvas';
+import { safeLoadImage } from '../framework/imgsafe.js';
+import { MediaError } from '../framework/media.js';
 import { LookupError } from './handler.js';
 import { getBufferPublic } from '../framework/http.js';
 
@@ -19,8 +21,7 @@ export async function makeQr(text: string, opts: { dark?: string; light?: string
  *  Note: jsQR's 'onlyInvert' mode throws in the current release, so 'attemptBoth' is used instead. */
 export async function scanQrBuffer(buf: Buffer): Promise<string> {
   let img;
-  try { img = await loadImage(buf); } catch { throw new LookupError('I couldn\'t read that as an image.'); }
-  if (img.width * img.height > 40_000_000) throw new LookupError('That image is too large to scan.');
+  try { img = await safeLoadImage(buf, { maxSide: 2400 }); } catch (e) { throw new LookupError(e instanceof MediaError ? e.message : 'I couldn\'t read that as an image.'); }
   for (const scale of [1, 2, 0.5]) {
     const w = Math.max(64, Math.min(2400, Math.round(img.width * scale))), h = Math.max(64, Math.min(2400, Math.round(img.height * scale)));
     const c = createCanvas(w, h);

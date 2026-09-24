@@ -1110,6 +1110,8 @@ export async function initDb() {
   await initEcoSchema();
   const { initFunSchema } = await import('../fun/schema.js');
   await initFunSchema();
+  const { initAiSchema } = await import('../ai/schema.js');
+  await initAiSchema();
 }
 
 export async function closeDb(): Promise<void> {

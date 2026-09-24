@@ -1,4 +1,6 @@
 import { createCanvas, GlobalFonts, loadImage, SKRSContext2D } from '@napi-rs/canvas';
+import { getBufferPublic } from '../framework/http.js';
+import { safeLoadImage } from '../framework/imgsafe.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -56,7 +58,8 @@ export async function buildRankCard(opts: {
 
   if (opts.backgroundUrl) {
     try {
-      const bg = await loadImage(opts.backgroundUrl);
+      // Admin-configured URL: fetch it ourselves (SSRF-checked) and decode via the crash-safe path, not loadImage(url).
+      const bg = await safeLoadImage(await getBufferPublic(opts.backgroundUrl, { maxBytes: 8 * 1024 * 1024, timeoutMs: 10_000 }), { maxSide: 1200 });
       const scale = Math.max(W / bg.width, H / bg.height);
       const bw = bg.width * scale, bh = bg.height * scale;
       ctx.drawImage(bg, (W - bw) / 2, (H - bh) / 2, bw, bh);

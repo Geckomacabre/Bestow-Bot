@@ -16,6 +16,9 @@ export interface FakeOpts {
   channel?: { nsfw?: boolean } | null;
   /** Display name of the invoking user (default "Tester"). */
   displayName?: string;
+  /** Whether the invoker has Manage Server (default false). */
+  manageGuild?: boolean;
+  guildName?: string;
 }
 
 /** Just enough of a ChatInputCommandInteraction for the media/lookup handlers — records everything they send. */
@@ -23,7 +26,7 @@ export function fakeInteraction(o: FakeOpts = {}) {
   const sent: any[] = [];
   const restPosts: { route: string; options: any }[] = [];
   let deleted = false;
-  const state = { deferred: false, replied: false };
+  const state = { deferred: false, replied: false, deferFlags: 0 };
   const val = (n: string) => (o.options && n in o.options ? o.options[n]! : null);
   const options = {
     getString: (n: string, req?: boolean) => { const v = val(n); if (v == null && req) throw new Error(`missing required option ${n}`); return v == null ? null : String(v); },
@@ -40,7 +43,8 @@ export function fakeInteraction(o: FakeOpts = {}) {
     get replied() { return state.replied; },
     user: { id: o.userId ?? 'u-test', username: 'tester', displayName: o.displayName ?? 'Tester' },
     guildId: o.guildId === undefined ? 'g-test' : o.guildId,
-    guild: null,
+    guild: o.guildName ? { name: o.guildName } : null,
+    memberPermissions: { has: () => !!o.manageGuild },
     channel: o.channel ?? null,
     channelId: 'c-test',
     attachmentSizeLimit: o.limit ?? 10 * 1024 * 1024,
@@ -49,13 +53,13 @@ export function fakeInteraction(o: FakeOpts = {}) {
       rest: { post: async (route: string, options: unknown) => { if (o.restFails) throw new Error('Missing Permissions'); restPosts.push({ route, options }); return {}; } },
     },
     options,
-    deferReply: async () => { state.deferred = true; },
+    deferReply: async (p?: { flags?: number }) => { state.deferred = true; state.deferFlags = p?.flags ?? 0; },
     reply: async (p: unknown) => { state.replied = true; sent.push(p); return {}; },
     editReply: async (p: unknown) => { sent.push(p); return {}; },
     followUp: async (p: unknown) => { sent.push(p); return {}; },
     deleteReply: async () => { deleted = true; },
   } as unknown as ChatInputCommandInteraction;
-  return { interaction, sent, restPosts, wasDeleted: () => deleted, last: () => sent.at(-1) };
+  return { interaction, sent, restPosts, wasDeleted: () => deleted, last: () => sent.at(-1), deferFlags: () => state.deferFlags };
 }
 
 /** Text content of whatever the handler last sent (plain content, or CV2 text blocks). */

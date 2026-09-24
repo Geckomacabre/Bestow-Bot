@@ -1,5 +1,6 @@
 import { AttachmentBuilder, ContainerBuilder, MessageFlags, SectionBuilder, TextDisplayBuilder, ThumbnailBuilder, type ChatInputCommandInteraction } from 'discord.js';
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { createCanvas } from '@napi-rs/canvas';
+import { safeLoadImage } from '../../framework/imgsafe.js';
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Sub, SubGroup } from '../../framework/group.js';
@@ -49,7 +50,7 @@ const amountOpt = (desc: string) => (s: import('discord.js').SlashCommandSubcomm
 
 async function saveIcon(companyId: number, url: string): Promise<void> {
   const raw = await getBufferPublic(url, { maxBytes: 8 * 1024 * 1024 });
-  const img = await loadImage(raw);
+  const img = await safeLoadImage(raw, { maxSide: 1024 }); // user-supplied bytes: never hand these straight to the native decoder
   const c = createCanvas(128, 128);
   const ctx = c.getContext('2d');
   const s = Math.max(128 / img.width, 128 / img.height);

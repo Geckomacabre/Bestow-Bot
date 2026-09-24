@@ -29,6 +29,7 @@ import streamVcModule from './streamvc';
 import { startLottery } from './lottery';
 import raidguardModule from './raidguard';
 import stickyModule, { startStickyRefresh } from './sticky';
+import aiModule from './ai';
 
 const features = [
   countingModule,
@@ -54,6 +55,7 @@ const features = [
   streamVcModule,
   raidguardModule,
   stickyModule,
+  aiModule,
 ];
 
 export function registerFeatures(bot: Client) {
