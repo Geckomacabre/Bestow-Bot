@@ -99,6 +99,8 @@ export function assertPublicUrl(raw: string): URL {
   let u: URL;
   try { u = new URL(raw); } catch { throw new Error('That is not a valid URL.'); }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('Only http(s) links are supported.');
+  // Test-only escape hatch so integration tests can serve fixtures from localhost. Ignored outside NODE_ENV=test.
+  if (Bun.env.NODE_ENV === 'test' && Bun.env.ALLOW_PRIVATE_URLS === '1') return u;
   const h = u.hostname.toLowerCase();
   const privateHost =
     h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal') ||
