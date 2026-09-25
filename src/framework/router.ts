@@ -1,11 +1,11 @@
-import type { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction } from 'discord.js';
+import type { ButtonInteraction, ModalSubmitInteraction, StringSelectMenuInteraction, UserSelectMenuInteraction } from 'discord.js';
 
 /**
  * Buttons, select menus and modals are routed by the prefix of their customId ("tags:edit:…" → the handler registered for "tags:").
  * Modules register at import time, so a feature's components live next to the command that creates them.
  */
 
-export type ComponentInteraction = ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction;
+export type ComponentInteraction = ButtonInteraction | StringSelectMenuInteraction | UserSelectMenuInteraction | ModalSubmitInteraction;
 type Handler = (i: ComponentInteraction) => Promise<unknown>;
 
 const routes = new Map<string, Handler>();

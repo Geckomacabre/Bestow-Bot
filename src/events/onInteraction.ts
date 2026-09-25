@@ -24,7 +24,7 @@ export const onInteraction = async (interaction: Interaction) => {
   }
 
   // Components registered by feature modules (framework/router.ts).
-  if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
+  if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
     const route = routeFor(interaction.customId);
     if (route) {
       try {
