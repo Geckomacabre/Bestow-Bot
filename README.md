@@ -39,7 +39,7 @@ There is deliberately **no music player and no giveaway system**.
 
 ### 2. Configure
 ```bash
-cp .env.example .env      # then fill in TOKEN, CLIENT_ID, GUILD_ID (see the comments in the file)
+cp .env.example .env      # then fill in TOKEN and CLIENT_ID (see the comments in the file)
 bun install
 ```
 Keep the database (`./data/bestow.db` by default) on a **local disk**. The bot refuses to start with the database inside OneDrive/Dropbox/iCloud, because sync clients corrupt SQLite files.
@@ -48,7 +48,7 @@ Keep the database (`./data/bestow.db` by default) on a **local disk**. The bot r
 ```bash
 bun run start:production     # or: bun run dev   (auto-restart on changes)
 ```
-Slash commands are registered on startup: with `NODE_ENV=development` only in `GUILD_ID` (instant, for testing); otherwise globally. Invite the bot with `/bot invite`, or build the link from your Client ID. To let people use the fun/lookup/tools commands from their own account in any server or DM, enable **User Install** under the application's *Installation* tab in the Developer Portal.
+Slash commands are registered globally on startup. Invite the bot with `/bot invite`, or build the link from your Client ID. To let people use the fun/lookup/tools commands from their own account in any server or DM, enable **User Install** under the application's *Installation* tab in the Developer Portal.
 
 ### Docker
 ```bash

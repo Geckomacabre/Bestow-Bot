@@ -5,37 +5,18 @@ import commands from '../handlers/commandHandler';
 import { ownerGuardScan } from './onGuildCreate';
 import { getBotConfig } from '../utils/db';
 
+/**
+ * Registers every command GLOBALLY. Bestow is a user-install app: people add it to their own account and use it in any
+ * server, DM or group DM — so commands must never be tied to a particular server (guild commands aren't available to
+ * user installs at all).
+ */
 export const onReady = async (Bot: Client) => {
   const rest = new REST({ version: '10' }).setToken(Config.DISCORD_TOKEN);
   const commandData = Array.from(commands.values()).map((command) => command.data.toJSON());
 
   try {
-    logger.info('Clearing existing commands...');
-
-    if (Config.NODE_ENV === 'development') {
-      await rest.put(Routes.applicationGuildCommands(Config.CLIENT_ID, Config.GUILD_ID), { body: [] });
-      logger.info('Cleared guild commands');
-
-      await rest.put(Routes.applicationCommands(Config.CLIENT_ID), { body: [] });
-      logger.info('Cleared global commands');
-
-      logger.info('Development mode: Registering guild commands...');
-      await rest.put(Routes.applicationGuildCommands(Config.CLIENT_ID, Config.GUILD_ID), {
-        body: commandData,
-      });
-      logger.info(`Successfully registered ${commandData.length} guild commands`);
-    } else {
-      // Remove leftover dev-server commands so they don't show up twice (only possible if a dev server is configured).
-      if (Config.GUILD_ID) {
-        await rest.put(Routes.applicationGuildCommands(Config.CLIENT_ID, Config.GUILD_ID), { body: [] });
-        logger.info('Cleared guild commands');
-      }
-
-      logger.info('Production mode: Registering global commands...');
-      await rest.put(Routes.applicationCommands(Config.CLIENT_ID), { body: commandData });
-      logger.info(`Successfully registered ${commandData.length} global commands`);
-    }
-
+    await rest.put(Routes.applicationCommands(Config.CLIENT_ID), { body: commandData });
+    logger.info(`Registered ${commandData.length} global commands`);
     logger.info(`Logged in as ${Bot.user?.tag}!`);
 
     await ownerGuardScan([...Bot.guilds.cache.values()]);

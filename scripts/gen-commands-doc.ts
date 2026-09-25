@@ -7,7 +7,7 @@ import { categoryLabel, toHelp } from '../src/info/help';
 
 export async function buildCommandsDoc(): Promise<string> {
   // Loading commands must never depend on (or read) a developer's real .env.
-  Bun.env.DB_PATH = ':memory:'; Bun.env.LOG_LEVEL = 'warn'; Bun.env.TOKEN = 'docs'; Bun.env.CLIENT_ID = '1'; Bun.env.GUILD_ID = '1';
+  Bun.env.DB_PATH = ':memory:'; Bun.env.LOG_LEVEL = 'warn'; Bun.env.TOKEN = 'docs'; Bun.env.CLIENT_ID = '1';
   const registry = (await import('../src/handlers/commandHandler')).default;
   const list = toHelp(registry.values());
   const byCat = new Map<string, typeof list>();

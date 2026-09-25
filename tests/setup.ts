@@ -15,5 +15,4 @@ try {
 Bun.env.DB_PATH = ':memory:';
 Bun.env.TOKEN = 'test-token';
 Bun.env.CLIENT_ID = '1';
-Bun.env.GUILD_ID = '1';
 Bun.env.NODE_ENV = 'test';

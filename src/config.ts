@@ -1,12 +1,8 @@
-const nodeEnv = Bun.env.NODE_ENV || 'development';
-
-// GUILD_ID is only needed in development, where slash commands register to one server for instant updates.
-// Everywhere else commands register globally and GUILD_ID may be left empty.
+// Bestow is a user-install app: nothing is tied to a single server, so there is no GUILD_ID.
 const required = {
   CLIENT_ID: Bun.env.CLIENT_ID,
   DISCORD_TOKEN: Bun.env.TOKEN,
-  NODE_ENV: nodeEnv,
-  ...(nodeEnv === 'development' ? { GUILD_ID: Bun.env.GUILD_ID } : {}),
+  NODE_ENV: Bun.env.NODE_ENV || 'development',
 };
 
 const missingVars = Object.entries(required)
@@ -20,7 +16,6 @@ if (missingVars.length > 0) {
 interface Config {
   DISCORD_TOKEN: string;
   CLIENT_ID: string;
-  GUILD_ID: string;
   NODE_ENV: string;
   // Optional — features that need these will silently skip if absent
   TWITCH_CLIENT_ID?: string;
@@ -37,7 +32,6 @@ interface Config {
 
 const Config: Config = {
   CLIENT_ID: required.CLIENT_ID!,
-  GUILD_ID: Bun.env.GUILD_ID ?? '',
   DISCORD_TOKEN: required.DISCORD_TOKEN!,
   NODE_ENV: required.NODE_ENV,
   TWITCH_CLIENT_ID: Bun.env.TWITCH_CLIENT_ID,
