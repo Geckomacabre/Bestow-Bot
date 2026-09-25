@@ -17,6 +17,7 @@ import { openTierBuilder } from '../../generate/tierlist.js';
 import { encode } from '../../media/anim.js';
 import * as fx from '../../media/effects.js';
 import { generateQuote } from '../../utils/quote.js';
+import { activeStyle } from '../../quotes/presets.js';
 
 /** /generate — joke images in Heist's shapes (docs/heist-spec.json). Every fake carries a small "not a real screenshot" line. */
 
@@ -92,7 +93,7 @@ export const fakeSubs: Sub[] = [
     const u = i.options.getUser('user', true);
     const m = i.options.getMember('user');
     const name = (m && 'displayName' in m ? m.displayName : null) ?? u.globalName ?? u.username;
-    const png = await generateQuote({ text: i.options.getString('text', true), authorName: name, authorHandle: `@${u.username}`, authorAvatarUrl: u.displayAvatarURL({ extension: 'png', size: 1024 }) });
+    const png = await generateQuote({ text: i.options.getString('text', true), authorName: name, authorHandle: `@${u.username}`, authorAvatarUrl: u.displayAvatarURL({ extension: 'png', size: 1024 }), style: await activeStyle(i.user.id) });
     await sendBuffer(i, png, 'quote.png');
   }), { tweaks: { text: text(500) } }),
 

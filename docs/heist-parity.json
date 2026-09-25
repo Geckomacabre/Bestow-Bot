@@ -26,23 +26,5 @@
    "Fuck (NSFW)": "A sexual act aimed at another person; declined like /rating ppsize."
   }
  },
- "notYet": [
-  "AI Tools",
-  "Transcribe Audio",
-  "Translate Message",
-  "ai custom build",
-  "ai custom chat",
-  "ai custom models",
-  "ai deepgeolocate",
-  "ai edit-imagine",
-  "ai imagine",
-  "ai perplexity",
-  "ai tts openai",
-  "quotemessage config apply",
-  "quotemessage config create",
-  "quotemessage config delete",
-  "quotemessage config edit",
-  "quotemessage config list",
-  "quotemessage howto"
- ]
+ "notYet": []
 }

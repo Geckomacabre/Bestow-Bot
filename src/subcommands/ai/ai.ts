@@ -14,6 +14,8 @@ import { imageUrlToDataUri } from '../../ai/vision.js';
 import { transcribe, whisperConfig } from '../../ai/transcribe.js';
 import { factcheck } from '../../ai/factcheck.js';
 import * as store from '../../ai/store.js';
+import { hsub } from '../../framework/heist.js';
+import { aiCustomSubs, aiHeistSubs, aiTtsSubs } from './heist.js';
 
 const COLOR = 0x9b59b6;
 const name_ = (i: ChatInputCommandInteraction) => i.user.displayName ?? i.user.username;
@@ -67,7 +69,7 @@ const usageSub: Sub = {
   },
 };
 
-async function imageTask(i: ChatInputCommandInteraction, system: string, prompt: string, title: string, maxTokens = 700) {
+export async function imageTask(i: ChatInputCommandInteraction, system: string, prompt: string, title: string, maxTokens = 700) {
   const ref = await findMedia(i, 'image');
   const uri = await imageUrlToDataUri(ref.url);
   const out = await chat([{ role: 'system', content: system }, { role: 'user', content: userContent(prompt, [uri]) }], { kind: 'vision', maxTokens, temperature: 0.2 });
@@ -203,12 +205,18 @@ const configSubs: Sub[] = [
   },
 ];
 
+/** Heist's own /ai commands take Heist's options exactly; the rest are Bestow extras. */
 export const aiSubs: Sub[] = [
-  chatSub('chatgpt', 'Ask the AI a question (attach an image and it can look at it)', 'chat', true),
-  chatSub('llama', 'Ask the Llama model a question', 'llama', false),
-  ...imageSubs, transcriptSub, summarizeSub, factcheckSub, funSub, usageSub,
+  hsub('ai chatgpt', chatSub('chatgpt', '', 'chat', true).run, { tweaks: { prompt: { maxLength: 1500 } } }),
+  hsub('ai llama', chatSub('llama', '', 'llama', false).run, { tweaks: { prompt: { maxLength: 1500 } } }),
+  hsub('ai ocr', imageSubs.find(s => s.name === 'ocr')!.run),
+  hsub('ai transcript', transcriptSub.run),
+  ...aiHeistSubs,
+  ...imageSubs.filter(s => s.name !== 'ocr'), summarizeSub, factcheckSub, funSub, hsub('ai usage', usageSub.run),
 ];
 export const aiGroups: SubGroup[] = [
+  { name: 'custom', description: '✨ Build and chat with your own AI', subs: aiCustomSubs },
+  { name: 'tts', description: 'Text to speech with AI voices', subs: aiTtsSubs },
   { name: 'persona', description: 'Give the AI a persona for your chats', subs: personaSubs },
   { name: 'memory', description: 'Opt-in notes the AI can remember about you', subs: memorySubs },
   { name: 'config', description: 'Server settings for the AI (Manage Server)', subs: configSubs },

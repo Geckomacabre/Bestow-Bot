@@ -1,6 +1,7 @@
 import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import { messageMenu } from '../../framework/menu.js';
 import { generateQuote } from '../../utils/quote.js';
+import { activeStyle } from '../../quotes/presets.js';
 
 /** Right-click a message → Apps → Quote Message. */
 export default messageMenu('Quote Message', async interaction => {
@@ -52,6 +53,7 @@ export default messageMenu('Quote Message', async interaction => {
     authorName: msg.member?.displayName ?? author.globalName ?? author.username,
     authorHandle: handle,
     authorAvatarUrl: avatarUrl,
+    style: await activeStyle(interaction.user.id), // the quoter's applied preset (/quotemessage config)
   });
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(

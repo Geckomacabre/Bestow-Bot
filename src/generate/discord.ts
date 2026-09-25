@@ -11,7 +11,8 @@ import { createCanvas, GlobalFonts, type Image, type SKRSContext2D } from '@napi
 
 const FONTS = path.resolve(import.meta.dir, '../../assets/fonts');
 let ready = false;
-function fonts() {
+/** Registers the UI and display-name fonts (idempotent). */
+export function fonts() {
   if (ready) return;
   const reg = (file: string, name: string) => { try { GlobalFonts.registerFromPath(path.join(FONTS, file), name); } catch { /* falls back to sans-serif */ } };
   reg('display/Figtree-Regular.ttf', 'DGG'); reg('display/Figtree-SemiBold.ttf', 'DGGSemi'); reg('display/Figtree-Bold.ttf', 'DGGBold');
@@ -29,7 +30,7 @@ export { NOTICE };
 /** Discord's display-name fonts, in Heist's order. */
 export const DISPLAY_FONTS = ['gg sans', 'Tempo', 'Sakura', 'Jellybean', 'Modern', 'Medieval', '8Bit', 'Vampyre'] as const;
 export type DisplayFont = (typeof DISPLAY_FONTS)[number];
-const FAMILY: Record<DisplayFont, string> = { 'gg sans': 'DGGSemi', Tempo: 'DTempo', Sakura: 'DSakura', Jellybean: 'DJellybean', Modern: 'DModern', Medieval: 'DMedieval', '8Bit': 'D8Bit', Vampyre: 'DVampyre' };
+export const FAMILY: Record<DisplayFont, string> = { 'gg sans': 'DGGSemi', Tempo: 'DTempo', Sakura: 'DSakura', Jellybean: 'DJellybean', Modern: 'DModern', Medieval: 'DMedieval', '8Bit': 'D8Bit', Vampyre: 'DVampyre' };
 /** Discord's `display_name_styles.font_id` values (as datamined) → the style's name. */
 export const FONT_IDS: Record<number, DisplayFont> = { 11: 'gg sans', 12: 'Tempo', 3: 'Sakura', 4: 'Jellybean', 6: 'Modern', 7: 'Medieval', 8: '8Bit', 10: 'Vampyre' };
 

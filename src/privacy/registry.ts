@@ -37,7 +37,7 @@ export const REGISTRY: PrivacyEntry[] = [
   // Fun
   del('juul_state', 'Juul'),
   // Your own tags (/tags) and any unused export codes for them
-  del('user_tags', 'Your tags'), del('tag_exports', 'Tag export codes you made'),
+  del('user_tags', 'Your tags'), del('quote_presets', 'Your quote presets'), del('tag_exports', 'Tag export codes you made'),
   // /lastfm login (your Last.fm username, login key and display preferences)
   del('lastfm_users', 'Your linked Last.fm account'),
   // /crypto track (transaction hashes you asked to watch)
@@ -47,7 +47,7 @@ export const REGISTRY: PrivacyEntry[] = [
   // A server setting that remembers which admin set it up
   { table: 'ping_on_join', columns: ['created_by'], label: 'Ping-on-join channels you set up', policy: 'anonymize', note: 'the server keeps its setting; you are removed as the admin who created it' },
   // AI — all opt-in, entered by the person
-  del('ai_persona', 'Your AI persona'), del('ai_prefs', 'AI memory preference'), del('ai_memory', 'AI memory notes you saved'),
+  del('ai_persona', 'Your AI persona'), del('ai_prefs', 'AI memory preference'), del('ai_memory', 'AI memory notes you saved'), del('ai_custom', 'Your custom AI (name, instructions, model)'),
   // Premium — a local mirror of your subscription/grant, plus gift codes you bought or redeemed
   del('user_accent', 'Your accent color (/customize color)'), del('premium_users', 'Premium status'), del('premium_gifts', 'Premium gift codes', 'buyer_id', 'redeemed_by'),
   // Giveaways: entries are yours (deleted); a giveaway you hosted belongs to its server, so only your id is blanked. Your id inside the winner lists is scrubbed by deleteData.
