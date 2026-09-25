@@ -38,6 +38,10 @@ export const REGISTRY: PrivacyEntry[] = [
   del('juul_state', 'Juul'),
   // Your own tags (/tags) and any unused export codes for them
   del('user_tags', 'Your tags'), del('tag_exports', 'Tag export codes you made'),
+  // /me and /donate
+  del('bestow_users', 'Your Bestow UID, first-use date and command count'), del('donations', 'Donations you submitted'),
+  // A server setting that remembers which admin set it up
+  { table: 'ping_on_join', columns: ['created_by'], label: 'Ping-on-join channels you set up', policy: 'anonymize', note: 'the server keeps its setting; you are removed as the admin who created it' },
   // AI — all opt-in, entered by the person
   del('ai_persona', 'Your AI persona'), del('ai_prefs', 'AI memory preference'), del('ai_memory', 'AI memory notes you saved'),
   // Premium — a local mirror of your subscription/grant, plus gift codes you bought or redeemed

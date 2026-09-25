@@ -63,7 +63,9 @@ describe('registry coverage (fails when someone adds a table with a user column 
       'reminders.message', 'rsvp_events.description', 'scheduled_tasks.data', 'sticky_messages.content', 'streaming_config.message', 'tags.content', 'topics.text', 'twitch_feeds.message',
       'xp_config.level_up_message', 'youtube_feeds.message', 'economy_config.currency_name',
       // Text people deliberately save as their own tags (and one-use export codes of them).
-      'user_tags.content']);
+      'user_tags.content',
+      // A server's own ping-on-join template ({user} / {server}).
+      'ping_on_join.message']);
     const tables = (await db`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`) as { name: string }[];
     const suspicious: string[] = [];
     for (const t of tables) for (const c of (await db.unsafe(`PRAGMA table_info(${t.name})`)) as { name: string }[]) {

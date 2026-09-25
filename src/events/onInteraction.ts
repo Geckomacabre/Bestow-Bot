@@ -8,6 +8,7 @@ import { handleStudioComponent, handleStudioModal } from '../subcommands/eco/stu
 import { useAccent } from '../customize/accent';
 import { routeFor } from '../framework/router';
 import { staffCommand, staffGuildId } from '../staff/index';
+import { countCommand } from '../profile/store';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -100,6 +101,7 @@ export const onInteraction = async (interaction: Interaction) => {
 
 
 
+  countCommand(interaction.user.id).catch(() => {}); // /me's command counter (a number only)
   try {
     if (typeof command.run === 'function') {
       await useAccent(interaction);

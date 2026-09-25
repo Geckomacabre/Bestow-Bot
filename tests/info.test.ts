@@ -23,7 +23,7 @@ describe('/help over the real command registry', () => {
     const t = commandView(list, '/qr')!;
     expect(t).toContain('/qr generate'); expect(t).toContain('/qr scan'); expect(t.length).toBeLessThanOrEqual(3300);
     expect(commandView(list, 'juul')).toContain('/juul hit');
-    expect(commandView(list, 'settings')).toContain('/settings privacy delete');
+    expect(commandView(list, 'settings')).toContain('/settings'); expect(commandView(list, 'privacy')).toContain('/privacy delete');
     expect(categoryView(list, 'utility')).toContain('/crypto'); expect(categoryView(list, 'nope')).toBeUndefined(); expect(commandView(list, 'nope')).toBeUndefined();
     // the biggest command still fits
     for (const c of list) expect(commandView(list, c.name)!.length, c.name).toBeLessThanOrEqual(3300);
