@@ -60,7 +60,7 @@ describe('AI limit: 20 per hour free, unlimited with premium', () => {
   test('END TO END: /ai ask stops a free user at their limit, and a premium user sails past it', async () => {
     Bun.env.AI_USER_LIMIT = '3'; Bun.env.PREMIUM_SKU_ID = SKU;
     const free = uid(), prem = uid(); await extendPremium(prem, 30, 'grant');
-    const ask = async (userId: string) => { const fi = fakeInteraction({ userId, options: { question: 'hi there' } }); await find(aiSubs, 'ask').run(fi.interaction); return textOf(fi.last()); };
+    const ask = async (userId: string) => { const fi = fakeInteraction({ userId, options: { prompt: 'hi there' } }); await find(aiSubs, 'chatgpt').run(fi.interaction); return textOf(fi.last()); };
     for (let i = 0; i < 3; i++) expect(await ask(free)).toContain('mock answer');
     const blocked = await ask(free);
     expect(blocked).toContain('3 free AI requests'); expect(blocked).toContain('/premium buy'); expect(providerCalls).toBe(3);
@@ -70,8 +70,8 @@ describe('AI limit: 20 per hour free, unlimited with premium', () => {
   test('an entitlement Discord attaches to the interaction unlocks the limit immediately', async () => {
     Bun.env.AI_USER_LIMIT = '1'; Bun.env.PREMIUM_SKU_ID = SKU;
     const u = uid();
-    const fi = () => { const f = fakeInteraction({ userId: u, options: { question: 'hey' } }); (f.interaction as any).entitlements = new Map([['1', ent(u)]]); return f; };
-    for (let i = 0; i < 4; i++) { const f = fi(); await find(aiSubs, 'ask').run(f.interaction); expect(textOf(f.last())).toContain('mock answer'); }
+    const fi = () => { const f = fakeInteraction({ userId: u, options: { prompt: 'hey' } }); (f.interaction as any).entitlements = new Map([['1', ent(u)]]); return f; };
+    for (let i = 0; i < 4; i++) { const f = fi(); await find(aiSubs, 'chatgpt').run(f.interaction); expect(textOf(f.last())).toContain('mock answer'); }
     expect((await premiumStatus(u)).source).toBe('entitlement'); // remembered for the @mention path too
   });
 });

@@ -4,7 +4,8 @@ import { findMedia, MediaError, mediaOptions } from '../../framework/media.js';
 import { getBufferPublic } from '../../framework/http.js';
 import { card, trunc } from '../../lookups/card.js';
 import { friendlyError, lookup, LookupError } from '../../lookups/handler.js';
-import { chat, ask, LlmUnavailable, llmConfigured, sanitizeReply } from '../../services/llm.js';
+import { chat, ask, LlmUnavailable, llmConfigured, sanitizeReply, type ChatMessage, type LlmKind } from '../../services/llm.js';
+import { startConversation, usageLines } from '../../ai/conversation.js';
 import { checkLimit, limitMessage, refund } from '../../ai/limits.js';
 import { premiumOf } from '../../premium/index.js';
 import { buildSystem, DESCRIBE_SYSTEM, FUN_KINDS, FUN_SYSTEM, funKind, GEOLOCATE_SYSTEM, OCR_SYSTEM, SUMMARIZE_SYSTEM } from '../../ai/prompts.js';
@@ -15,19 +16,20 @@ import { factcheck } from '../../ai/factcheck.js';
 import * as store from '../../ai/store.js';
 
 const COLOR = 0x9b59b6;
-const name = (i: ChatInputCommandInteraction) => i.user.displayName ?? i.user.username;
+const name_ = (i: ChatInputCommandInteraction) => i.user.displayName ?? i.user.username;
 const str = (n: string, d: string, max: number, required = true) => (s: SlashCommandSubcommandBuilder) => s.addStringOption(o => o.setName(n).setDescription(d).setRequired(required).setMaxLength(max));
 
 /**
  * Wraps an AI subcommand: defers, checks the per-user limit, turns provider errors into friendly text,
  * and gives the request back if the provider (not the person) was the problem.
  */
-function aiRun(fn: (i: ChatInputCommandInteraction) => Promise<unknown>, opts: { needs?: 'chat' | 'vision' } = {}) {
+function aiRun(fn: (i: ChatInputCommandInteraction, ctx: { premium: boolean }) => Promise<unknown>, opts: { needs?: LlmKind } = {}) {
   return lookup(async i => {
     if (!llmConfigured(opts.needs ?? 'chat')) throw new LookupError(opts.needs === 'vision' ? 'Image understanding isn\'t configured on this bot (set VISION_MODEL or use a vision-capable LLM_MODEL).' : 'The AI isn\'t set up on this bot yet — the owner needs to set LLM_BASE_URL and LLM_MODEL.');
-    const lim = checkLimit(i.user.id, Date.now(), (await premiumOf(i)).premium);
+    const premium = (await premiumOf(i)).premium;
+    const lim = checkLimit(i.user.id, Date.now(), premium);
     if (!lim.ok) throw new LookupError(limitMessage(lim));
-    try { await fn(i); } catch (e) {
+    try { await fn(i, { premium }); } catch (e) {
       if (!(e instanceof LookupError) && !(e instanceof MediaError)) refund(i.user.id);
       if (e instanceof LlmUnavailable) throw new LookupError(e.message);
       throw e;
@@ -37,22 +39,32 @@ function aiRun(fn: (i: ChatInputCommandInteraction) => Promise<unknown>, opts: {
 
 // ─── Core actions ────────────────────────────────────────────────────────────
 
-const askSub: Sub = {
-  name: 'ask', description: 'Ask the AI anything (attach an image and it can look at it)',
-  options: s => str('question', 'What do you want to know?', 1500)(s).addAttachmentOption(o => o.setName('image').setDescription('An image to ask about (optional)')),
-  run: aiRun(async i => {
-    const q = i.options.getString('question', true);
-    const att = i.options.getAttachment('image');
+/** `/ai chatgpt` and `/ai llama`: an answer card with usage in the footer and a "Reply n/3" button that continues the conversation. */
+const chatSub = (name: string, description: string, kind: 'chat' | 'llama', withImage: boolean): Sub => ({
+  name, description,
+  options: s => { str('prompt', 'What do you want to know?', 1500)(s); if (withImage) s.addAttachmentOption(o => o.setName('image').setDescription('An image to ask about (optional)')); return s; },
+  run: aiRun(async (i, { premium }) => {
+    const q = i.options.getString('prompt', true);
+    const att = withImage ? i.options.getAttachment('image') : null;
     let images: string[] = [];
     if (att) {
       if (!att.contentType?.startsWith('image/')) throw new LookupError('That attachment isn\'t an image.');
       if (!llmConfigured('vision')) throw new LookupError('Image understanding isn\'t configured on this bot.');
       images = [await imageUrlToDataUri(att.url)];
     }
-    const system = buildSystem({ userPersona: await store.getPersona(i.user.id), notes: await store.notesForPrompt(i.user.id), userName: name(i), guildName: i.guild?.name });
-    const reply = await chat([{ role: 'system', content: system }, { role: 'user', content: userContent(q, images) }], { kind: images.length ? 'vision' : 'chat', maxTokens: 800 });
-    await i.editReply({ ...card({ title: trunc(q, 200), color: COLOR, description: sanitizeReply(reply, 3000), footer: 'AI-generated — it can be wrong. Double-check anything important.' }) });
-  }),
+    const system = buildSystem({ userPersona: await store.getPersona(i.user.id), notes: await store.notesForPrompt(i.user.id), userName: name_(i), guildName: i.guild?.name });
+    const user: ChatMessage = { role: 'user', content: userContent(q, images) };
+    const used: LlmKind = images.length ? 'vision' : kind;
+    const reply = await chat([{ role: 'system', content: system }, user], { kind: used, maxTokens: 800 });
+    await i.editReply(startConversation(i.user.id, { title: q, system, user, answer: reply, kind: used, premium }));
+  }, { needs: kind }),
+});
+
+const usageSub: Sub = {
+  name: 'usage', description: 'Check your AI usage limits',
+  run: async i => {
+    await i.reply({ ...card({ title: '📊 AI usage', color: COLOR, description: usageLines(i.user.id, await premiumOf(i)).join('\n') }), flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral });
+  },
 };
 
 async function imageTask(i: ChatInputCommandInteraction, system: string, prompt: string, title: string, maxTokens = 700) {
@@ -124,7 +136,7 @@ const funSub: Sub = {
     if (!k) throw new LookupError('Unknown kind.');
     const u = i.options.getUser('user');
     if (k.target === 'required' && !u && k.id !== 'roastbattle') throw new LookupError(`**${k.label}** needs someone — pick a user.`);
-    const who = u ? (u.displayName ?? u.username) : k.target === 'optional' ? name(i) : '';
+    const who = u ? (u.displayName ?? u.username) : k.target === 'optional' ? name_(i) : '';
     const about = (i.options.getString('about') ?? '').replace(/[\r\n]+/g, ' ').trim();
     const out = await ask(FUN_SYSTEM, k.prompt(who, about), { temperature: 1, maxTokens: 450 });
     await i.editReply(card({ title: `${k.label}${u ? ` · ${who}` : ''}`, color: COLOR, description: `${u ? `<@${u.id}>\n` : ''}${sanitizeReply(out, 3000)}`, footer: 'AI-generated fiction — for fun.' }));
@@ -191,7 +203,11 @@ const configSubs: Sub[] = [
   },
 ];
 
-export const aiSubs: Sub[] = [askSub, ...imageSubs, transcriptSub, summarizeSub, factcheckSub, funSub];
+export const aiSubs: Sub[] = [
+  chatSub('chatgpt', 'Ask the AI a question (attach an image and it can look at it)', 'chat', true),
+  chatSub('llama', 'Ask the Llama model a question', 'llama', false),
+  ...imageSubs, transcriptSub, summarizeSub, factcheckSub, funSub, usageSub,
+];
 export const aiGroups: SubGroup[] = [
   { name: 'persona', description: 'Give the AI a persona for your chats', subs: personaSubs },
   { name: 'memory', description: 'Opt-in notes the AI can remember about you', subs: memorySubs },

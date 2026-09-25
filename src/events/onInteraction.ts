@@ -2,6 +2,7 @@ import { Interaction, MessageFlags } from 'discord.js';
 import commands from '../handlers/commandHandler';
 import logger from '../utils/logger';
 import * as db from '../utils/db';
+import { handleReplyButton, handleReplyModal } from '../ai/conversation';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -13,6 +14,16 @@ export const onInteraction = async (interaction: Interaction) => {
         logger.error(`Autocomplete error for ${interaction.commandName}: ${err}`);
       }
     }
+    return;
+  }
+
+  // AI conversations: the "Reply n/3" button opens a modal, whose submission continues the conversation.
+  if (interaction.isButton() && interaction.customId.startsWith('ai:reply:')) {
+    await handleReplyButton(interaction).catch(err => logger.error(`AI reply button error: ${err}`));
+    return;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith('ai:modal:')) {
+    await handleReplyModal(interaction).catch(err => logger.error(`AI reply modal error: ${err}`));
     return;
   }
 

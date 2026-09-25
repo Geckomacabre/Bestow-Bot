@@ -351,30 +351,30 @@ describe('chat on mention', () => {
 describe('/ai commands', () => {
   test('ask: persona and notes reach the model; the answer is rendered with a disclaimer', async () => {
     const u = uid(); await store.setPersona(u, 'pirate'); respond = () => 'It is 4.';
-    const fi = fakeInteraction({ userId: u, options: { question: 'what is 2+2' } }); await find(aiSubs, 'ask').run(fi.interaction);
-    const t = textOf(fi.last()); expect(t).toContain('It is 4.'); expect(t).toContain('AI-generated');
+    const fi = fakeInteraction({ userId: u, options: { prompt: 'what is 2+2' } }); await find(aiSubs, 'chatgpt').run(fi.interaction);
+    const t = textOf(fi.last()); expect(t).toContain('It is 4.'); expect(t).toContain('Results are AI generated');
     expect(chatCalls()[0]!.body.messages[0].content).toContain('pirate');
   });
   test('not configured / rate-limited / provider failure all give friendly text (and failures are refunded)', async () => {
     const saved = Bun.env.LLM_BASE_URL; delete Bun.env.LLM_BASE_URL;
-    let fi = fakeInteraction({ options: { question: 'hi' } }); await find(aiSubs, 'ask').run(fi.interaction); expect(textOf(fi.last())).toContain('AI isn\'t set up'); Bun.env.LLM_BASE_URL = saved;
+    let fi = fakeInteraction({ options: { prompt: 'hi' } }); await find(aiSubs, 'chatgpt').run(fi.interaction); expect(textOf(fi.last())).toContain('AI isn\'t set up'); Bun.env.LLM_BASE_URL = saved;
     Bun.env.AI_USER_LIMIT = '1'; const u = uid();
-    fi = fakeInteraction({ userId: u, options: { question: 'one' } }); await find(aiSubs, 'ask').run(fi.interaction);
-    fi = fakeInteraction({ userId: u, options: { question: 'two' } }); await find(aiSubs, 'ask').run(fi.interaction); expect(textOf(fi.last())).toContain('free AI requests'); expect(chatCalls()).toHaveLength(1);
+    fi = fakeInteraction({ userId: u, options: { prompt: 'one' } }); await find(aiSubs, 'chatgpt').run(fi.interaction);
+    fi = fakeInteraction({ userId: u, options: { prompt: 'two' } }); await find(aiSubs, 'chatgpt').run(fi.interaction); expect(textOf(fi.last())).toContain('free AI requests'); expect(chatCalls()).toHaveLength(1);
     const v = uid(); failWith = 500; const orig = console.error; console.error = () => {};
-    try { fi = fakeInteraction({ userId: v, options: { question: 'boom' } }); await find(aiSubs, 'ask').run(fi.interaction); } finally { console.error = orig; }
+    try { fi = fakeInteraction({ userId: v, options: { prompt: 'boom' } }); await find(aiSubs, 'chatgpt').run(fi.interaction); } finally { console.error = orig; }
     expect(textOf(fi.last())).toContain('❌'); expect(textOf(fi.last())).not.toContain('exploded');
-    fi = fakeInteraction({ userId: v, options: { question: 'again' } }); await find(aiSubs, 'ask').run(fi.interaction); expect(textOf(fi.last())).toContain('mock reply');
+    fi = fakeInteraction({ userId: v, options: { prompt: 'again' } }); await find(aiSubs, 'chatgpt').run(fi.interaction); expect(textOf(fi.last())).toContain('mock reply');
   });
   test('ask with a non-image attachment is refused; with an image it goes to the vision model', async () => {
-    let fi = fakeInteraction({ options: { question: 'what?' }, attachments: { image: { url: 'https://x.test/a.pdf', name: 'a.pdf', contentType: 'application/pdf' } } });
-    await find(aiSubs, 'ask').run(fi.interaction); expect(textOf(fi.last())).toContain('isn\'t an image'); expect(calls).toHaveLength(0);
+    let fi = fakeInteraction({ options: { prompt: 'what?' }, attachments: { image: { url: 'https://x.test/a.pdf', name: 'a.pdf', contentType: 'application/pdf' } } });
+    await find(aiSubs, 'chatgpt').run(fi.interaction); expect(textOf(fi.last())).toContain('isn\'t an image'); expect(calls).toHaveLength(0);
     const png = (() => { const c = createCanvas(20, 20); return c.toBuffer('image/png'); })();
     const img = Bun.serve({ port: 0, fetch: () => new Response(new Uint8Array(png), { headers: { 'content-type': 'image/png' } }) });
     Bun.env.ALLOW_PRIVATE_URLS = '1';
     try {
-      fi = fakeInteraction({ options: { question: 'what is this' }, attachments: { image: { url: `http://127.0.0.1:${img.port}/a.png`, name: 'a.png', contentType: 'image/png' } } });
-      await find(aiSubs, 'ask').run(fi.interaction);
+      fi = fakeInteraction({ options: { prompt: 'what is this' }, attachments: { image: { url: `http://127.0.0.1:${img.port}/a.png`, name: 'a.png', contentType: 'image/png' } } });
+      await find(aiSubs, 'chatgpt').run(fi.interaction);
       const b = chatCalls()[0]!.body; expect(b.model).toBe('mock-vision'); expect(b.messages[1].content[1].image_url.url).toStartWith('data:image/png;base64,');
     } finally { delete Bun.env.ALLOW_PRIVATE_URLS; img.stop(true); }
   });

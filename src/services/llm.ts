@@ -11,16 +11,27 @@ export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: stri
 
 export interface LlmConfig { baseUrl: string; apiKey: string; model: string }
 
-export function llmConfig(kind: 'chat' | 'vision' = 'chat'): LlmConfig | null {
-  const baseUrl = (kind === 'vision' ? Bun.env.VISION_BASE_URL : undefined) ?? Bun.env.LLM_BASE_URL;
-  const apiKey = (kind === 'vision' ? Bun.env.VISION_API_KEY : undefined) ?? Bun.env.LLM_API_KEY;
-  const model = (kind === 'vision' ? Bun.env.VISION_MODEL : undefined) ?? Bun.env.LLM_MODEL;
+/** Which configured model to use: the main chat model, an image-capable one, or a second "llama" model (LLAMA_* env, falls back to chat). */
+export type LlmKind = 'chat' | 'vision' | 'llama';
+const PREFIX: Record<LlmKind, string | null> = { chat: null, vision: 'VISION', llama: 'LLAMA' };
+
+export function llmConfig(kind: LlmKind = 'chat'): LlmConfig | null {
+  const p = PREFIX[kind];
+  const baseUrl = (p ? Bun.env[`${p}_BASE_URL`] : undefined) || Bun.env.LLM_BASE_URL;
+  const apiKey = (p ? Bun.env[`${p}_API_KEY`] : undefined) || Bun.env.LLM_API_KEY;
+  const model = (p ? Bun.env[`${p}_MODEL`] : undefined) || Bun.env.LLM_MODEL;
   if (!baseUrl || !model) return null;
   // Local servers (Ollama, LM Studio) don't need a key.
   return { baseUrl: baseUrl.replace(/\/+$/, ''), apiKey: apiKey ?? '', model };
 }
 
-export const llmConfigured = (kind: 'chat' | 'vision' = 'chat') => llmConfig(kind) !== null;
+export const llmConfigured = (kind: LlmKind = 'chat') => llmConfig(kind) !== null;
+
+/** The name shown in reply footers: LLM_LABEL / LLAMA_LABEL / VISION_LABEL if set, else the model id. */
+export function modelLabel(kind: LlmKind = 'chat'): string {
+  const p = PREFIX[kind];
+  return (p ? Bun.env[`${p}_LABEL`] : undefined) || Bun.env.LLM_LABEL || llmConfig(kind)?.model || 'AI';
+}
 
 export class LlmUnavailable extends Error {
   constructor(message = 'The AI isn\'t configured on this bot yet.') { super(message); this.name = 'LlmUnavailable'; }
@@ -30,7 +41,7 @@ export interface ChatOptions {
   temperature?: number;
   maxTokens?: number;
   json?: boolean;
-  kind?: 'chat' | 'vision';
+  kind?: LlmKind;
   model?: string;
   timeoutMs?: number;
   /** Injected for tests. */
