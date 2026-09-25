@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
-import { ffmpeg, MediaError, probe, withWorkdir } from '../framework/media.js';
+import { assertNotText, ffmpeg, MediaError, probe, withWorkdir } from '../framework/media.js';
 
 /**
  * Speech-to-text through any OpenAI-compatible /audio/transcriptions endpoint (OpenAI, Groq, a local faster-whisper server…).
@@ -18,6 +18,7 @@ export function whisperConfig(): WhisperConfig | null {
 
 /** Any audio/video → mono 16 kHz 32 kbps MP3 (a 10-minute clip is < 3 MB, well under provider upload limits). */
 export async function toSpeechMp3(input: Buffer, name = 'input'): Promise<Buffer> {
+  assertNotText(input);
   return withWorkdir(async dir => {
     const ext = path.extname(name).replace(/[^.\w]/g, '').slice(0, 8) || '.bin';
     const src = path.join(dir, `in${ext}`);

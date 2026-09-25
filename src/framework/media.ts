@@ -56,8 +56,42 @@ function explain(stderr: string): string {
   return `Processing failed: ${last.slice(0, 200)}`;
 }
 
+/**
+ * ffmpeg chooses a demuxer from a file's *content*, not its name. A user could upload a text file that is really an HLS/DASH playlist or a
+ * concat script and make ffmpeg fetch URLs (or read local files) on the bot's behalf — a classic SSRF/local-file-read trick.
+ * Defence in depth: (1) inputs may only use the `file` and `pipe` protocols, so no network fetch is ever possible from an input, and
+ * (2) text/playlist/script/SVG files are refused outright before ffmpeg sees them (`assertNotText`).
+ */
+export const INPUT_PROTOCOLS = 'file,pipe';
+
+/** Inserts `-protocol_whitelist` before every `-i` (it is a per-input option). */
+export function withProtocolWhitelist(args: string[]): string[] {
+  const out: string[] = [];
+  for (const a of args) {
+    if (a === '-i') out.push('-protocol_whitelist', INPUT_PROTOCOLS);
+    out.push(a);
+  }
+  return out;
+}
+
+const TEXT_SIGNATURE = /^[\s﻿]*(#EXTM3U|#EXT-X-|ffconcat|<\?xml|<MPD|<svg|<!DOCTYPE|<html|\[playlist\]|\[Reference\]|\[InternetShortcut\])/i;
+
+/** True for scripts, playlists, manifests, SVG/HTML and other text that ffmpeg could interpret as "go fetch this". */
+export function looksLikeText(buf: Buffer): boolean {
+  const head = buf.subarray(0, 4096);
+  if (!head.length) return false;
+  if (TEXT_SIGNATURE.test(head.toString('utf8'))) return true;
+  const n = Math.min(head.length, 512);
+  for (let i = 0; i < n; i++) { const c = head[i]!; if (!(c === 9 || c === 10 || c === 13 || (c >= 32 && c <= 126))) return false; }
+  return true; // the first 512 bytes are plain printable ASCII: no real image/video/audio container looks like that
+}
+
+export function assertNotText(buf: Buffer): void {
+  if (looksLikeText(buf)) throw new MediaError('That file is a text or script file, not an image, video or audio file.');
+}
+
 export function ffmpeg(args: string[], opts: { cwd?: string; timeoutMs?: number } = {}): Promise<void> {
-  return gated(async () => { await run(FFMPEG_BIN, ['-hide_banner', '-loglevel', 'error', '-y', ...args], opts); });
+  return gated(async () => { await run(FFMPEG_BIN, ['-hide_banner', '-loglevel', 'error', '-y', ...withProtocolWhitelist(args)], opts); });
 }
 
 export interface Probe {
@@ -77,7 +111,7 @@ export interface Probe {
 }
 
 export async function probe(file: string, cwd?: string): Promise<Probe> {
-  const { stdout } = await run(FFPROBE_BIN, ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', file], { cwd, timeoutMs: 20_000 });
+  const { stdout } = await run(FFPROBE_BIN, ['-v', 'error', '-protocol_whitelist', INPUT_PROTOCOLS, '-print_format', 'json', '-show_format', '-show_streams', file], { cwd, timeoutMs: 20_000 });
   const j = JSON.parse(stdout) as {
     streams?: { codec_type: string; codec_name?: string; width?: number; height?: number; r_frame_rate?: string; nb_frames?: string; duration?: string; sample_rate?: string }[];
     format?: { duration?: string; size?: string; format_name?: string };
@@ -147,6 +181,7 @@ export async function findMedia(interaction: ChatInputCommandInteraction, kind: 
 /** Download into `dir` (size-capped, SSRF-checked) and return the local filename. */
 export async function download(ref: MediaRef, dir: string, base = 'input'): Promise<string> {
   const buf = await getBufferPublic(ref.url, { maxBytes: MAX_INPUT_BYTES, timeoutMs: 30_000 });
+  assertNotText(buf);
   const ext = path.extname(ref.name).replace(/[^.\w]/g, '').slice(0, 6);
   const file = `${base}${ext || '.bin'}`;
   await writeFile(path.join(dir, file), buf);

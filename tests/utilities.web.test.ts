@@ -129,6 +129,6 @@ describe('QR codes', () => {
     await expect(makeQr('   ')).rejects.toThrow(/text or a link/); await expect(makeQr('x'.repeat(QR_MAX + 1))).rejects.toThrow(/too long/);
     const c = createCanvas(300, 300); const ctx = c.getContext('2d'); ctx.fillStyle = '#88a'; ctx.fillRect(0, 0, 300, 300);
     await expect(scanQrBuffer(c.toBuffer('image/png'))).rejects.toThrow(/couldn't find a QR/);
-    await expect(scanQrBuffer(Buffer.from('not an image'))).rejects.toThrow(/couldn't read/);
+    await expect(scanQrBuffer(Buffer.from('not an image'))).rejects.toThrow(/text or script|couldn't read/);
   });
 });

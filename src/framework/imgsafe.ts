@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { loadImage, type Image } from '@napi-rs/canvas';
-import { ffmpeg, MediaError, probe, withWorkdir } from './media.js';
+import { assertNotText, ffmpeg, MediaError, probe, withWorkdir } from './media.js';
 
 /**
  * Safe decoding of images that a *user* supplied.
@@ -18,6 +18,7 @@ const BAD = 'I couldn\'t read that as a valid image (it may be corrupt or an uns
 
 export async function normalizeImage(input: Buffer, opts: { maxSide?: number } = {}): Promise<Buffer> {
   const maxSide = Math.max(16, Math.min(8192, opts.maxSide ?? 2048));
+  assertNotText(input); // SVG, playlists and scripts are refused before ffmpeg can interpret them
   return withWorkdir(async dir => {
     const src = path.join(dir, 'in.bin'), out = path.join(dir, 'out.png');
     await writeFile(src, input);
