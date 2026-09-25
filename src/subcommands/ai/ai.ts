@@ -23,7 +23,7 @@ const str = (n: string, d: string, max: number, required = true) => (s: SlashCom
  * Wraps an AI subcommand: defers, checks the per-user limit, turns provider errors into friendly text,
  * and gives the request back if the provider (not the person) was the problem.
  */
-function aiRun(fn: (i: ChatInputCommandInteraction, ctx: { premium: boolean }) => Promise<unknown>, opts: { needs?: LlmKind } = {}) {
+export function aiRun(fn: (i: ChatInputCommandInteraction, ctx: { premium: boolean }) => Promise<unknown>, opts: { needs?: LlmKind } = {}) {
   return lookup(async i => {
     if (!llmConfigured(opts.needs ?? 'chat')) throw new LookupError(opts.needs === 'vision' ? 'Image understanding isn\'t configured on this bot (set VISION_MODEL or use a vision-capable LLM_MODEL).' : 'The AI isn\'t set up on this bot yet — the owner needs to set LLM_BASE_URL and LLM_MODEL.');
     const premium = (await premiumOf(i)).premium;

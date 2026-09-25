@@ -38,6 +38,8 @@ export const REGISTRY: PrivacyEntry[] = [
   del('juul_state', 'Juul'),
   // Your own tags (/tags) and any unused export codes for them
   del('user_tags', 'Your tags'), del('tag_exports', 'Tag export codes you made'),
+  // /crypto track (transaction hashes you asked to watch)
+  del('crypto_trackers', 'Crypto transactions you are tracking'),
   // /me and /donate
   del('bestow_users', 'Your Bestow UID, first-use date and command count'), del('donations', 'Donations you submitted'),
   // A server setting that remembers which admin set it up

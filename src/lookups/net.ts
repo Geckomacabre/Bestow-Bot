@@ -16,6 +16,7 @@ export function cleanHost(input: string): string {
 }
 
 export function assertPublicHost(host: string): void {
+  if (Bun.env.NODE_ENV === 'test' && Bun.env.ALLOW_PRIVATE_URLS === '1') return; // same test-only escape hatch as assertPublicUrl
   if (isIP(host) && isPrivateIp(host)) throw new LookupError('That\'s a private or reserved address — I only look up public hosts.');
   if (!isIP(host) && /(^|\.)(localhost|local|internal|lan|home|corp|intranet)$/.test(host)) throw new LookupError('That\'s a private hostname — I only look up public hosts.');
 }

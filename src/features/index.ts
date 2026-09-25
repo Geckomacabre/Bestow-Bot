@@ -21,6 +21,7 @@ import premiumModule from './premium';
 import pingOnJoinModule from './pingonjoin';
 import { startPremiumSync } from '../premium/sync.js';
 import { startGiveawayScheduler } from '../giveaway/service.js';
+import { startCryptoTrackers } from '../crypto/tracker.js';
 
 const features = [
   countingModule,
@@ -60,6 +61,7 @@ export function registerFeatures(bot: Client) {
     startMediaGames(bot);
     startLottery(bot);
     startStickyRefresh(bot);
+    startCryptoTrackers(bot);
     startPremiumSync(bot);
     startGiveawayScheduler(bot);
   });
