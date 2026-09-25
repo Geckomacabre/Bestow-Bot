@@ -19,6 +19,7 @@ import stickyModule, { startStickyRefresh } from './sticky';
 import aiModule from './ai';
 import premiumModule from './premium';
 import { startPremiumSync } from '../premium/sync.js';
+import { startGiveawayScheduler } from '../giveaway/service.js';
 
 const features = [
   countingModule,
@@ -58,5 +59,6 @@ export function registerFeatures(bot: Client) {
     startLottery(bot);
     startStickyRefresh(bot);
     startPremiumSync(bot);
+    startGiveawayScheduler(bot);
   });
 }

@@ -3,6 +3,7 @@ import commands from '../handlers/commandHandler';
 import logger from '../utils/logger';
 import * as db from '../utils/db';
 import { handleReplyButton, handleReplyModal } from '../ai/conversation';
+import { handleEnterButton } from '../giveaway/service';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -14,6 +15,11 @@ export const onInteraction = async (interaction: Interaction) => {
         logger.error(`Autocomplete error for ${interaction.commandName}: ${err}`);
       }
     }
+    return;
+  }
+
+  if (interaction.isButton() && interaction.customId.startsWith('gw:enter:')) {
+    await handleEnterButton(interaction).catch(err => logger.error(`Giveaway enter error: ${err}`));
     return;
   }
 

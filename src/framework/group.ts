@@ -48,7 +48,7 @@ function guarded(sub: Sub): RunFn {
       return interaction.reply({ content: '❌ That only works in a server.', flags: MessageFlags.Ephemeral });
     }
     if (sub.permissions && !interaction.memberPermissions?.has(sub.permissions)) {
-      const names = new PermissionsBitField(sub.permissions).toArray().map(p => p.replace(/([a-z])([A-Z])/g, '$1 $2')).join(', ');
+      const names = new PermissionsBitField(sub.permissions).toArray().map(p => p.replace(/([a-z])([A-Z])/g, '$1 $2').replace('Guild', 'Server')).join(', '); // Discord's UI says "Manage Server"
       return interaction.reply({ content: `❌ You need the **${names}** permission for that.`, flags: MessageFlags.Ephemeral });
     }
     return sub.run(interaction);

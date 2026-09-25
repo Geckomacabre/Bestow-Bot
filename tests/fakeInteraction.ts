@@ -30,6 +30,7 @@ export function fakeInteraction(o: FakeOpts = {}) {
   const restPosts: { route: string; options: any }[] = [];
   let deleted = false;
   const state = { deferred: false, replied: false, deferFlags: 0 };
+  let msgSeq = 0;
   const val = (n: string) => (o.options && n in o.options ? o.options[n]! : null);
   const options = {
     getString: (n: string, req?: boolean) => { const v = val(n); if (v == null && req) throw new Error(`missing required option ${n}`); return v == null ? null : String(v); },
@@ -62,6 +63,7 @@ export function fakeInteraction(o: FakeOpts = {}) {
     channelId: 'c-test',
     attachmentSizeLimit: o.limit ?? 10 * 1024 * 1024,
     client: {
+      user: { id: '999000999000999000' },
       users: { fetch: async () => null },
       channels: { cache: new Map(), fetch: async () => null },
       guilds: { cache: new Map() },
@@ -69,8 +71,8 @@ export function fakeInteraction(o: FakeOpts = {}) {
     },
     options,
     deferReply: async (p?: { flags?: number }) => { state.deferred = true; state.deferFlags = p?.flags ?? 0; },
-    reply: async (p: unknown) => { state.replied = true; sent.push(p); return {}; },
-    editReply: async (p: unknown) => { sent.push(p); return {}; },
+    reply: async (p: unknown) => { state.replied = true; sent.push(p); return { id: `m${++msgSeq}` }; },
+    editReply: async (p: unknown) => { sent.push(p); return { id: `m${++msgSeq}` }; },
     followUp: async (p: unknown) => { sent.push(p); return {}; },
     deleteReply: async () => { deleted = true; },
   } as unknown as ChatInputCommandInteraction;

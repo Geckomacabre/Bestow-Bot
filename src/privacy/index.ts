@@ -71,8 +71,22 @@ export async function deleteData(userId: string): Promise<DeleteResult> {
         await db`DELETE FROM eco_company WHERE id = ${c.id}`;
       }
     }
+    if (await tableExists('giveaways')) {
+      // A money-funded giveaway holds the host's coins in escrow; blanking the host would orphan the refund.
+      const funded = ((await db`SELECT COUNT(*) AS n FROM giveaways WHERE host_id = ${userId} AND status = 'active' AND pot > 0`) as { n: number }[])[0]!.n;
+      if (funded > 0) throw new DeleteRefused(`You are hosting ${funded} money giveaway${funded === 1 ? '' : 's'} that ${funded === 1 ? 'is' : 'are'} still running, and the pot is held for ${funded === 1 ? 'it' : 'them'}. Cancel ${funded === 1 ? 'it' : 'them'} (your coins are refunded) or wait for ${funded === 1 ? 'it' : 'them'} to end, then run this again.`);
+    }
     let deleted = 0, anonymized = 0;
     const kept: Summary[] = [];
+    if (await tableExists('giveaways')) {
+      // Winner lists are JSON arrays of user ids: take this person out of them (LIKE's `_` wildcard can only over-match, and those rows are rewritten unchanged).
+      const rows = (await db`SELECT id, winner_ids, drawn FROM giveaways WHERE winner_ids LIKE ${`%"${userId}"%`} OR drawn LIKE ${`%"${userId}"%`}`) as { id: number; winner_ids: string; drawn: string }[];
+      const strip = (json: string): string => { try { return JSON.stringify((JSON.parse(json) as string[]).filter(u => u !== userId)); } catch { return json; } };
+      for (const r of rows) {
+        const w = strip(r.winner_ids), d = strip(r.drawn);
+        if (w !== r.winner_ids || d !== r.drawn) { await db`UPDATE giveaways SET winner_ids = ${w}, drawn = ${d} WHERE id = ${r.id}`; anonymized++; }
+      }
+    }
     for (const e of REGISTRY) {
       if (!(await tableExists(e.table))) continue;
       const p = params(e, userId);
