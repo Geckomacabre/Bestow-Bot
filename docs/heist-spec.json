@@ -1,0 +1,9029 @@
+[
+ {
+  "path": "ping",
+  "description": "View the bot's latency",
+  "premium": false,
+  "cog": "Info",
+  "args": []
+ },
+ {
+  "path": "me",
+  "description": "View your Heist info",
+  "premium": false,
+  "cog": "Info",
+  "args": [
+   {
+    "name": "user",
+    "description": "Lookup Heist user by Discord ID",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "uid",
+    "description": "Lookup user by Heist UID",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "about",
+  "description": "View info about the bot.",
+  "premium": false,
+  "cog": "Info",
+  "args": []
+ },
+ {
+  "path": "lastfm",
+  "description": "Last.fm integration commands",
+  "premium": false,
+  "cog": "Music",
+  "args": []
+ },
+ {
+  "path": "lastfm login",
+  "description": "Link your Last.fm account",
+  "premium": false,
+  "cog": "Music",
+  "args": []
+ },
+ {
+  "path": "lastfm logout",
+  "description": "Unlink your Last.fm account",
+  "premium": false,
+  "cog": "Music",
+  "args": []
+ },
+ {
+  "path": "lastfm nowplaying",
+  "description": "Get your current playing track on Last.fm",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "username",
+    "description": "…",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "style",
+    "description": "Override display style (default uses your saved preference)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "default",
+     "compact",
+     "classic",
+     "image"
+    ]
+   },
+   {
+    "name": "canvas",
+    "description": "Show Spotify canvas animation (overrides your saved np-style canvas setting)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm spotify",
+  "description": "Find your current playing Last.fm song on Spotify",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "username",
+    "description": "…",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm latest",
+  "description": "View your latest Last.fm scrobbles",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "username",
+    "description": "Last.fm username (optional)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm np-style",
+  "description": "Set your default nowplaying display style",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "style",
+    "description": "The display style for /lastfm nowplaying",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "default",
+     "compact",
+     "classic",
+     "image"
+    ]
+   },
+   {
+    "name": "canvas",
+    "description": "Show Spotify canvas animation when available",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "enabled",
+     "disabled"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "lastfm love",
+  "description": "Love your currently playing or last scrobbled track",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "track",
+    "description": "Track to love (defaults to currently playing)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm unlove",
+  "description": "Unlove your currently playing or last scrobbled track",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "track",
+    "description": "Track to unlove (defaults to currently playing)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm loved",
+  "description": "Show your recently loved tracks",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm cover",
+  "description": "Show the album art for your current or last track",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm artistplays",
+  "description": "How many times you've scrobbled an artist",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "artist",
+    "description": "Artist name",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm trackplays",
+  "description": "How many times you've scrobbled a track",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "track",
+    "description": "Track name",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "artist",
+    "description": "Artist name (optional, helps accuracy)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm year",
+  "description": "Get your Last.fm stats for a specific year",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "year",
+    "description": "Year to check (e.g. 2023)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm taste",
+  "description": "Compare music taste with another user",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "member",
+    "description": "The user to compare with",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm topartists",
+  "description": "Your top artists on Last.fm",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "period",
+    "description": "Time period",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "overall",
+     "7 days",
+     "1 month",
+     "3 months",
+     "6 months",
+     "12 months"
+    ]
+   },
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm toptracks",
+  "description": "Your top tracks on Last.fm",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "period",
+    "description": "Time period",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "overall",
+     "7 days",
+     "1 month",
+     "3 months",
+     "6 months",
+     "12 months"
+    ]
+   },
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm topalbums",
+  "description": "Your top albums on Last.fm",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "period",
+    "description": "Time period",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "overall",
+     "7 days",
+     "1 month",
+     "3 months",
+     "6 months",
+     "12 months"
+    ]
+   },
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lastfm collage",
+  "description": "Generate a collage of your top albums",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "size",
+    "description": "Grid size",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "3×3",
+     "4×4",
+     "5×5"
+    ]
+   },
+   {
+    "name": "period",
+    "description": "Time period",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "overall",
+     "7 days",
+     "1 month",
+     "3 months",
+     "6 months",
+     "12 months"
+    ]
+   },
+   {
+    "name": "member",
+    "description": "Member to check (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "avatar",
+  "description": "View a user's avatar",
+  "premium": false,
+  "cog": "Info",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "banner",
+  "description": "View a user's banner",
+  "premium": false,
+  "cog": "Info",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "games",
+  "description": "Minigame related commands",
+  "premium": false,
+  "cog": "Games",
+  "args": []
+ },
+ {
+  "path": "games tictactoe",
+  "description": "Play TicTacToe with a friend",
+  "premium": false,
+  "cog": "Games",
+  "args": [
+   {
+    "name": "player",
+    "description": "The user you want to play against",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "games rps",
+  "description": "Play Rock-Paper-Scissors with a friend",
+  "premium": false,
+  "cog": "Games",
+  "args": []
+ },
+ {
+  "path": "games snake",
+  "description": "Play Snake game",
+  "premium": false,
+  "cog": "Games",
+  "args": []
+ },
+ {
+  "path": "games blackjack",
+  "description": "Play Blackjack with a friend",
+  "premium": false,
+  "cog": "Games",
+  "args": []
+ },
+ {
+  "path": "games cookie",
+  "description": "Click the cookie first",
+  "premium": false,
+  "cog": "Games",
+  "args": []
+ },
+ {
+  "path": "settings",
+  "description": "⚙ Manage your Heist settings",
+  "premium": false,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "Roast User",
+  "description": "",
+  "premium": false,
+  "cog": "Fun",
+  "args": []
+ },
+ {
+  "path": "roast",
+  "description": "Roast a user",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user to roast",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "invite",
+  "description": "Get Heist's invite link",
+  "premium": false,
+  "cog": "Info",
+  "args": []
+ },
+ {
+  "path": "coinflip",
+  "description": "Flip a coin",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "rounds",
+    "description": "…",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "8ball",
+  "description": "Consult 8ball to receive an answer",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "question",
+    "description": "The question you want answers to",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "urban",
+  "description": "Search Urban Dictionary",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "search",
+    "description": "The term to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "lyrics",
+  "description": "Search for song lyrics",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "song",
+    "description": "The song to search lyrics for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "math",
+  "description": "Calculate mathematical expressions",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "expression",
+    "description": "The mathematical expression to evaluate",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "nitro",
+  "description": "Why not send a little gift?",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "legacy",
+    "description": "Use the old embed style instead of the new container layout",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "yes",
+     "no"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "rate",
+  "description": "Rates what you desire",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "thing",
+    "description": "The thing you want to rate",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ship",
+  "description": "Ship two users together",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user1",
+    "description": "First user to ship",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "user2",
+    "description": "Second user to ship (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "emojimix",
+  "description": "Mix two emojis together",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "emojis",
+    "description": "Two emojis to mix together",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "asciify",
+  "description": "Convert text to ASCII art",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "text",
+    "description": "The text you want to convert to ASCII",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "font",
+    "description": "The font you want to use for the ASCII",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "button",
+  "description": "Create a button",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "title",
+    "description": "Button title",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Text sent when button is clicked",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "style",
+    "description": "Button style",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "blurple",
+     "green",
+     "grey",
+     "red",
+     "link"
+    ]
+   },
+   {
+    "name": "timeout",
+    "description": "Time before disabling the button (default 60s)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "rizz",
+  "description": "Rizz a user",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user to rizz",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "Rizz User",
+  "description": "",
+  "premium": false,
+  "cog": "Fun",
+  "args": []
+ },
+ {
+  "path": "premium",
+  "description": "Premium related commands",
+  "premium": false,
+  "cog": "Premium",
+  "args": []
+ },
+ {
+  "path": "premium gifts buy",
+  "description": "Gift your friends Heist Premium",
+  "premium": false,
+  "cog": "Premium",
+  "args": []
+ },
+ {
+  "path": "premium gifts inventory",
+  "description": "View your Heist Premium gifts",
+  "premium": false,
+  "cog": "Premium",
+  "args": []
+ },
+ {
+  "path": "premium gifts redeem",
+  "description": "Redeem a Heist Premium gift code",
+  "premium": false,
+  "cog": "Premium",
+  "args": [
+   {
+    "name": "code",
+    "description": "The code to redeem",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "premium syncrole",
+  "description": "✨ Sync your Premium role on the Discord server",
+  "premium": true,
+  "cog": "Premium",
+  "args": []
+ },
+ {
+  "path": "premium perks",
+  "description": "Discover the perks of Heist Premium",
+  "premium": false,
+  "cog": "Premium",
+  "args": []
+ },
+ {
+  "path": "premium buy",
+  "description": "Purchase Heist Premium",
+  "premium": false,
+  "cog": "Premium",
+  "args": []
+ },
+ {
+  "path": "say",
+  "description": "Make the bot say something",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "message",
+    "description": "Message to say.",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "freaky",
+    "description": "Make it 𝓯𝓻𝓮𝓪𝓴𝔂?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "uwu",
+    "description": "Make it UwU?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "reverse",
+    "description": "Reverse the message?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "customize",
+  "description": "Heist customization",
+  "premium": false,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "customize color",
+  "description": "✨⚙ Customize Heist's embed color",
+  "premium": true,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "getbotinvite",
+  "description": "Get an invite of a bot",
+  "premium": false,
+  "cog": "Info",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "plus",
+  "description": "Get Heist+ invite link",
+  "premium": false,
+  "cog": "Info",
+  "args": []
+ },
+ {
+  "path": "giveaway",
+  "description": "Giveaway commands",
+  "premium": false,
+  "cog": "Giveaway",
+  "args": []
+ },
+ {
+  "path": "giveaway start",
+  "description": "Start a giveaway in this channel",
+  "premium": false,
+  "cog": "Giveaway",
+  "args": [
+   {
+    "name": "duration",
+    "description": "How long (e.g. 30m, 2h, 1d)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "winners",
+    "description": "Number of winners",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "prize",
+    "description": "What is being given away",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "image",
+    "description": "Optional image to display in the giveaway",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "giveaway cancel",
+  "description": "Cancel a giveaway without picking winners",
+  "premium": false,
+  "cog": "Giveaway",
+  "args": [
+   {
+    "name": "message_id",
+    "description": "The message ID of the giveaway to cancel",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "giveaway edit",
+  "description": "Edit an active giveaway's prize, winner count, or duration",
+  "premium": false,
+  "cog": "Giveaway",
+  "args": [
+   {
+    "name": "message_id",
+    "description": "The message ID of the giveaway to edit",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "winners",
+    "description": "New number of winners (optional)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "duration",
+    "description": "New duration from now, e.g. 30m, 2h, 1d (optional)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "prize",
+    "description": "New prize/name (optional)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "giveaway end",
+  "description": "End a giveaway early",
+  "premium": false,
+  "cog": "Giveaway",
+  "args": [
+   {
+    "name": "message_id",
+    "description": "The message ID of the giveaway",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "giveaway reroll",
+  "description": "Reroll winners for an ended giveaway",
+  "premium": false,
+  "cog": "Giveaway",
+  "args": [
+   {
+    "name": "message_id",
+    "description": "The message ID of the ended giveaway",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "giveaway list",
+  "description": "List your active giveaways",
+  "premium": false,
+  "cog": "Giveaway",
+  "args": []
+ },
+ {
+  "path": "juul",
+  "description": "Manage and use your juul",
+  "premium": false,
+  "cog": "Fun",
+  "args": []
+ },
+ {
+  "path": "juul hit",
+  "description": "Take a hit from your juul",
+  "premium": false,
+  "cog": "Fun",
+  "args": []
+ },
+ {
+  "path": "juul charge",
+  "description": "Plug in and recharge your juul",
+  "premium": false,
+  "cog": "Fun",
+  "args": []
+ },
+ {
+  "path": "juul flavor",
+  "description": "Swap out your flavor pod",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "flavor",
+    "description": "Flavor pod to load",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Classic Menthol",
+     "Cool Cucumber",
+     "Classic Tobacco",
+     "Mango",
+     "Virginia Tobacco",
+     "Cool Mint",
+     "Fruit Medley",
+     "Creme Brulee",
+     "THC",
+     "Lychee",
+     "Apple"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "juul customize",
+  "description": "Rename your juul or pick a skin",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "name",
+    "description": "Custom name for your juul",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "skin",
+    "description": "Skin to apply",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Default",
+     "Chrome",
+     "Matte Black",
+     "Rose Gold",
+     "Icy White",
+     "Stealth"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "juul stats",
+  "description": "View your juul or someone else's",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "Whose juul to check",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "spotify",
+  "description": "Spotify commands",
+  "premium": false,
+  "cog": "Music",
+  "args": []
+ },
+ {
+  "path": "spotify search",
+  "description": "Search for Spotify tracks",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "query",
+    "description": "Song name or artist",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "spotify album",
+  "description": "Browse a Spotify album",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "query",
+    "description": "Album name, artist + album, or Spotify URL",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "spotify cover",
+  "description": "Show the album cover art for a Spotify track",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "query",
+    "description": "Song name, artist + song, or Spotify URL",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "spotify preview",
+  "description": "Play a 30s preview of a Spotify track",
+  "premium": false,
+  "cog": "Music",
+  "args": [
+   {
+    "name": "query",
+    "description": "Song name, artist + song, or Spotify URL",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media",
+  "description": "Image & video manipulation",
+  "premium": false,
+  "cog": "Media",
+  "args": []
+ },
+ {
+  "path": "media makesweet billboard",
+  "description": "Put your image on a Times Square billboard",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet flag",
+  "description": "Wave your image as a flag",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet flag2",
+  "description": "Wave your image as a different style flag",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet rubiks",
+  "description": "Put your image on a spinning Rubik's cube",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet book",
+  "description": "Animate your image as a flipping book page",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet toaster",
+  "description": "Pop your image out of a toaster",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet valentine",
+  "description": "Reveal your image as a Valentine's card",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet circuitboard",
+  "description": "Put your image on a circuit board",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet fortunecookie",
+  "description": "Put your image inside a fortune cookie",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet backtattoo",
+  "description": "Tattoo your image on someone's back",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to use",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media makesweet heartlocket",
+  "description": "Put your image in a spinning heart locket",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Main image",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "image2",
+    "description": "Second image for the other locket face (optional, can't combine with text)",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Text on the other locket face (optional, can't combine with image2)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format (default: GIF)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media image speechbubble",
+  "description": "Add speech bubble to an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "engine",
+    "description": "Rendering engine",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Heist",
+     "Flux"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media image caption",
+  "description": "Add caption to an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "caption",
+    "description": "Caption text",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "image",
+    "description": "Image",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "caption_bottom",
+    "description": "Bottom caption text",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image grayscale",
+  "description": "Convert an image to black & white",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image pixelate",
+  "description": "Pixelate an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to pixelate",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "size",
+    "description": "…",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Small",
+     "Medium",
+     "Large"
+    ]
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image invert",
+  "description": "Invert image colors",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to invert",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image deepfry",
+  "description": "Deepfry an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to deepfry",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image magik",
+  "description": "Liquid-rescale / content-aware scale",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF/video",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "gifmagik",
+    "description": "Animate the distortion building up (static images only)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image spin",
+  "description": "Make an image spin",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to spin",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image pingpong",
+  "description": "Make a GIF bounce back and forth",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "GIF or image",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image fisheye",
+  "description": "Apply fisheye lens distortion",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image overlay",
+  "description": "Overlay one image on top of another",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "base",
+    "description": "Base image",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "overlay",
+    "description": "Image to place on top",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "opacity",
+    "description": "Opacity of overlay (0.0–1.0, default 1.0)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "x",
+    "description": "X offset in pixels from left (default 0)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "y",
+    "description": "Y offset in pixels from top (default 0)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "scale",
+    "description": "Scale the overlay (0.1–5.0, default 1.0)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image flip",
+  "description": "Flip or mirror an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "direction",
+    "description": "Flip direction",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Horizontal (mirror)",
+     "Vertical (upside down)"
+    ]
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image meme",
+  "description": "Add top/bottom impact text to an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Text — use | to split top|bottom",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image motivate",
+  "description": "Generate a demotivational poster",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Text — use | to split title|subtitle",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image zoomblur",
+  "description": "Radial motion blur zooming from center",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "power",
+    "description": "Blur power (-10 to 10, default 2)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image blur",
+  "description": "Apply gaussian blur",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "strength",
+    "description": "Blur strength (0.1–20, default 5)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image rotate",
+  "description": "Rotate an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "degrees",
+    "description": "…",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "90°",
+     "180°",
+     "270°"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media image watermark",
+  "description": "Add a text watermark to an image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Watermark text",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "position",
+    "description": "Corner to place it",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Bottom Right",
+     "Bottom Left",
+     "Top Right",
+     "Top Left",
+     "Center"
+    ]
+   },
+   {
+    "name": "opacity",
+    "description": "Opacity 0.1–1.0 (default 0.8)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "font",
+    "description": "Font to use (default Impact)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Impact",
+     "Futura Black",
+     "Quicksand Bold",
+     "Ubuntu Bold",
+     "Liberation Sans Bold"
+    ]
+   },
+   {
+    "name": "size",
+    "description": "Font size in pixels (default auto)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "color",
+    "description": "Text color (default black)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "White",
+     "Black",
+     "Red",
+     "Yellow",
+     "Orange",
+     "Blue"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media image swirl",
+  "description": "Swirl the image",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image or GIF",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "strength",
+    "description": "Swirl strength (-5 to 5, default 1)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image globe",
+  "description": "Wrap image around a spinning globe",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image togif",
+  "description": "Convert an image to GIF",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to convert",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media image addaudio",
+  "description": "Combine a static image with an audio file into a video",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image file (PNG, JPG, WebP, etc.)",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "audio",
+    "description": "Audio file (MP3, WAV, OGG, FLAC, M4A, OPUS, etc.)",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "loop",
+    "description": "Number of times to loop the audio (1–5, default 1)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "volume",
+    "description": "Volume multiplier 0.1–2.0 (default 1.0)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "start",
+    "description": "Trim audio: start time in seconds (default 0)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "end",
+    "description": "Trim audio: end time in seconds (default: full duration)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "effect",
+    "description": "Optional visual effect applied to the image",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Blurred to Clear",
+     "Clear to Blurred",
+     "Pixelized to Clear",
+     "Clear to Pixelized",
+     "Fade In",
+     "Fade Out",
+     "Wipe Left to Right",
+     "Slide Up"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media video speechbubble",
+  "description": "✨ Add speech bubble to a video",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "style",
+    "description": "Speech bubble style",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Heist (default)",
+     "Flux"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "media video togif",
+  "description": "✨ Convert a video to GIF",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video file (mp4, webm, etc.)",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video caption",
+  "description": "✨ Add a caption to a video",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "caption",
+    "description": "Caption text",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "bottom",
+    "description": "Put caption at bottom instead of top",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video reverse",
+  "description": "✨ Reverse a video or GIF",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video or GIF file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio reversed (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video resize",
+  "description": "✨ Resize a video",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "scale",
+    "description": "Scale factor (0.1–4.0, e.g. 0.5 = half size)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video speed",
+  "description": "✨ Speed up or slow down a video",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video or GIF",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "multiplier",
+    "description": "Speed multiplier",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "0.25x (very slow)",
+     "0.5x (slow)",
+     "2x (fast)",
+     "3x (very fast)"
+    ]
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio at matching speed (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video rotate",
+  "description": "✨ Rotate a video",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video or image",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "degrees",
+    "description": "…",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "90°",
+     "180°",
+     "270°"
+    ]
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video scramble",
+  "description": "✨ Scramble the frames of a video or GIF",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video or GIF",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video watermark",
+  "description": "✨ Add a text watermark to a video",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Watermark text",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "position",
+    "description": "Corner to place it",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Bottom Right",
+     "Bottom Left",
+     "Top Right",
+     "Top Left",
+     "Center"
+    ]
+   },
+   {
+    "name": "opacity",
+    "description": "Opacity 0.1–1.0 (default 0.8)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "font",
+    "description": "Font to use (default Impact)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Impact",
+     "Futura Black",
+     "Quicksand Bold",
+     "Ubuntu Bold",
+     "Liberation Sans Bold"
+    ]
+   },
+   {
+    "name": "size",
+    "description": "Font size in pixels (default auto)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "color",
+    "description": "Text color (default black)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "White",
+     "Black",
+     "Red",
+     "Yellow",
+     "Orange",
+     "Blue"
+    ]
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media video crop",
+  "description": "✨ Crop a video to an aspect ratio",
+  "premium": true,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "video",
+    "description": "Video file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "ratio",
+    "description": "Target aspect ratio",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "16:9 (landscape)",
+     "9:16 (portrait)",
+     "1:1 (square)",
+     "4:3",
+     "3:4",
+     "21:9 (ultrawide)"
+    ]
+   },
+   {
+    "name": "anchor",
+    "description": "Which part of the frame to keep",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Center (default)",
+     "Top",
+     "Bottom",
+     "Left",
+     "Right"
+    ]
+   },
+   {
+    "name": "output",
+    "description": "Output format",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "GIF",
+     "MP4"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "Keep original audio (MP4 only, default on)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media ahshit",
+  "description": "Ah shit, here we go again",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image, GIF, or video",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "url",
+    "description": "Image URL",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media frames",
+  "description": "Extract all frames of a GIF or video as a ZIP",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "media",
+    "description": "GIF or video file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "media info",
+  "description": "Get info about an image, GIF, or video",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "media",
+    "description": "Image, GIF, or video file",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate",
+  "description": "Generate images and fake screenshots",
+  "premium": false,
+  "cog": "Media",
+  "args": []
+ },
+ {
+  "path": "generate fake message",
+  "description": "Generate a fake Discord message",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "text",
+    "description": "Message content",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "user",
+    "description": "User whose avatar and name to use",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "theme",
+    "description": "Discord background theme",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Dark",
+     "Ash",
+     "Onyx",
+     "Black",
+     "Light"
+    ]
+   },
+   {
+    "name": "display_font",
+    "description": "Override the display name font",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "gg sans",
+     "Tempo",
+     "Sakura",
+     "Jellybean",
+     "Modern",
+     "Medieval",
+     "8Bit",
+     "Vampyre"
+    ]
+   },
+   {
+    "name": "image",
+    "description": "Optional image attachment to show below the message",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "timestamp",
+    "description": "Custom timestamp, e.g. \"13:33\" or \"4/7/2026 13:33\"",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "mention_highlight",
+    "description": "Add a yellow mention highlight to the message",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "reactions",
+    "description": "Reactions, e.g. \"💀:3 😭:3\"",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "use_username",
+    "description": "Use the plain username instead of display name",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "hide_clantags",
+    "description": "Hide clan tags from the generated image",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake convo",
+  "description": "Generate a fake Discord conversation",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user1",
+    "description": "First message author",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "msg1",
+    "description": "First message content",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "user2",
+    "description": "Second message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg2",
+    "description": "Second message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user3",
+    "description": "Third message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg3",
+    "description": "Third message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user4",
+    "description": "Fourth message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg4",
+    "description": "Fourth message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user5",
+    "description": "Fifth message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg5",
+    "description": "Fifth message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user6",
+    "description": "Sixth message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg6",
+    "description": "Sixth message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user7",
+    "description": "Seventh message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg7",
+    "description": "Seventh message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user8",
+    "description": "Eighth message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg8",
+    "description": "Eighth message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user9",
+    "description": "Ninth message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg9",
+    "description": "Ninth message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user10",
+    "description": "Tenth message author",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "msg10",
+    "description": "Tenth message content",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "theme",
+    "description": "Discord background theme",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Dark",
+     "Ash",
+     "Onyx",
+     "Black",
+     "Light"
+    ]
+   },
+   {
+    "name": "timestamp",
+    "description": "Custom timestamp, e.g. \"13:33\" or \"4/7/2026 13:33\"",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "custom_display_fonts",
+    "description": "Apply each user's custom display name font if they have one",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "use_usernames",
+    "description": "Use plain usernames instead of display names",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "hide_clantags",
+    "description": "Hide clan tags from the generated image",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake reply",
+  "description": "Generate a fake Discord reply message",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "reply_user",
+    "description": "User whose message is being replied to",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "reply_text",
+    "description": "Content of the message being replied to",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "user",
+    "description": "User sending the reply (defaults to you)",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Reply message content",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "theme",
+    "description": "Discord background theme",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Dark",
+     "Ash",
+     "Onyx",
+     "Black",
+     "Light"
+    ]
+   },
+   {
+    "name": "display_font",
+    "description": "Override the sender's display name font",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "gg sans",
+     "Tempo",
+     "Sakura",
+     "Jellybean",
+     "Modern",
+     "Medieval",
+     "8Bit",
+     "Vampyre"
+    ]
+   },
+   {
+    "name": "reply_display_font",
+    "description": "Override the replied-to user's display name font",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "gg sans",
+     "Tempo",
+     "Sakura",
+     "Jellybean",
+     "Modern",
+     "Medieval",
+     "8Bit",
+     "Vampyre"
+    ]
+   },
+   {
+    "name": "image",
+    "description": "Optional image attachment to show below the message",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "timestamp",
+    "description": "Custom timestamp, e.g. \"13:33\" or \"4/7/2026 13:33\"",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "mention_highlight",
+    "description": "Add a yellow mention highlight to the message",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "reactions",
+    "description": "Reactions, e.g. \"💀:3 😭:3\"",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "use_usernames",
+    "description": "Use plain usernames instead of display names",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "hide_clantags",
+    "description": "Hide clan tags from the generated image",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake quote",
+  "description": "Generate a fake quote from a user",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user to fake quote",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "The text to attribute to them",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake apply",
+  "description": "Generate a fake Apply to Join application card",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user",
+    "description": "The applicant user",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "question",
+    "description": "The application question shown",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "answer",
+    "description": "The applicant's answer",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "status",
+    "description": "Leave blank for pending, or choose Approved / Rejected",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Approved",
+     "Rejected"
+    ]
+   },
+   {
+    "name": "reason",
+    "description": "Rejection reason (only shown when status is Rejected)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "use_username",
+    "description": "Use plain username instead of display name",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake request",
+  "description": "Generate a fake Discord friend request notification",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user",
+    "description": "User who 'sent' the friend request",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "age",
+    "description": "How long ago, e.g. \"23h\", \"5m\", \"2d\" (default: 1m)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Make GIF?",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "use_username",
+    "description": "Use plain username instead of display name",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake report",
+  "description": "Generate a fake Discord Trust & Safety report screen",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user",
+    "description": "User shown in the recent activity",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "message",
+    "description": "The message shown in the activity block",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "reason",
+    "description": "What Discord's rules were broken for (default: child self-endangerment)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "theme",
+    "description": "Background theme",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Dark",
+     "Onyx",
+     "Light"
+    ]
+   },
+   {
+    "name": "timestamp",
+    "description": "Custom timestamp, e.g. \"13:33\" or \"4/7/2026 13:33\"",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "use_username",
+    "description": "Use plain username instead of display name",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "hide_clantags",
+    "description": "Hide clan tags from the generated image",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake vc",
+  "description": "Generate a fake Discord voice channel",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user1",
+    "description": "First user in the VC",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "channel",
+    "description": "Voice channel name",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user2",
+    "description": "Second user in the VC",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user3",
+    "description": "Third user in the VC",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user4",
+    "description": "Fourth user in the VC",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user5",
+    "description": "Fifth user in the VC",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "theme",
+    "description": "Background theme",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Dark",
+     "Ash",
+     "Onyx",
+     "Black",
+     "Light"
+    ]
+   },
+   {
+    "name": "use_usernames",
+    "description": "Use plain usernames instead of display names",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate fake tiktokfollowing",
+  "description": "Generate a fake TikTok following notification",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user",
+    "description": "User to show as follower",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "username",
+    "description": "Username override (if no user provided)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "avatar",
+    "description": "Avatar image override",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "timeago",
+    "description": "Time since follow (e.g. 6d, 2h)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "theme",
+    "description": "Background theme",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Dark",
+     "Black"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "generate fake ai-watermark",
+  "description": "Add a fake AI watermark to an image or video",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "media",
+    "description": "Image or video to watermark",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "brand",
+    "description": "AI brand watermark to apply",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Gemini",
+     "Sora AI"
+    ]
+   },
+   {
+    "name": "position",
+    "description": "Where to place the watermark (static mode only)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Top Left",
+     "Top Right",
+     "Bottom Left",
+     "Bottom Right"
+    ]
+   },
+   {
+    "name": "opacity",
+    "description": "Watermark opacity 0.1–1.0 (default: 1.0)",
+    "type": "number",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "animate",
+    "description": "Animate the Sora watermark (default: on for video, off for image)",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate among-us",
+  "description": "Generate an Among Us role card",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "role",
+    "description": "The role name",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "description",
+    "description": "Text shown below the role",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Send as GIF",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate rip",
+  "description": "May a person of your choice rest in peace",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "user",
+    "description": "Who to mourn",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "reason",
+    "description": "Cause of death",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "togif",
+    "description": "Send as GIF",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "generate spotifylyrics",
+  "description": "Render text in Spotify lyrics style",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "text",
+    "description": "Line 1. Use *text* for italic.",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "text2",
+    "description": "Line 2 (optional)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text3",
+    "description": "Line 3 (optional)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text4",
+    "description": "Line 4 (optional)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text5",
+    "description": "Line 5 (optional)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "size",
+    "description": "Font size (default: large)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Small",
+     "Medium",
+     "Large"
+    ]
+   },
+   {
+    "name": "background",
+    "description": "Background color preset (default: teal)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Teal",
+     "Forest",
+     "Plum",
+     "Midnight",
+     "Rust",
+     "Slate"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "generate tierlist",
+  "description": "Generate a Discord user tier list",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "hidden",
+    "description": "Only show the builder to you",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio",
+  "description": "Audio effect commands",
+  "premium": false,
+  "cog": "Media",
+  "args": []
+ },
+ {
+  "path": "audio nightcore",
+  "description": "Speed up and pitch up the track",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio bassboost",
+  "description": "Boost the bass",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio earrape",
+  "description": "Distort the audio to oblivion",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "level",
+    "description": "Intensity level",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "1 - Loud",
+     "2 - Very Loud",
+     "3 - God Help You"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "audio lofi",
+  "description": "Chill lofi effect",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio phonk",
+  "description": "Slowed phonk with echo",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio reverse",
+  "description": "Play the audio backwards",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio slowedandreverb",
+  "description": "Slowed down with reverb",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio 8d",
+  "description": "8D panning audio effect",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "audio spatial",
+  "description": "3D spatial audio effect",
+  "premium": false,
+  "cog": "Media",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio file to process",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "serveravatar",
+  "description": "View a member's server avatar",
+  "premium": false,
+  "cog": "Info",
+  "args": [
+   {
+    "name": "member",
+    "description": "The member whose server avatar to view",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "serverbanner",
+  "description": "View a member's server banner",
+  "premium": false,
+  "cog": "Info",
+  "args": [
+   {
+    "name": "member",
+    "description": "The member whose server banner to view",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "serverprofile",
+  "description": "Manage your server profile",
+  "premium": false,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "serverprofile avatar set",
+  "description": "Set the bot's server avatar",
+  "premium": false,
+  "cog": "Customize",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image file to use as the bot's server avatar",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "serverprofile avatar reset",
+  "description": "Reset the bot's server avatar",
+  "premium": false,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "serverprofile banner set",
+  "description": "Set the bot's server banner",
+  "premium": false,
+  "cog": "Customize",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image file to use as the bot's server banner",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "serverprofile banner reset",
+  "description": "Reset the bot's server banner",
+  "premium": false,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "serverprofile bio set",
+  "description": "Set the bot's server bio",
+  "premium": false,
+  "cog": "Customize",
+  "args": [
+   {
+    "name": "text",
+    "description": "Bio for this server (max 190 characters)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "serverprofile bio reset",
+  "description": "Reset the bot's server bio",
+  "premium": false,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "serverprofile name set",
+  "description": "Set the bot's server nickname",
+  "premium": false,
+  "cog": "Customize",
+  "args": [
+   {
+    "name": "text",
+    "description": "Nickname for the bot in this server (max 32 characters)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "serverprofile name reset",
+  "description": "Reset the bot's server nickname",
+  "premium": false,
+  "cog": "Customize",
+  "args": []
+ },
+ {
+  "path": "roblox",
+  "description": "Roblox utilities",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "roblox profilelink",
+  "description": "Get Roblox user profile links",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username1",
+    "description": "First Roblox username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "username2",
+    "description": "Second Roblox username",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "username3",
+    "description": "Third Roblox username",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "username4",
+    "description": "Fourth Roblox username",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "username5",
+    "description": "Fifth Roblox username",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox britcheck",
+  "description": "Check if a Roblox user has friends hidden (UK/AUS)",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Roblox username to check",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox game",
+  "description": "Get Roblox game information",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "Game name to search",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox group",
+  "description": "Get Roblox group information",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "name",
+    "description": "The Roblox group name to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox render asset",
+  "description": "Render a Roblox asset into a 3D model",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "assetid",
+    "description": "The ID or URL of the Roblox UGC item",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox render avatar",
+  "description": "Render a Roblox avatar into a 3D model",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Roblox username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox history user",
+  "description": "View a Roblox user's game history based on recent badges",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox user",
+  "description": "Get Roblox user information",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "userid",
+    "description": "Look up by user ID instead",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox item",
+  "description": "View a Roblox item's details from Rolimons",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "The item name, acronym or ID to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox previousnames",
+  "description": "View a Roblox user's past usernames",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox followers",
+  "description": "View a Roblox user's followers",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox following",
+  "description": "View a Roblox user's following",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox friends",
+  "description": "View a Roblox user's friends list",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox groups",
+  "description": "View a Roblox user's joined groups",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox blendavatars",
+  "description": "Blend two Roblox avatar headshots side by side",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username1",
+    "description": "The first Roblox username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "username2",
+    "description": "The second Roblox username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox recentbadges",
+  "description": "View a Roblox user's recently earned badges",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox wearing",
+  "description": "View a Roblox user's currently worn items",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox games",
+  "description": "View a Roblox user's created games",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox necklaces",
+  "description": "Search for initial necklaces in a user's inventory",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to search",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox outfits",
+  "description": "View a Roblox user's saved avatars",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox devex",
+  "description": "Calculate the USD value you'd get from Developer Exchange",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount of Robux, e.g., 100k, 1m, 10b",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox calctax",
+  "description": "Calculate Robux taxes",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "amount",
+    "description": "Amount of Robux",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox avatar",
+  "description": "View a Roblox user's current avatar",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox template",
+  "description": "Grab the template for a classic Roblox shirt or pants",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "assetid",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roblox asset",
+  "description": "Fetch a Roblox asset by ID",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "id",
+    "description": "Asset ID or Roblox catalog/library URL",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "placeid",
+    "description": "Place ID or Roblox game URL (optional, for place-restricted assets)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "rolimons",
+  "description": "Rolimons utilities",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "rolimons user",
+  "description": "Get Rolimons user information",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "rolimons chart",
+  "description": "Get Rolimons value chart for a user",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "range",
+    "description": "Chart time range",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "1 Week",
+     "1 Month",
+     "3 Months",
+     "6 Months",
+     "1 Year",
+     "All Time"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "roblox2discord",
+  "description": "✨ Find Discord users linked to a Roblox account",
+  "premium": true,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "discord2roblox",
+  "description": "✨ Find a Discord user's linked Roblox account",
+  "premium": true,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "user",
+    "description": "The Discord user to look up",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "snapchat",
+  "description": "Snapchat social commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "snapchat user",
+  "description": "Get Snapchat user info",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Snapchat username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "instagram",
+  "description": "Instagram social commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "instagram user",
+  "description": "✨ Get Instagram user info",
+  "premium": true,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Instagram username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "instagram repost",
+  "description": "✨ Repost an Instagram post/reel",
+  "premium": true,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "url",
+    "description": "The Instagram post/reel URL to download",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "medaltv",
+  "description": "MedalTV related commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "medaltv repost",
+  "description": "Repost a Medal TV clip",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "url",
+    "description": "The URL of the Medal clip",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tiktok",
+  "description": "TikTok social commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "tiktok user",
+  "description": "View TikTok user info",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The TikTok username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tiktok posts",
+  "description": "Browse a TikTok user's recent posts",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The TikTok username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "count",
+    "description": "Number of posts to fetch (default 20, max 40)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tiktok country user",
+  "description": "View TikTok user country",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The TikTok username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tiktok country video",
+  "description": "View TikTok video author country",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "url",
+    "description": "The TikTok video URL to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tiktok repost",
+  "description": "Repost a TikTok post",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "url",
+    "description": "The TikTok post URL to download",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tiktok sound",
+  "description": "Rip the sound from a TikTok post",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "url",
+    "description": "The TikTok post URL to rip the sound from",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram",
+  "description": "Telegram utilities",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "telegram user",
+  "description": "Look up a Telegram user",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Telegram @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram group",
+  "description": "Look up a Telegram group or channel",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "handle",
+    "description": "Telegram @handle of the group or channel",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "extended",
+    "description": "Show the full extended profile",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram channel",
+  "description": "Look up a Telegram channel",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "handle",
+    "description": "Telegram @handle of the channel",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "extended",
+    "description": "Show the full extended profile",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram whois",
+  "description": "Resolve a Telegram handle to its TON wallet(s)",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Telegram @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram connections",
+  "description": "NFT and gift breakdown for a Telegram handle",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Telegram @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram giftinfo",
+  "description": "Look up a Telegram NFT gift by slug",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "slug",
+    "description": "Gift slug, e.g. ElectricSkull-6160",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram avatars",
+  "description": "Profile photo history for a Telegram user",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Telegram @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram archive",
+  "description": "Pinned story archive for a Telegram profile",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Telegram @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram mutuals",
+  "description": "Groups and channels the userbot shares with a Telegram user",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Telegram @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram bot",
+  "description": "Look up a Telegram bot - description, commands, menu button",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Bot @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram emoji",
+  "description": "Render a Telegram custom emoji by its document ID",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "emoji_id",
+    "description": "Custom emoji document ID",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "telegram message",
+  "description": "Resolve a t.me message link",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "link",
+    "description": "t.me/<chat>/<id> link",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "x",
+  "description": "X/Twitter utilities",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "x repost",
+  "description": "Repost an X (Twitter) post",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "url",
+    "description": "The URL of the X post",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "x user",
+  "description": "View X/Twitter user info",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The X/Twitter username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "twitch",
+  "description": "Twitch social commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "twitch user",
+  "description": "View Twitch user info",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Twitch username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "twitch live",
+  "description": "View a live Twitch stream",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Twitch username to check",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "pinterest",
+  "description": "Pinterest utilities",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "pinterest search",
+  "description": "Search for images on Pinterest",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "What to search for on Pinterest",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "pinterest pin",
+  "description": "View Pinterest pin info",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "url",
+    "description": "The Pinterest pin URL",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "youtube",
+  "description": "YouTube related commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "youtube search",
+  "description": "Search YouTube videos",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "The query to search",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "minecraft",
+  "description": "Minecraft related commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "minecraft user",
+  "description": "Get Minecraft user information",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Minecraft username to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "minecraft skin",
+  "description": "View a Minecraft player's skin",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Minecraft username to look up the skin of",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "minecraft server",
+  "description": "Get Minecraft server information",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "address",
+    "description": "The address of the Minecraft server",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "minecraft randomserver",
+  "description": "Get a random Minecraft server",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "bio",
+  "description": "Bio page lookups",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "bio gunslol",
+  "description": "Look up a guns.lol user",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Guns.lol username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "bio hauntgg",
+  "description": "Look up a haunt.gg user",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Haunt.gg username",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "discord",
+    "description": "Discord user",
+    "type": "user",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "uid",
+    "description": "Haunt.gg numeric UID",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "objectid",
+    "description": "MongoDB ObjectID (24-char hex)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "fortnite",
+  "description": "Fortnite utilities",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "fortnite shop",
+  "description": "View today's Fortnite shop",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "fortnite map",
+  "description": "View the Fortnite map",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "fortnite user",
+  "description": "View Fortnite stats for a player",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Fortnite Epic Games username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "fortnite cosmetic",
+  "description": "Look up a Fortnite cosmetic",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "name",
+    "description": "Cosmetic name to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "steam",
+  "description": "Search for a game on Steam",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "The game you want to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "github",
+  "description": "GitHub utilities",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "github 2email",
+  "description": "Find email addresses linked to a GitHub username",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "GitHub username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "github user",
+  "description": "Look up a GitHub user's profile",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "GitHub username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "github repo",
+  "description": "Look up a GitHub repository",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "repo",
+    "description": "Repository in user/repo format or full GitHub URL",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "sherlock",
+  "description": "Username OSINT across social platforms",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "sherlock user",
+  "description": "✨ Search for a username across social platforms",
+  "premium": true,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "username",
+    "description": "Username to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "sherlock cancel",
+  "description": "✨ Cancel your active Sherlock search",
+  "premium": true,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "socialscan",
+  "description": "Check a username or email across social platforms",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "Username or email to check",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "valorant",
+  "description": "Valorant lookup commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "valorant user",
+  "description": "View Valorant account, rank & recent matches",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "name",
+    "description": "Riot username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "tag",
+    "description": "Riot tag (no #)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "platform",
+    "description": "PC or Console",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "PC",
+     "Console"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "valorant agents",
+  "description": "Browse all Valorant agents",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "valorant maps",
+  "description": "Browse all playable Valorant maps",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "valorant seasons",
+  "description": "Browse Valorant seasons and episodes",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "valorant weapon",
+  "description": "Show info about a Valorant weapon",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "name",
+    "description": "Weapon name (e.g. Vandal, Phantom, Sheriff)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "valorant skin",
+  "description": "Show info about a Valorant weapon skin",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "name",
+    "description": "Skin name (start typing to search)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "valorant store",
+  "description": "Show current featured Valorant store bundles",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "valorant match",
+  "description": "View detailed scoreboard for a Valorant match",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "matchid",
+    "description": "Match UUID",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "region",
+    "description": "Region (auto-detected if omitted)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "NA",
+     "EU",
+     "AP",
+     "KR",
+     "LATAM",
+     "BR"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "valorant history",
+  "description": "View ranked RR history for a Valorant player",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "name",
+    "description": "Riot username",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "tag",
+    "description": "Riot tag (no #)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "platform",
+    "description": "PC or Console (tries both if omitted)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "PC",
+     "Console"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "cashapp",
+  "description": "Cash App social commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "cashapp user",
+  "description": "Get Cash App user info",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "cashtag",
+    "description": "Cash App cashtag to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ton",
+  "description": "TON network lookups",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "ton address",
+  "description": "Look up a TON wallet by address or .ton domain",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "TON address or .ton domain",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ton dns",
+  "description": "Resolve a .ton domain",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "domain",
+    "description": ".ton domain to resolve",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ton jettons",
+  "description": "List jetton (token) balances for a TON address",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "TON address or .ton domain",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ton nfts",
+  "description": "List NFTs held by a TON address",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "TON address or .ton domain",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ton events",
+  "description": "Recent transactions for a TON address",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "query",
+    "description": "TON address or .ton domain",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "get",
+  "description": "Pfp generation commands",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "get pfp",
+  "description": "Fetch a profile picture from Pinterest",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "style",
+    "description": "Choose a style for the profile picture",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Cat Pfp",
+     "Aesthetic Pfp",
+     "Dark Pfp",
+     "Couple Pfp",
+     "Anime Pfp",
+     "Eboy Pfp",
+     "Egirl Pfp",
+     "Opiumcore Pfp",
+     "Grunge Pfp",
+     "Cartoon Pfp",
+     "Indie Pfp"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "get banner",
+  "description": "Fetch a banner from Pinterest",
+  "premium": false,
+  "cog": "Social",
+  "args": [
+   {
+    "name": "style",
+    "description": "Choose a style for the banner",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Cat Banner",
+     "Aesthetic Banner",
+     "Dark Banner",
+     "Couple Banner",
+     "Anime Banner",
+     "Eboy Banner",
+     "Egirl Banner",
+     "Opiumcore Banner",
+     "Grunge Banner",
+     "Cartoon Banner",
+     "Indie Banner"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "✨ Lookup Roblox",
+  "description": "",
+  "premium": false,
+  "cog": "Social",
+  "args": []
+ },
+ {
+  "path": "petpet",
+  "description": "Pet someone's avatar",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "User to pet (defaults to you)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "Pet User",
+  "description": "",
+  "premium": false,
+  "cog": "Fun",
+  "args": []
+ },
+ {
+  "path": "donate",
+  "description": "Submit a donation",
+  "premium": false,
+  "cog": "Info",
+  "args": []
+ },
+ {
+  "path": "donate submit",
+  "description": "Submit a donation",
+  "premium": false,
+  "cog": "Info",
+  "args": [
+   {
+    "name": "name",
+    "description": "Name to show as top donor",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "amount",
+    "description": "Amount donated in USD",
+    "type": "number",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "message",
+    "description": "Optional message (only shown for donations of $20+)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "donate leaderboard",
+  "description": "View donations made to Heist",
+  "premium": false,
+  "cog": "Info",
+  "args": []
+ },
+ {
+  "path": "eco",
+  "description": "Economy commands - owner only (private testing)",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco wallet",
+  "description": "View your Heist wallet",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco bank deposit",
+  "description": "Move cash into your bank",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco bank withdraw",
+  "description": "Move money from your bank to cash",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco bank upgrade",
+  "description": "Buy additional bank space ($1 per space)",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "How much bank space to buy",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco bank sell",
+  "description": "Sell bank space back for 10% of its cost",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "How much bank space to sell",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco transfer",
+  "description": "Transfer bank money to another user (25% tax)",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "User to send money to",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "amount",
+    "description": "Amount to send",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco daily",
+  "description": "Claim your daily reward",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco bonus",
+  "description": "Claim a random bonus reward",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco beg",
+  "description": "Beg a stranger for money",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco work",
+  "description": "Work a shift for money",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco slut",
+  "description": "...for money",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco rob",
+  "description": "Attempt to rob another user's cash",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user to rob",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco joinbonus",
+  "description": "Claim a one-time cash bonus for joining our server",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco monthly",
+  "description": "✨ Claim your monthly premium cash reward",
+  "premium": true,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco toggle-notifications",
+  "description": "Toggle DMs when someone robs you",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco cooldowns",
+  "description": "See what you can and can't claim right now",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco guide",
+  "description": "Learn how the economy works",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco wallet-edit background",
+  "description": "✨ Change the card background",
+  "premium": true,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "color",
+    "description": "Solid color or top gradient color, such as #111827",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "gradient",
+    "description": "Bottom gradient color, or 'none' to disable it",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "direction",
+    "description": "Where the first gradient color starts",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "image",
+    "description": "Image, GIF, or small video to stretch to the card dimensions",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "remove_image",
+    "description": "Remove the uploaded image and use colors instead",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco wallet-edit text-color",
+  "description": "✨ Change the card text color",
+  "premium": true,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "color",
+    "description": "Six-digit hex color, such as #F8FAFC",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco wallet-edit avatar",
+  "description": "✨ Change the avatar shape",
+  "premium": true,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "shape",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Circle",
+     "Rounded",
+     "Square",
+     "Hidden"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "eco wallet-edit message",
+  "description": "✨ Set or clear the card message",
+  "premium": true,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "text",
+    "description": "Message up to 100 characters; use '-' to clear it",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco wallet-edit privacy",
+  "description": "✨ Show or hide cash and net worth",
+  "premium": true,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "hide_wallet",
+    "description": "Hide cash and net worth when enabled",
+    "type": "boolean",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco wallet-edit opacity",
+  "description": "✨ Change the dark overlay opacity",
+  "premium": true,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "Dark overlay opacity from 0 to 90 percent",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco wallet-edit studio",
+  "description": "✨ Open the interactive balance-card studio",
+  "premium": true,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco wallet-edit reset",
+  "description": "✨ Reset every balance-card setting",
+  "premium": true,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco history",
+  "description": "Show your recent economy transactions",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "Another user to inspect; defaults to you",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco graph",
+  "description": "Show your balance graph for the last seven days",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "Another user to inspect; defaults to you",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco giveaway",
+  "description": "Start an economy-funded giveaway (25% tax on payout)",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "Total cash amount to reserve as the prize pool",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "winners",
+    "description": "Number of winners (1-20)",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "duration",
+    "description": "Duration such as 30s, 10m, 2h, or 1d",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games dice",
+  "description": "Bet on a dice roll vs the house",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games coinflip",
+  "description": "Bet on a coin flip",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "side",
+    "description": "heads or tails; random if not given",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Heads",
+     "Tails"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "eco games roulette",
+  "description": "Bet on roulette",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "bet",
+    "description": "number 0-36, red/black/green, odd/even, low/middle/high",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games slots",
+  "description": "Spin the slots",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games ladder",
+  "description": "Climb the multiplier ladder",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games mines",
+  "description": "Play mines",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "count",
+    "description": "Number of mines (1-15)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games blackjack",
+  "description": "Play blackjack",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games higherlower",
+  "description": "Guess higher or lower",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games towers",
+  "description": "Climb five rows and cash out before losing",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "The amount to bet",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "difficulty",
+    "description": "Easy, medium, or hard",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Easy",
+     "Medium",
+     "Hard"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "eco games stats",
+  "description": "Show lifetime gambling statistics",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "Another user to inspect; defaults to you",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco games odds",
+  "description": "Explain a game's odds and payouts",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "game",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Dice",
+     "Coinflip",
+     "Roulette",
+     "Slots",
+     "Ladder",
+     "Mines",
+     "Blackjack",
+     "Higher/Lower",
+     "Towers"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "eco card cases",
+  "description": "View your unopened cases",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco card buy",
+  "description": "Buy trading card cases",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "case_type",
+    "description": "standard or blackice",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Standard",
+     "Blackice"
+    ]
+   },
+   {
+    "name": "amount",
+    "description": "How many to buy",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco card open",
+  "description": "Open trading card cases",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "case_type",
+    "description": "standard or blackice",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Standard",
+     "Blackice"
+    ]
+   },
+   {
+    "name": "category",
+    "description": "which type of card to open the case(s) into",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Business",
+     "Lab",
+     "Personal"
+    ]
+   },
+   {
+    "name": "amount",
+    "description": "How many to open (max 10)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco card list",
+  "description": "List a user's trading cards",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco card equip",
+  "description": "Equip one of your cards",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "card_id",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco card unequip",
+  "description": "Unequip your active card for a category",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "category",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Business",
+     "Lab",
+     "Personal"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "eco card upgrade",
+  "description": "Merge 10 same-star standard cards into 1 higher-star card",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "category",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Business",
+     "Lab",
+     "Personal"
+    ]
+   },
+   {
+    "name": "stars",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco card shred",
+  "description": "Shred a card for cash",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "card_id",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco card sell",
+  "description": "Sell a card to another user",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "card_id",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "price",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco card trade",
+  "description": "Trade a card 1-for-1 with another user",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "your_card_id",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "their_card_id",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco business list",
+  "description": "List available businesses",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco business buy",
+  "description": "Buy a business",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "name",
+    "description": "The business to buy",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco business sell",
+  "description": "Sell your business",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco business collect",
+  "description": "Collect your business earnings",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco business info",
+  "description": "View a business",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco lab buy",
+  "description": "Buy a laboratory",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco lab ampoules",
+  "description": "Buy ampoules for your lab",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "A number, or 'all'",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco lab upgrade",
+  "description": "Upgrade your laboratory",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco lab collect",
+  "description": "Collect your laboratory earnings",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco lab sell",
+  "description": "Sell your laboratory",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco lab info",
+  "description": "View a laboratory",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco leaderboard global",
+  "description": "Global net-worth leaderboard",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco leaderboard cash",
+  "description": "Cash-only leaderboard",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco leaderboard networth",
+  "description": "Net-worth leaderboard (cash+bank+lab+business)",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco quest start",
+  "description": "Start a quest",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "difficulty",
+    "description": "easy, medium, or hard",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Easy",
+     "Medium",
+     "Hard"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "eco quest status",
+  "description": "View the status of your quest",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco quest complete",
+  "description": "Complete your quest",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco quest stop",
+  "description": "Stop your quest",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco quest leaderboard",
+  "description": "View the quest leaderboard",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco investment list",
+  "description": "List all investments that exist",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco investment start",
+  "description": "Start an investment",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "name",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco investment status",
+  "description": "View the status of your investment",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco investment complete",
+  "description": "Complete your investment",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company",
+  "description": "Manage your company",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company create",
+  "description": "Create a company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "tag",
+    "description": "Company tag",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "name",
+    "description": "Company name",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company info",
+  "description": "View your company or another company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "name",
+    "description": "…",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company userinfo",
+  "description": "Show a company member's rank",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company members",
+  "description": "List company members and ranks",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company delete",
+  "description": "Delete your company permanently",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company leave",
+  "description": "Leave your company",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company join",
+  "description": "Join a company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "name",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company kick",
+  "description": "Kick a member from your company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company invite",
+  "description": "Invite a user to your company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company uninvite",
+  "description": "Cancel a pending invite",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company uprank",
+  "description": "Promote a member within the company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company downrank",
+  "description": "Demote a member within the company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company transfer",
+  "description": "Transfer company ownership to another member",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company upgrade",
+  "description": "Upgrade your company",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company name",
+  "description": "Rename your company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "name",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company tag",
+  "description": "Change your company's tag",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "tag",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company description",
+  "description": "Change your company's description",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "description",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company icon",
+  "description": "Set your company's icon",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "image",
+    "description": "Upload an image",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company reset-icon",
+  "description": "Remove your company's icon",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company privacy",
+  "description": "Change your company's privacy settings",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "privacy",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Public",
+     "Closed",
+     "Request"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "eco-company requests send",
+  "description": "Send (or cancel) a join request",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "name",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "…",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company requests list",
+  "description": "View pending join requests",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company requests accept",
+  "description": "Accept a pending join request",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company requests deny",
+  "description": "Deny a pending join request",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company leaderboard vault",
+  "description": "Company leaderboard by vault",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company leaderboard networth",
+  "description": "Company leaderboard by member net worth",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company vault deposit",
+  "description": "Deposit cash into your company vault",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company vault withdraw",
+  "description": "Withdraw cash from your company vault (CEO only)",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company vault bonus",
+  "description": "Send a vault bonus to a member (CEO only)",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "user",
+    "description": "…",
+    "type": "user",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company vault limit",
+  "description": "Set your own daily vault withdraw limit (CEO only)",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "integer",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company vault logs",
+  "description": "View the company vault logs",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company project list",
+  "description": "List all projects that exist",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company project start",
+  "description": "Start a project for your company",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "name",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company project status",
+  "description": "View the status of your company project",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company project contribute",
+  "description": "Contribute to your company project",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "eco-company project cancel",
+  "description": "Cancel your company project",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company project participants",
+  "description": "View project contributors",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company project complete",
+  "description": "Complete your company project",
+  "premium": false,
+  "cog": "Economy",
+  "args": []
+ },
+ {
+  "path": "eco-company project collect",
+  "description": "Collect your company project earnings",
+  "premium": false,
+  "cog": "Economy",
+  "args": [
+   {
+    "name": "amount",
+    "description": "…",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "rating",
+  "description": "Rate someone on something silly",
+  "premium": false,
+  "cog": "Fun",
+  "args": []
+ },
+ {
+  "path": "rating hotcalc",
+  "description": "Check how hot someone is",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user you want to check",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "rating howgay",
+  "description": "Check how gay someone is",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user you want to check the gayness of",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "rating howautistic",
+  "description": "Check how autistic someone is",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user you want to check the autism of.",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "rating ppsize",
+  "description": "Check the size of someone's pp",
+  "premium": false,
+  "cog": "Fun",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user you want to check the pp size of.",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai",
+  "description": "AI utilities",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "ai custom chat",
+  "description": "✨ Chat to your custom AI",
+  "premium": true,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "prompt",
+    "description": "The prompt for the AI",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai custom models",
+  "description": "✨ See which models you can pick for your custom AI",
+  "premium": true,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "ai custom build",
+  "description": "✨ Build your custom AI",
+  "premium": true,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "ai deepgeolocate",
+  "description": "✨ Use AI to geolocate & deeply analyze an image",
+  "premium": true,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "image",
+    "description": "The image to geolocate",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai perplexity",
+  "description": "✨ Search the web with Perplexity Sonar",
+  "premium": true,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "Your query for Sonar",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "image",
+    "description": "Image to attach",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai tts openai",
+  "description": "✨ Convert text to audio using OpenAI",
+  "premium": true,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "text",
+    "description": "Text to convert to speech",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "voice",
+    "description": "Voice style to use",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Alloy",
+     "Echo",
+     "Fable",
+     "Onyx",
+     "Nova",
+     "Shimmer"
+    ]
+   },
+   {
+    "name": "voicemessage",
+    "description": "Send as voicemessage",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai llama",
+  "description": "Ask LLaMA-3.1-8b-instant a question",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "prompt",
+    "description": "The prompt for the AI",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai usage",
+  "description": "Check your AI usage limits",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "ai chatgpt",
+  "description": "Ask ChatGPT a question",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "prompt",
+    "description": "The prompt for the AI",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "image",
+    "description": "Optional image to include with your question",
+    "type": "attachment",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai ocr",
+  "description": "Extract text from images using AI",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to extract text from",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai imagine",
+  "description": "✨ Generate an image with AI",
+  "premium": true,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "model",
+    "description": "The AI model to use",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Flux (2-klein)",
+     "Flux (1-schnell)",
+     "P Image",
+     "Nano Banana 2"
+    ]
+   },
+   {
+    "name": "prompt",
+    "description": "The prompt to generate the image from",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai edit-imagine",
+  "description": "Edit an image with AI",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "image",
+    "description": "The image to edit",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "prompt",
+    "description": "The editing instruction",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ai transcript",
+  "description": "Transcribe audio or video to text",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "file",
+    "description": "Audio or video file to transcribe",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "markov-chain",
+  "description": "Generate Markov-chain text from your input",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "text",
+    "description": "Text to use as the generation corpus (more words = more variety)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tts",
+  "description": "Convert text to audio",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "text",
+    "description": "Text to convert to speech",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "voice",
+    "description": "Voice to use",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Female",
+     "Male",
+     "Male 2",
+     "Ghostface (Char)",
+     "Stormtrooper (Char)",
+     "Rocket (Char)",
+     "Tenor (Singing)",
+     "Sunshine Soon (Singing)",
+     "Warmy Breeze (Singing)",
+     "Glorious (Singing)",
+     "It Goes Up (Singing)",
+     "Chipmunk (Singing)",
+     "Dramatic (Singing)"
+    ]
+   },
+   {
+    "name": "voicemessage",
+    "description": "Send as voicemessage",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "shazam",
+  "description": "Recognize a song using Shazam",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "audio",
+    "description": "Audio file to be recognized",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "convert",
+  "description": "Conversion utilities",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "convert discorduser2id",
+  "description": "Get the Discord ID of a user",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user to get ID of (empty=self)",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "convert robloxuser2id",
+  "description": "Get the Roblox user ID from username",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "username",
+    "description": "The Roblox username to get the ID of",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "convert discordid2user",
+  "description": "Get the Discord user from an ID",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "user_id",
+    "description": "The Discord user ID to convert",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "convert robloxid2user",
+  "description": "Get the Roblox username from user ID",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "user_id",
+    "description": "The Roblox user ID to convert",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "convert telegramuser2id",
+  "description": "Get the Telegram ID from a username",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "username",
+    "description": "Telegram @handle",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "crypto",
+  "description": "Cryptocurrency related commands",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "crypto track",
+  "description": "Track a crypto transaction until it confirms",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "coin",
+    "description": "Select a cryptocurrency",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Bitcoin",
+     "Litecoin",
+     "Ethereum"
+    ]
+   },
+   {
+    "name": "txid",
+    "description": "Transaction ID to track",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "confirmations",
+    "description": "✨ Number of confirmations to wait for",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "crypto stoptrack",
+  "description": "Cancel all active transaction trackers",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "crypto wallet",
+  "description": "Look up a crypto wallet's balance and recent transactions",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "address",
+    "description": "The wallet address",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "chain",
+    "description": "The blockchain (auto-detected if omitted)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Bitcoin",
+     "Litecoin",
+     "Ethereum",
+     "Dogecoin",
+     "Dash"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "crypto transaction",
+  "description": "Look up a crypto transaction by hash",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "hash",
+    "description": "The transaction hash/txid",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "chain",
+    "description": "The blockchain (auto-detected if omitted)",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Bitcoin",
+     "Litecoin",
+     "Ethereum",
+     "Dogecoin",
+     "Dash"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "crypto gas",
+  "description": "View gas prices for a blockchain",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "chain",
+    "description": "The chain",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Ethereum",
+     "Polygon",
+     "BNB Chain",
+     "Arbitrum",
+     "Optimism",
+     "Base",
+     "Avalanche"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "crypto price",
+  "description": "View a cryptocurrency's price and stats",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "coin",
+    "description": "The coin symbol or name (e.g. btc)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "currency",
+    "description": "The currency to price in",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "USD",
+     "EUR",
+     "GBP",
+     "JPY",
+     "BTC",
+     "ETH"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "crypto rates",
+  "description": "View the top cryptocurrencies by market cap",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "currency",
+    "description": "The currency to price in",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "USD",
+     "EUR",
+     "GBP",
+     "JPY",
+     "BTC",
+     "ETH"
+    ]
+   },
+   {
+    "name": "count",
+    "description": "How many coins to list (5-50)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "crypto chart",
+  "description": "View a cryptocurrency's price chart",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "coin",
+    "description": "The coin symbol or name (e.g. btc)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "currency",
+    "description": "The currency to price in",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "USD",
+     "EUR",
+     "GBP",
+     "JPY",
+     "BTC",
+     "ETH"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "qr",
+  "description": "QR code utilities",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "qr generate",
+  "description": "Generate a QR code",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "text",
+    "description": "Text to encode in QR",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "qr scan",
+  "description": "Scan a QR code from an image",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image containing QR code to scan",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "color",
+  "description": "Inspect colors and create color transitions",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "color inspect",
+  "description": "Inspect a color and get palette recommendations",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "Color name, HEX value, or RGB value",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "color gradient",
+  "description": "Create a custom transition between two colors",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "start",
+    "description": "First color",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "end",
+    "description": "Last color",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "amount",
+    "description": "Number of colors (2-10)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "base64",
+  "description": "Base64 encoding/decoding utilities",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "base64 encode",
+  "description": "Encode a string to Base64",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "string",
+    "description": "The string to encode",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "base64 decode",
+  "description": "Decode a Base64 string",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "string",
+    "description": "The Base64 string to decode",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "soundcloud",
+  "description": "Fetch a song from SoundCloud",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "Search query or track URL",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "stats",
+    "description": "Show track statistics?",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Yes",
+     "No"
+    ]
+   },
+   {
+    "name": "voicemessage",
+    "description": "Send as voicemessage",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "translate",
+  "description": "Translate text with Google",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "to",
+    "description": "Language to translate to (e.g. 'English', 'fr', 'ro')",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "from_lang",
+    "description": "Language to translate from (default: auto-detect)",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "Text to translate",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "badtranslate",
+  "description": "Badly translate some text",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "text",
+    "description": "Text to badly translate",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "count",
+    "description": "Amount of translations",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "chain",
+    "description": "Show language chain",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "timezone",
+  "description": "Timezone related commands",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "timezone view",
+  "description": "View the current time for a timezone or user",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "timezone",
+    "description": "The timezone to get the current time for",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "user",
+    "description": "The user to check the timezone for",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "timezone set",
+  "description": "Set your timezone",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "timezone",
+    "description": "The timezone to set for your profile",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "website",
+  "description": "Website utilities",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "website screenshot",
+  "description": "Take a screenshot of a website",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "url",
+    "description": "The URL to screenshot",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "delay",
+    "description": "Extra seconds to wait before capturing",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "click",
+    "description": "Left-click the center of the page before capturing",
+    "type": "boolean",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "website scroll",
+  "description": "✨ Render a scrolling video of a website",
+  "premium": true,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "url",
+    "description": "The URL to scroll through",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "length",
+    "description": "How long the scroll video should be",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "short",
+     "medium",
+     "long"
+    ]
+   },
+   {
+    "name": "animation",
+    "description": "How the scroll motion is paced",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "normal",
+     "fast",
+     "speedy"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "website download",
+  "description": "✨ Download a website's source files as a ZIP",
+  "premium": true,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "url",
+    "description": "The URL of the website to download",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "bypass",
+  "description": "Bypass a URL",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "url",
+    "description": "The URL you want to bypass",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ip",
+  "description": "IP info related commands",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "ip ping",
+  "description": "Ping a host from global locations",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "host",
+    "description": "IP address or domain to ping",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "ip lookup",
+  "description": "Look up an IP address (IPv4)",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "ip",
+    "description": "The IP address to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "download",
+  "description": "Download media from a website",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "url",
+    "description": "…",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "quality",
+    "description": "…",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "144p",
+     "240p",
+     "360p",
+     "480p",
+     "720p",
+     "1080p"
+    ]
+   },
+   {
+    "name": "audio",
+    "description": "…",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "With Audio",
+     "Muted"
+    ]
+   },
+   {
+    "name": "format",
+    "description": "…",
+    "type": "integer",
+    "required": false,
+    "choices": [
+     "Audio Only",
+     "Video"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "search",
+  "description": "Web-Search utilities",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "search ai-overview",
+  "description": "Get an AI overview of your search query",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "What to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "engine",
+    "description": "AI engine to use",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "search news",
+  "description": "Search the web for news",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "What news to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "engine",
+    "description": "Search engine to use",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "time",
+    "description": "Time filter: d=day, w=week, m=month",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "safesearch",
+    "description": "Safe search level",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Moderate",
+     "On",
+     "Off"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "search text",
+  "description": "Search the web",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "What to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "engine",
+    "description": "Search engine to use",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "safesearch",
+    "description": "Safe search level",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Moderate",
+     "On",
+     "Off"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "search images",
+  "description": "Search for images",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "What images to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "engine",
+    "description": "Search engine to use",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "time",
+    "description": "Time filter: d=day, w=week, m=month",
+    "type": "string",
+    "required": false,
+    "choices": []
+   },
+   {
+    "name": "safesearch",
+    "description": "Safe search level",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Moderate",
+     "On",
+     "Off"
+    ]
+   }
+  ]
+ },
+ {
+  "path": "search grokipedia",
+  "description": "Search for books and articles on Grokipedia",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "query",
+    "description": "What to search for",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "limit",
+    "description": "Max results (default 20, max 40)",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "voicemessage",
+  "description": "Send an audio file as a voice message",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "audio",
+    "description": "Audio file to send as a voice message",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "duration",
+    "description": "Custom duration in seconds",
+    "type": "integer",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "paste",
+  "description": "Create a Pastebin paste and get a shareable link",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "text",
+    "description": "Text content to paste",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "title",
+    "description": "Optional title for the paste",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "define",
+  "description": "Look up a word definition using Merriam-Webster",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "word",
+    "description": "The word to define",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "discord",
+  "description": "Discord related commands",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "discord dsa",
+  "description": "View Discord DSA violations for a user",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user to look up DSA violations for",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "discord user",
+  "description": "View a Discord user's profile",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "user",
+    "description": "The user to view the profile of",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "discord emoji",
+  "description": "Get the CDN URL of a Discord emoji",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "emoji",
+    "description": "The emoji (<:name:id> or animated) or just its ID",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "discord server",
+  "description": "Look up a Discord server via invite link or code",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "invite",
+    "description": "The Discord invite code or URL (e.g. discord.gg/abc or just abc)",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "quotemessage",
+  "description": "Quote a message as an image",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "quotemessage config create",
+  "description": "Create a new quote preset",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "name",
+    "description": "Name for the new preset",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "quotemessage config edit",
+  "description": "Edit an existing quote preset",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "preset",
+    "description": "The preset to edit",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "quotemessage config delete",
+  "description": "Delete a quote preset",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "preset",
+    "description": "The preset to delete",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "quotemessage config apply",
+  "description": "Set a preset as the one used when you quote",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "preset",
+    "description": "The preset to activate",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "quotemessage config list",
+  "description": "List your quote presets",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "quotemessage howto",
+  "description": "Learn how to quote a message",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "tags",
+  "description": "Tags related commands",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "tags create",
+  "description": "Create a tag",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "tag",
+    "description": "The name of the tag",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "text",
+    "description": "The text to display on the tag",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tags send",
+  "description": "Send a tag",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "tag",
+    "description": "The name of the tag to send",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tags delete",
+  "description": "Delete a tag",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "tag",
+    "description": "The name of the tag to delete",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tags edit",
+  "description": "Edit a tag",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "tag",
+    "description": "The name of the tag to edit",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "tags list",
+  "description": "List all your tags",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "tags export",
+  "description": "Export your tags as a one-use sync code",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "tags import",
+  "description": "Import tags from an export code",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "hash",
+    "description": "The export code from /tags export",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "AI Tools",
+  "description": "",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "View Profile",
+  "description": "",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "Identify Song",
+  "description": "",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "Quote Message",
+  "description": "",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "Transcribe Audio",
+  "description": "",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "Translate Message",
+  "description": "",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "pingonjoin",
+  "description": "Ping new members when they join, then delete the ping",
+  "premium": false,
+  "cog": "Management",
+  "args": []
+ },
+ {
+  "path": "pingonjoin setup",
+  "description": "Ping new members in a channel when they join",
+  "premium": false,
+  "cog": "Management",
+  "args": [
+   {
+    "name": "channel",
+    "description": "Channel to send the ping in",
+    "type": "channel",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "message",
+    "description": "Optional message to include after the ping",
+    "type": "string",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "pingonjoin remove",
+  "description": "Stop pinging new members in a specific channel",
+  "premium": false,
+  "cog": "Management",
+  "args": [
+   {
+    "name": "channel",
+    "description": "Channel to remove from Ping on Join",
+    "type": "string",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "pingonjoin list",
+  "description": "View Ping on Join channels for this server",
+  "premium": false,
+  "cog": "Management",
+  "args": []
+ },
+ {
+  "path": "pingonjoin stop",
+  "description": "Disable ping on join for this server",
+  "premium": false,
+  "cog": "Management",
+  "args": []
+ },
+ {
+  "path": "gif",
+  "description": "Shortcut for media image togif",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "image",
+    "description": "Image to convert to GIF",
+    "type": "attachment",
+    "required": true,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "action",
+  "description": "Do an action to a user",
+  "premium": false,
+  "cog": "Action",
+  "args": [
+   {
+    "name": "do",
+    "description": "The action to perform",
+    "type": "string",
+    "required": true,
+    "choices": [
+     "Slap",
+     "Hug",
+     "Kiss",
+     "Bite",
+     "Baka",
+     "Cuddle",
+     "Feed",
+     "Handhold",
+     "Handshake",
+     "Highfive",
+     "Kick",
+     "Pat",
+     "Punch",
+     "Peck",
+     "Poke",
+     "Shoot",
+     "Cry",
+     "Fuck (NSFW)"
+    ]
+   },
+   {
+    "name": "user",
+    "description": "The user to target",
+    "type": "user",
+    "required": false,
+    "choices": []
+   }
+  ]
+ },
+ {
+  "path": "roleplay",
+  "description": "Roleplay actions have moved to /action",
+  "premium": false,
+  "cog": "Action",
+  "args": []
+ },
+ {
+  "path": "dns",
+  "description": "DNS related commands",
+  "premium": false,
+  "cog": "Utility",
+  "args": []
+ },
+ {
+  "path": "dns lookup",
+  "description": "Look up DNS records for a domain",
+  "premium": false,
+  "cog": "Utility",
+  "args": [
+   {
+    "name": "domain",
+    "description": "Domain to look up",
+    "type": "string",
+    "required": true,
+    "choices": []
+   },
+   {
+    "name": "resolver",
+    "description": "DNS resolver to use",
+    "type": "string",
+    "required": false,
+    "choices": [
+     "Google DNS",
+     "Cloudflare DNS"
+    ]
+   }
+  ]
+ }
+]

@@ -16,6 +16,9 @@ import roll from '../../legacy/utility/roll.js';
 import weather from '../../legacy/utility/weather.js';
 import hint from '../../legacy/mediaguess/hint.js';
 import voteskip from '../../legacy/mediaguess/voteskip.js';
+import { extraClaimSubs } from '../../subcommands/eco/claims.js';
+import { protection } from '../../subcommands/eco/protection.js';
+import shopCommand from '../../subcommands/eco/shop.js';
 
 /** Everyday member-facing extras: levels, reputation, birthdays, reminders, small games and jokes. */
 export default defineGroup({
@@ -25,8 +28,10 @@ export default defineGroup({
   subs: [
     fromCommand(rank), fromCommand(roll), fromCommand(weather), fromCommand(trivia), fromCommand(advice), fromCommand(dadjoke),
     fromCommand(topic), fromCommand(wouldyourather), fromCommand(tenor, 'gif'), fromCommand(hint), fromCommand(voteskip),
+    ...extraClaimSubs, protection, // economy extras that don't fit under /eco
   ],
   groups: [
+    groupFromCommand(shopCommand, 'shop'),
     groupFromCommand(level, 'level'),
     groupFromCommand(rep, 'reputation'),
     groupFromCommand(birthday, 'birthday'),

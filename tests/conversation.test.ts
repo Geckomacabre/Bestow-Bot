@@ -163,13 +163,13 @@ describe('continuing the conversation', () => {
     const { onInteraction } = await import('../src/events/onInteraction');
     const owner = uid(); const sid = sidOf(start(owner))!;
     const b = fakeButton(owner, sid);
-    await onInteraction({ ...b.i, isAutocomplete: () => false, isButton: () => true, isModalSubmit: () => false } as any);
+    await onInteraction({ ...b.i, isAutocomplete: () => false, isButton: () => true, isStringSelectMenu: () => false, isModalSubmit: () => false } as any);
     expect(b.out.modal?.custom_id).toBe(`ai:modal:${sid}`);
     const m = fakeModal(owner, sid, 'via router');
     // The router uses the real chat client; a closed local port makes it fail fast, and the handler must fail cleanly (button restored).
     Bun.env.LLM_BASE_URL = 'http://127.0.0.1:9/v1';
     const orig = console.error; console.error = () => {};
-    try { await onInteraction({ ...m.i, isAutocomplete: () => false, isButton: () => false, isModalSubmit: () => true } as any); } finally { console.error = orig; }
+    try { await onInteraction({ ...m.i, isAutocomplete: () => false, isButton: () => false, isStringSelectMenu: () => false, isModalSubmit: () => true } as any); } finally { console.error = orig; }
     expect(m.log.updates.length + m.log.replies.length).toBeGreaterThan(0);
   });
 });

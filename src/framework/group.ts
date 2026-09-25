@@ -10,6 +10,7 @@ import {
   SlashCommandSubcommandGroupBuilder,
 } from 'discord.js';
 import type { Command } from '../interfaces/command';
+import { PREMIUM_MARK, premiumWall } from '../premium/wall.js';
 
 /**
  * Discord allows only 100 top-level global slash commands, but a command can hold
@@ -38,12 +39,18 @@ export interface Sub {
   permissions?: bigint;
   /** Refuse outside servers (DMs / user-install). */
   guildOnly?: boolean;
+  /** A ✨ Premium command: needs Premium once Premium is on sale (see premium/wall.ts). */
+  premium?: boolean;
 }
 
-/** Wraps a sub's handler with its permission / guild-only requirements. */
+/** Marks subs as Premium commands. */
+export const premium = (subs: Sub[]): Sub[] => subs.map(s => ({ ...s, premium: true }));
+
+/** Wraps a sub's handler with its permission / guild-only / premium requirements. */
 function guarded(sub: Sub): RunFn {
-  if (!sub.permissions && !sub.guildOnly) return sub.run;
+  if (!sub.permissions && !sub.guildOnly && !sub.premium) return sub.run;
   return async interaction => {
+    if (sub.premium && (await premiumWall(interaction))) return;
     if ((sub.guildOnly || sub.permissions) && !interaction.inGuild()) {
       return interaction.reply({ content: '❌ That only works in a server.', flags: MessageFlags.Ephemeral });
     }
@@ -89,8 +96,9 @@ function assertDescription(description: string, path: string) {
 
 function buildSub(sub: Sub, path: string): SlashCommandSubcommandBuilder {
   assertName('subcommand', sub.name, path);
-  assertDescription(sub.description, path);
-  const b = new SlashCommandSubcommandBuilder().setName(sub.name).setDescription(sub.description);
+  const description = sub.premium ? PREMIUM_MARK + sub.description : sub.description;
+  assertDescription(description, path);
+  const b = new SlashCommandSubcommandBuilder().setName(sub.name).setDescription(description);
   sub.options?.(b);
   return b;
 }

@@ -4,7 +4,7 @@ import { companyGroups, companySubs } from '../../subcommands/eco/company.js';
 export default defineGroup({
   name: 'eco-company',
   description: 'Companies: shared vaults, projects and leaderboards',
-  scope: 'guild',
+  scope: 'anywhere',
   subs: companySubs,
   groups: companyGroups,
 });

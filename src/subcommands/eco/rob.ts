@@ -82,7 +82,7 @@ export const rob: Sub = {
         await interaction.reply(box(Colors.Green, `🦹 **Successful Robbery!**\nYou stole **${sym} ${stolen.toLocaleString()}** from <@${target.id}>!\n*You'll need to lay low for 1 hour.*${oddsNote}`));
         void notifyVictim(interaction.client, target.id,
           `🦹 **${interaction.user.username}** robbed you for **${sym} ${stolen.toLocaleString()}** in **${interaction.guild?.name ?? 'a server'}**. ` +
-          `Keep your money in the bank with \`/eco bank deposit\` to protect it. (Turn these DMs off with \`/eco notifications\`.)`);
+          `Keep your money in the bank with \`/eco bank deposit\` to protect it. (Turn these DMs off with \`/eco toggle-notifications\`.)`);
         return;
       }
 

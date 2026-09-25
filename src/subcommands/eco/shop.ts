@@ -176,7 +176,7 @@ const Shop: Command = {
       const container = new ContainerBuilder()
         .setAccentColor(Colors.Blurple)
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(
-          `🏪 **Shop**\nBuy with \`/eco shop buy\`.\n\n` +
+          `🏪 **Shop**\nBuy with \`/community shop buy\`.\n\n` +
           `**⏱️ Boosts** *(timed effects)*\n${section('boost')}\n\n` +
           `**🎫 One-Shots** *(stored until they trigger, expire after 7 days)*\n${section('oneshot')}\n\n` +
           `**⚡ Instant** *(happens right away)*\n${section('instant')}`

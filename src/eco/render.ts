@@ -43,8 +43,18 @@ function roundedRect(ctx: SKRSContext2D, x: number, y: number, w: number, h: num
   ctx.closePath();
 }
 
-export type AvatarShape = 'circle' | 'square' | 'rounded' | 'hexagon';
-export const AVATAR_SHAPES: AvatarShape[] = ['circle', 'square', 'rounded', 'hexagon'];
+export type AvatarShape = 'circle' | 'square' | 'rounded' | 'hexagon' | 'hidden';
+export const AVATAR_SHAPES: AvatarShape[] = ['circle', 'rounded', 'square', 'hexagon', 'hidden'];
+
+/** Splits a card message into at most two lines (~58 characters each), breaking on spaces where it can. */
+export function wrapMessage(msg: string, width = 58): string[] {
+  const text = msg.trim();
+  if (text.length <= width) return [text];
+  let cut = text.lastIndexOf(' ', width);
+  if (cut < width * 0.5) cut = width;
+  const first = text.slice(0, cut).trimEnd(), rest = text.slice(cut).trimStart();
+  return [first, rest.length > width ? rest.slice(0, width - 1) + '…' : rest];
+}
 
 function avatarPath(ctx: SKRSContext2D, shape: AvatarShape, cx: number, cy: number, size: number) {
   const r = size / 2;
@@ -135,7 +145,8 @@ export async function renderWalletCard(o: WalletCardOpts): Promise<Buffer> {
 
   // ── Avatar ────────────────────────────────────────────────────────────────
   const AV = 120, AX = 30 + AV / 2, AY = 30 + AV / 2;
-  try {
+  const showAvatar = o.style.avatarShape !== 'hidden';
+  if (showAvatar) try {
     const avatar = await loadImage(o.avatarUrl);
     ctx.save();
     avatarPath(ctx, o.style.avatarShape, AX, AY, AV);
@@ -149,7 +160,7 @@ export async function renderWalletCard(o: WalletCardOpts): Promise<Buffer> {
   } catch { /* no avatar */ }
 
   // ── Title ─────────────────────────────────────────────────────────────────
-  const TX = 175;
+  const TX = showAvatar ? 175 : 40;
   ctx.fillStyle = text;
   ctx.font = 'bold 32px RankB, sans-serif';
   ctx.textAlign = 'left';
@@ -186,11 +197,12 @@ export async function renderWalletCard(o: WalletCardOpts): Promise<Buffer> {
   ctx.fillStyle = text;
   ctx.globalAlpha = 0.85;
   ctx.font = '18px Rank, sans-serif';
-  if (assets) ctx.fillText(assets, 30, 214);
-  if (o.style.message) {
+  const msgLines = o.style.message ? wrapMessage(o.style.message) : [];
+  if (assets) ctx.fillText(assets, 30, msgLines.length > 1 ? 206 : 214);
+  if (msgLines.length) {
     ctx.font = 'italic 19px Rank, sans-serif';
-    const msg = o.style.message.length > 70 ? o.style.message.slice(0, 69) + '…' : o.style.message;
-    ctx.fillText(`“${msg}”`, 30, 250);
+    const last = msgLines.length - 1;
+    msgLines.forEach((line, n) => ctx.fillText(`${n === 0 ? '“' : ''}${line}${n === last ? '”' : ''}`, 30, 252 - (last - n) * 22));
   }
   ctx.globalAlpha = 1;
   return canvas.toBuffer('image/png') as unknown as Buffer;

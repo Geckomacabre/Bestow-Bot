@@ -1,11 +1,11 @@
-import { defineGroup, fromCommand, groupFromCommand } from '../../framework/group.js';
-import { claimSubs } from '../../subcommands/eco/claims.js';
+import { defineGroup, fromCommand, premium } from '../../framework/group.js';
+import { claimSubs, hustle } from '../../subcommands/eco/claims.js';
 import { rob } from '../../subcommands/eco/rob.js';
-import { protection } from '../../subcommands/eco/protection.js';
-import shopCommand from '../../subcommands/eco/shop.js';
 import { bankSubs } from '../../subcommands/eco/bank.js';
-import { bonus, cooldowns, graph, guide, history, leaderboardSubs, notifications, transfer } from '../../subcommands/eco/misc.js';
-import { walletView } from '../../subcommands/eco/wallet.js';
+import { bonus, cooldowns, graph, guide, history, joinbonus, leaderboardSubs, notifications, transfer } from '../../subcommands/eco/misc.js';
+import { walletEditSubs, walletView } from '../../subcommands/eco/wallet.js';
+import { studioSub } from '../../subcommands/eco/studio.js';
+import { ecoGiveawaySub } from '../../subcommands/giveaway/giveaway.js';
 import { businessSubs, investmentSubs, labSubs, questSubs } from '../../subcommands/eco/assets.js';
 import { cardSubs } from '../../subcommands/eco/cards.js';
 import { gameLeaderboardSub, oddsSub, statsSub } from '../../subcommands/eco/games/extras.js';
@@ -21,13 +21,14 @@ import roulette from '../../subcommands/eco/games/roulette.js';
 import scratch from '../../subcommands/eco/games/scratch.js';
 import slots from '../../subcommands/eco/games/slots.js';
 
-// Discord caps a command at 25 direct subcommands/groups: 16 subcommands + 9 groups = 25.
+// Discord caps a command at 25 direct subcommands/groups: 16 subcommands + 9 groups = 25 (the same tree as Heist's /eco).
+// The economy extras that don't fit (weekly, yearly, protection, shop) live under /community.
 export default defineGroup({
   name: 'eco',
   description: 'Economy: wallet, bank, games, businesses, cards and more',
-  scope: 'guild',
+  scope: 'anywhere',
   subs: [
-    walletView, ...claimSubs, rob, transfer, cooldowns, history, graph, guide, bonus, protection, notifications,
+    walletView, ...claimSubs, hustle, bonus, joinbonus, rob, transfer, cooldowns, history, graph, guide, notifications, ecoGiveawaySub,
   ],
   groups: [
     { name: 'bank', description: 'Your bank account', subs: bankSubs },
@@ -37,7 +38,7 @@ export default defineGroup({
     { name: 'quest', description: 'Timed quests', subs: questSubs },
     { name: 'card', description: 'Trading cards, cases and bonuses', subs: cardSubs },
     { name: 'leaderboard', description: 'Economy leaderboards', subs: leaderboardSubs },
-    groupFromCommand(shopCommand, 'shop'),
+    { name: 'wallet-edit', description: 'Customise your wallet card', subs: premium([...walletEditSubs, studioSub]) },
     {
       name: 'games',
       description: 'Casino games — your stake is taken up front',

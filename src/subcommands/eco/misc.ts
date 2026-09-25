@@ -5,12 +5,13 @@ import { IS_CV2 } from '../../utils/components.js';
 import { randInt } from '../../utils/random.js';
 import { adjustBalance } from '../../utils/db.js';
 import {
-  TRANSFER_TAX, claimCooldown, fmtDuration, getEco, getHistory, getWealthSeries, leaderboard, transferFromBank, type LbRow,
+  TRANSFER_TAX, claimCooldown, claimOnce, fmtDuration, getEco, getHistory, getWealthSeries, leaderboard, transferFromBank, type LbRow,
 } from '../../eco/core.js';
 import { BONUS } from '../../eco/catalog.js';
 import { careerMultiplier } from '../../eco/effects.js';
 import { renderWealthGraph } from '../../eco/render.js';
 import { AMOUNT_HELP, Colors, cv2Box, cv2Err, ecoCtx, parseAmount, short } from './ui.js';
+import { getWalletStyle } from './wallet.js';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -50,6 +51,7 @@ const CD_LIST: { key: string; label: string; ms: number }[] = [
   { key: 'yearly', label: 'Yearly', ms: 365 * DAY },
   { key: 'work', label: 'Work', ms: HOUR },
   { key: 'beg', label: 'Beg', ms: 15 * 60_000 },
+  { key: 'hustle', label: 'Hustle', ms: 30 * 60_000 },
   { key: 'bonus', label: 'Bonus', ms: BONUS.cooldownMs },
   { key: 'rob_success', label: 'Rob (after a win)', ms: HOUR },
   { key: 'rob_fail', label: 'Rob (after a fail)', ms: 30 * 60_000 },
@@ -81,30 +83,45 @@ export const cooldowns: Sub = {
 
 // ─── history / graph ─────────────────────────────────────────────────────────
 
+const USER_OPT = (s: import('discord.js').SlashCommandSubcommandBuilder) => s.addUserOption(o => o.setName('user').setDescription('Another user to inspect; defaults to you'));
+
+/** Whose data to show. Someone who hid their wallet (`/eco wallet-edit privacy`) is private to everyone else. */
+async function inspect(i: import('discord.js').ChatInputCommandInteraction): Promise<import('discord.js').User | null> {
+  const target = i.options.getUser('user') ?? i.user;
+  if (target.bot) { await i.reply(cv2Err("Bots don't have wallets.")); return null; }
+  if (target.id !== i.user.id && (await getWalletStyle(target.id)).hideWallet) { await i.reply(cv2Err('🔒 That person keeps their wallet private.')); return null; }
+  return target;
+}
+
 export const history: Sub = {
   name: 'history',
   description: 'Show your recent economy transactions',
+  options: USER_OPT,
   async run(i) {
     const ctx = await ecoCtx(i);
-    const rows = await getHistory(ctx.userId, 15);
-    if (!rows.length) { await i.reply(cv2Box('No transactions yet — try `/eco daily`!', Colors.Blurple)); return; }
+    const target = await inspect(i); if (!target) return;
+    const rows = await getHistory(target.id, 15);
+    if (!rows.length) { await i.reply(cv2Box(target.id === ctx.userId ? 'No transactions yet — try `/eco daily`!' : 'No transactions yet.', Colors.Blurple)); return; }
     const lines = rows.map(r => {
       const sign = r.delta >= 0 ? '🟢 +' : '🔴 ';
       const where = r.where === 'bank' ? '🏦' : '👛';
       return `${sign}${ctx.fmt(Math.abs(r.delta))} ${where} \`${r.reason}\` <t:${Math.floor(r.ts / 1000)}:R>`;
     });
-    await i.reply(cv2Box(`🧾 **Recent transactions**\n${lines.join('\n')}`, Colors.Blurple));
+    const who = target.id === ctx.userId ? '' : ` — ${target.displayName ?? target.username}`;
+    await i.reply({ ...cv2Box(`🧾 **Recent transactions${who}**\n${lines.join('\n')}`, Colors.Blurple), allowedMentions: { parse: [] } });
   },
 };
 
 export const graph: Sub = {
   name: 'graph',
-  description: 'Chart your cash + bank over the last 7 days',
+  description: 'Show your balance graph for the last seven days',
+  options: USER_OPT,
   async run(i) {
-    await i.deferReply();
     const ctx = await ecoCtx(i);
-    const series = await getWealthSeries(ctx.guildId, ctx.userId, 7);
-    const png = await renderWealthGraph({ title: `${i.user.displayName}'s balance — last 7 days`, series, symbol: ctx.sym });
+    const target = await inspect(i); if (!target) return;
+    await i.deferReply();
+    const series = await getWealthSeries(ctx.guildId, target.id, 7);
+    const png = await renderWealthGraph({ title: `${target.displayName ?? target.username}'s balance — last 7 days`, series, symbol: ctx.sym });
     const container = new ContainerBuilder().setAccentColor(Colors.Blue)
       .addMediaGalleryComponents(new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL('attachment://graph.png')));
     await i.editReply({ flags: IS_CV2, files: [new AttachmentBuilder(png, { name: 'graph.png' })], components: [container] });
@@ -121,14 +138,14 @@ export const guide: Sub = {
     const container = new ContainerBuilder().setAccentColor(Colors.Gold)
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(
         `## ${ctx.sym} How the economy works\n` +
-        `**Earning** — \`/eco daily\` \`weekly\` \`monthly\` \`yearly\` \`work\` \`beg\` \`bonus\`, plus quests, businesses, labs and investments.\n` +
+        `**Earning** — \`/eco daily\` \`monthly\` \`work\` \`hustle\` \`beg\` \`bonus\` \`joinbonus\`, \`/community weekly\` \`yearly\`, plus quests, businesses, labs and investments.\n` +
         `**Cash vs bank** — cash can be **robbed** (\`/eco rob\`). Move it to the bank with \`/eco bank deposit\` to keep it safe. The bank has limited space (\`/eco bank upgrade\`).\n` +
         `**Sending money** — \`/eco transfer\` moves *banked* money to someone else. ${TRANSFER_TAX * 100}% is taxed.\n` +
         `**Growing** — \`/eco business\` (passive income), \`/eco lab\` (needs ampoules), \`/eco investment\` (risk vs reward), \`/eco quest\` (timers).\n` +
         `**Cards** — open cases with \`/eco card buy\` + \`open\`, equip one card per category for small bonuses, merge 10 → 1 with \`/eco card upgrade\`.\n` +
         `**Companies** — team up with \`/eco-company\`: shared vault, projects, leaderboards.\n` +
         `**Gambling** — \`/eco games …\` (slots, blackjack, mines, towers…). Your stake is taken up front. \`/eco games odds\` explains each game.\n` +
-        `**Tracking** — \`/eco wallet\`, \`history\`, \`graph\`, \`cooldowns\`, \`leaderboard\`.`,
+        `**Tracking** — \`/eco wallet\`, \`history\`, \`graph\`, \`cooldowns\`, \`leaderboard\`. Style your card with \`/eco wallet-edit\`. Server owners can run economy giveaways with \`/eco giveaway\`.`,
       ));
     await i.reply({ flags: IS_CV2, components: [container] });
   },
@@ -156,17 +173,39 @@ export const bonus: Sub = {
   },
 };
 
+// ─── joinbonus ───────────────────────────────────────────────────────────────
+
+export const joinbonus: Sub = {
+  name: 'joinbonus',
+  description: 'Claim a one-time cash bonus for joining our server',
+  async run(i) {
+    const ctx = await ecoCtx(i);
+    const supportId = Bun.env.SUPPORT_GUILD_ID;
+    if (!supportId) { await i.reply(cv2Err("This bot has no support server set up, so there's no join bonus.")); return; }
+    await i.deferReply();
+    const member = await i.client.guilds.fetch(supportId).then(g => g.members.fetch(ctx.userId)).catch(() => null);
+    if (!member) {
+      const invite = Bun.env.SUPPORT_INVITE;
+      await i.editReply(cv2Err(`Join our support server first${invite ? ` — ${invite}` : ''} — then run this again to claim **${ctx.fmt(BONUS.joinBonus)}**.`));
+      return;
+    }
+    if (!(await claimOnce(ctx.userId, 'join'))) { await i.editReply(cv2Err('You already claimed your join bonus.')); return; }
+    const { newBalance } = await adjustBalance(ctx.guildId, ctx.userId, BONUS.joinBonus, 'joinbonus');
+    await i.editReply(cv2Box(`🎉 **Welcome!**\nThanks for joining — here's **${ctx.fmt(BONUS.joinBonus)}**.\nNew balance: **${newBalance.toLocaleString()}**`, Colors.Green));
+  },
+};
+
 // ─── notifications ───────────────────────────────────────────────────────────
 
 export const notifications: Sub = {
-  name: 'notifications',
+  name: 'toggle-notifications',
   description: 'Toggle DMs when someone robs you',
   async run(i) {
     const ctx = await ecoCtx(i);
     const eco = await getEco(ctx.guildId, ctx.userId);
     const next = eco.notify_rob ? 0 : 1;
     await db`UPDATE economy SET notify_rob = ${next} WHERE user_id = ${ctx.userId}`;
-    await i.reply(cv2Box(next ? '🔔 You\'ll get a DM when someone robs you.' : '🔕 Rob DMs are now off.', Colors.Blurple));
+    await i.reply(cv2Box(next ? "🔔 You'll get a DM when someone robs you, and a ping when your work cooldown is up." : '🔕 Rob DMs and work-cooldown pings are now off.', Colors.Blurple));
   },
 };
 

@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import * as db from '../utils/db';
 import { handleReplyButton, handleReplyModal } from '../ai/conversation';
 import { handleEnterButton } from '../giveaway/service';
+import { handleStudioComponent, handleStudioModal } from '../subcommands/eco/studio';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -20,6 +21,16 @@ export const onInteraction = async (interaction: Interaction) => {
 
   if (interaction.isButton() && interaction.customId.startsWith('gw:enter:')) {
     await handleEnterButton(interaction).catch(err => logger.error(`Giveaway enter error: ${err}`));
+    return;
+  }
+
+  // /eco wallet-edit studio: its buttons, menus and the colours form.
+  if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith('ws:')) {
+    await handleStudioComponent(interaction).catch(err => logger.error(`Wallet studio error: ${err}`));
+    return;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith('ws:')) {
+    await handleStudioModal(interaction).catch(err => logger.error(`Wallet studio form error: ${err}`));
     return;
   }
 
