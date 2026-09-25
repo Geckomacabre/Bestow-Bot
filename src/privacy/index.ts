@@ -125,5 +125,6 @@ export const POLICY = {
     'Your data is never sold, rented or shared for advertising or analytics. There is no tracking and no telemetry.',
     'Some commands send *what you type into that command* to a public service to get an answer: /crypto → CoinGecko, Blockstream, Blockscout, mempool.space · /net → Cloudflare DNS, ipwho.is, check-host.net, thum.io · /tools → LRCLIB, paste.rs (public paste), Wikipedia/your search instance, open.er-api.com, Google Translate, vxtwitter · /fun action → nekos.best · /roblox, /minecraft, /github, /steam, /valorant, /fortnite → those services\' public APIs.',
     'AI features (if the server\'s owner turned them on) send your prompt to the AI provider the bot owner configured.',
+    'If you pick a ✨ ElevenLabs voice in /tts, the text you type is sent to ElevenLabs to be spoken. Free voices are generated on the bot\'s own host (or Microsoft\'s Edge voices, for the online ones).',
   ],
 } as const;

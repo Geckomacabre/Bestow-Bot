@@ -4,8 +4,10 @@ import {
 } from 'discord.js';
 import type { Command } from '../../interfaces/command';
 import {
-  ALL_VOICES, MAX_TEXT, SONG_STYLES, TTS_COOLDOWN_MS, cleanForSpeech, findVoice, searchVoices, speak, ttsCooldown, voiceIcon, type VoiceDef,
+  ALL_VOICES, MAX_TEXT, SONG_STYLES, TTS_COOLDOWN_MS, cleanForSpeech, ensureElevenVoices, findVoice, searchVoices, speak, speakableLength, ttsCooldown, voiceIcon, type VoiceDef,
 } from '../../services/tts.js';
+import { freeCharsPerDay, refundChars, reserveChars } from '../../services/elevenlabs.js';
+import { premiumConfigured, premiumOf } from '../../premium/index.js';
 import { MAX_WORDS, singLite } from '../../services/singlite.js';
 import {
   SING_SECONDS, generateSong, queueLength, queuedSong, refundSingCooldown, singCooldown, singHealthy,
@@ -78,12 +80,14 @@ const Tts: Command = {
     .addBooleanOption(o => o.setName('voicemessage').setDescription('Send as a Discord voice message')),
 
   async autocomplete(i: AutocompleteInteraction) {
+    await ensureElevenVoices(); // cached for an hour; a no-op without an ElevenLabs key
     await i.respond(searchVoices(i.options.getFocused()).map(v => ({ name: label(v), value: v.id })));
   },
 
   run: mediaHandler(async (i: ChatInputCommandInteraction) => {
     const raw = i.options.getString('text', true);
     const voiceOpt = i.options.getString('voice');
+    await ensureElevenVoices();
     const voice = findVoice(voiceOpt);
     if (!voice) throw new MediaError(`I don't know a voice called "${voiceOpt}". Start typing the voice option to see the list (${ALL_VOICES.length} voices).`);
 
@@ -98,8 +102,24 @@ const Tts: Command = {
       return;
     }
 
-    const r = await speak(raw, voiceOpt, i.options.getNumber('speed') ?? 1);
-    await sendAudio(i, r.mp3, 'speech.mp3', `${voiceIcon(r.voice)} **${r.voice.label}**${r.voice.engine === 'edge' ? ' *(online voice)*' : ''}`);
+    // ElevenLabs bills per character: set the characters aside first, and give them back if a free voice ended up speaking.
+    let reserved = 0;
+    if (voice.engine === 'eleven') {
+      const chars = speakableLength(raw);
+      const premium = (await premiumOf(i)).premium;
+      const r = reserveChars(i.user.id, chars, premium);
+      if (!r.ok) {
+        throw new MediaError(r.reason === 'user'
+          ? `You've used your free ✨ ElevenLabs characters for today (${freeCharsPerDay().toLocaleString()} a day, ${r.left.toLocaleString()} left).${premiumConfigured() ? ' Premium removes that limit — see `/premium buy`.' : ''} Any free voice has no limit.`
+          : 'The ✨ ElevenLabs voices have hit their daily limit for everyone — try again tomorrow, or use any free voice.');
+      }
+      reserved = chars;
+    }
+    let r;
+    try { r = await speak(raw, voiceOpt, i.options.getNumber('speed') ?? 1); }
+    catch (err) { if (reserved) refundChars(i.user.id, reserved); throw err; }
+    if (reserved && r.voice.engine !== 'eleven') refundChars(i.user.id, reserved);
+    await sendAudio(i, r.mp3, 'speech.mp3', `${voiceIcon(r.voice)} **${r.voice.label}**${r.voice.engine === 'edge' ? ' *(online voice)*' : ''}${r.voice.engine === 'eleven' ? ' *(ElevenLabs)*' : ''}${r.note ? `\n${r.note}` : ''}`);
   }),
 };
 

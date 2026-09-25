@@ -2,6 +2,7 @@ import path from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { withLock } from '../framework/mutex.js';
 import { ffmpeg, withWorkdir, MediaError } from '../framework/media.js';
+import { ElevenUnavailable, elevenConfigured, listElevenVoices, synthEleven, type ElevenVoice } from './elevenlabs.js';
 
 /**
  * Free text-to-speech. Two engines:
@@ -10,7 +11,7 @@ import { ffmpeg, withWorkdir, MediaError } from '../framework/media.js';
  *  - Edge: Microsoft's online neural voices via msedge-tts — many languages, needs internet, unofficial API.
  */
 
-export type Engine = 'kokoro' | 'edge' | 'sing' | 'song' | 'char';
+export type Engine = 'kokoro' | 'edge' | 'sing' | 'song' | 'char' | 'eleven';
 export interface VoiceDef { id: string; label: string; engine: Engine; lang: string; gender: 'Female' | 'Male'; blurb?: string }
 
 const K = (id: string, label: string, lang: string, gender: 'Female' | 'Male'): VoiceDef => ({ id, label, engine: 'kokoro', lang, gender });
@@ -79,7 +80,22 @@ export const SONG_VOICES: VoiceDef[] = Object.entries(SONG_STYLES).map(([id, v])
 
 export const ALL_VOICES: VoiceDef[] = [...KOKORO_VOICES, ...CHAR_VOICES, ...SING_VOICES, ...SONG_VOICES, ...EDGE_VOICES];
 
-export const voiceIcon = (v: Pick<VoiceDef, 'engine'>) => (v.engine === 'sing' ? '🎵' : v.engine === 'song' ? '🎤' : v.engine === 'char' ? '🎭' : v.engine === 'edge' ? '🌐' : '🗣️');
+/** ElevenLabs voices (only when ELEVENLABS_API_KEY is set). They're fetched from the account and put into ALL_VOICES by setElevenVoices. */
+export const ELEVEN_PREFIX = 'eleven:';
+
+/** Replaces the ElevenLabs entries of ALL_VOICES (in place, so everything holding the array sees them). Pass [] to remove them. */
+export function setElevenVoices(voices: ElevenVoice[]): void {
+  for (let i = ALL_VOICES.length - 1; i >= 0; i--) if (ALL_VOICES[i]!.engine === 'eleven') ALL_VOICES.splice(i, 1);
+  for (const v of voices) ALL_VOICES.push({ id: `${ELEVEN_PREFIX}${v.id}`, label: v.name, engine: 'eleven', lang: v.lang, gender: v.gender, blurb: v.blurb });
+}
+
+/** Loads the account's ElevenLabs voices if a key is configured (cached for an hour; failures just leave the list as it was). */
+export async function ensureElevenVoices(fetchImpl?: typeof fetch): Promise<void> {
+  if (!elevenConfigured()) { if (ALL_VOICES.some(v => v.engine === 'eleven')) setElevenVoices([]); return; }
+  try { setElevenVoices(await listElevenVoices({ fetchImpl })); } catch (err) { console.error('[elevenlabs] couldn\'t load voices:', (err as Error).message); }
+}
+
+export const voiceIcon = (v: Pick<VoiceDef, 'engine'>) => (v.engine === 'sing' ? '🎵' : v.engine === 'song' ? '🎤' : v.engine === 'char' ? '🎭' : v.engine === 'edge' ? '🌐' : v.engine === 'eleven' ? '✨' : '🗣️');
 export const DEFAULT_VOICE = 'af_heart';
 export const MAX_TEXT = 500;
 
@@ -95,10 +111,12 @@ export function searchVoices(query: string, limit = 25): VoiceDef[] {
   if (!q) {
     // No search yet: a taste of everything (singing voices are easy to miss otherwise).
     const featured = FEATURED.map(id => ALL_VOICES.find(v => v.id === id)!);
-    return [...featured, ...CHAR_VOICES, ...SING_VOICES, ...SONG_VOICES, ...EDGE_VOICES].slice(0, limit);
+    const eleven = ALL_VOICES.filter(v => v.engine === 'eleven').slice(0, 5);
+    return [...featured, ...eleven, ...CHAR_VOICES, ...SING_VOICES, ...SONG_VOICES, ...EDGE_VOICES].slice(0, limit);
   }
   return ALL_VOICES
     .filter(v => v.id.toLowerCase().includes(q) || v.label.toLowerCase().includes(q) || v.lang.toLowerCase().includes(q) || v.gender.toLowerCase().startsWith(q)
+      || (v.engine === 'eleven' && (v.blurb ?? '').toLowerCase().includes(q))
       || (q.startsWith('sing') && (v.engine === 'sing' || v.engine === 'song')) || (v.engine === 'song' && 'ai singer song'.includes(q)) || (v.engine === 'char' && ('character char'.includes(q) || (v.blurb ?? '').includes(q))))
     .slice(0, limit);
 }
@@ -171,16 +189,34 @@ async function kokoroSynth(text: string, voice: string, speed: number, fx?: stri
   });
 }
 
-export interface SpeechResult { mp3: Buffer; voice: VoiceDef }
+/** `note` is set when a different voice than the one asked for was used, and says why. */
+export interface SpeechResult { mp3: Buffer; voice: VoiceDef; note?: string }
 
-/** Text → MP3. Falls back from a local voice to an Edge one (and vice versa) if the chosen engine is unavailable. */
-export async function speak(rawText: string, voiceId?: string | null, speed = 1): Promise<SpeechResult> {
+/** How many characters of `rawText` a voice would actually speak (what ElevenLabs bills for). */
+export const speakableLength = (rawText: string): number => cleanForSpeech(rawText).slice(0, MAX_TEXT).length;
+
+/** Text → MP3. Falls back from a local voice to an Edge one (and vice versa) if the chosen engine is unavailable; ElevenLabs falls back to a free voice. */
+export async function speak(rawText: string, voiceId?: string | null, speed = 1, deps: { fetchImpl?: typeof fetch; freeSynth?: (text: string, voiceId: string, speed: number) => Promise<Buffer> } = {}): Promise<SpeechResult> {
   const text = cleanForSpeech(rawText).slice(0, MAX_TEXT);
   if (!text) throw new MediaError('There\'s nothing speakable in that text.');
   const voice = findVoice(voiceId);
   if (!voice) throw new MediaError('I don\'t know that voice — pick one from the list.');
   if (voice.engine === 'sing' || voice.engine === 'song') throw new MediaError('That is a singing voice — it needs the singing path, not plain speech.');
   const sp = Math.min(2, Math.max(0.5, speed));
+
+  if (voice.engine === 'eleven') {
+    try {
+      return { mp3: await synthEleven(text, voice.id.slice(ELEVEN_PREFIX.length), { speed: sp, fetchImpl: deps.fetchImpl }), voice };
+    } catch (err) {
+      if (!(err instanceof ElevenUnavailable)) throw err;
+      if (err.kind === 'key') console.error('[elevenlabs]', err.message);
+      // Fall back to a free voice of the same gender, and say so.
+      const free = KOKORO_VOICES.find(v => v.gender === voice.gender && v.lang === 'en-US')!;
+      const note = `*${err.message} I used a free voice instead.*`;
+      try { return { mp3: await (deps.freeSynth ?? kokoroSynth)(text, free.id, sp), voice: free, note }; }
+      catch { const edge = EDGE_VOICES.find(v => v.lang === 'en-US' && v.gender === voice.gender)!; return { mp3: await edgeSynth(text, edge.id.replace(/^edge:/, ''), sp), voice: edge, note }; }
+    }
+  }
 
   const attempt = async (v: VoiceDef) => {
     if (v.engine === 'char') { const c = CHAR_STYLES[v.id.replace('char:', '')]!; return kokoroSynth(text, c.base, sp, c.fx); }
