@@ -6,9 +6,11 @@ import { roundBusy, startGame, startInteractiveRound, type MediaType } from '../
 /**
  * /community guess — a round of the movie / TV / game / song guessing game, anywhere.
  *  • In a DM with the bot the bot can read your messages, so you just type your guesses.
- *  • Everywhere else (a group DM, a server the bot isn't in…) it can't, so the round is the command's own reply: press **Guess** to type
- *    an answer in a pop-up box, and anyone in the chat can play.
- * Servers where an admin gave the game its own channel (`/server guess setup`) run it there with typed guesses and XP.
+ *  • Everywhere else (a group DM, a server the bot isn't in…) it can't, so the round is the command's own reply: press **Guess** — or
+ *    use `/guess <answer>` — and anyone in the chat can play.
+ * Either way the game keeps going, round after round, until someone presses **Stop game**.
+ * Servers where an admin gave the game its own channel (`/server guess setup`) run it there with typed guesses and XP, and go on until
+ * an admin runs `/server guess stop`.
  */
 const guess: Sub = {
   name: 'guess',
@@ -50,7 +52,7 @@ const guess: Sub = {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const started = await startGame(null, interaction.channelId, type, interaction.client).catch(() => false);
-    await interaction.editReply(started ? '✅ Round started — type your guess below!' : '😵 I couldn\'t load a round just now — try again in a moment.');
+    await interaction.editReply(started ? '✅ Round started — type your guess below! Rounds keep coming until you press ⏹️ **Stop game**.' : '😵 I couldn\'t load a round just now — try again in a moment.');
   },
 };
 

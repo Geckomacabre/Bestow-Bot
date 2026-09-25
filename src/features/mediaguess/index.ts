@@ -1,8 +1,11 @@
-import { ActionRowBuilder, ButtonInteraction, Client, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, type ModalSubmitInteraction } from 'discord.js';
+import {
+  ActionRowBuilder, ButtonInteraction, Client, InteractionContextType, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle,
+  type ChatInputCommandInteraction, type ModalSubmitInteraction,
+} from 'discord.js';
 import { EventModule } from '../feature';
 import {
   activeGames, castVoteSkip, checkGuess, GUESS_BUTTON, GUESS_INPUT, GUESS_MODAL, INTERACTIVE_NEXT_PREFIX, interactiveNextButton, NEXT_ROUND_PREFIX, nextRoundButton,
-  requestHint, resolveGame, restoreActiveGames, roundBusy, startGame, startInteractiveRound, submitGuess, type InteractiveHost, type MediaType,
+  requestHint, resolveGame, restoreActiveGames, roundBusy, safeName, startGame, startInteractiveRound, STOP_PREFIX, stopGame, submitGuess, type InteractiveHost, type MediaType,
 } from '../../utils/mediagame';
 import { awardBonusXp } from '../../utils/xpBonus';
 import * as db from '../../utils/db';
@@ -103,6 +106,7 @@ const mediaguessModule: EventModule = {
       if (btn.customId === GUESS_BUTTON) return openGuessBox(btn);
       if (btn.customId.startsWith(INTERACTIVE_NEXT_PREFIX)) return nextInteractiveRound(btn);
       if (btn.customId.startsWith(NEXT_ROUND_PREFIX)) return nextRound(btn);
+      if (btn.customId.startsWith(STOP_PREFIX)) return stopFromButton(btn);
       if (btn.customId !== 'mg_hint' && btn.customId !== 'mg_voteskip') return;
 
       if (btn.customId === 'mg_hint') {
@@ -126,15 +130,19 @@ const mediaguessModule: EventModule = {
         await btn.reply({ content: `⏭️ Only <@${live.interactive.ownerId}> can skip this round — keep guessing!`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
         return;
       }
-      const { content, ephemeral } = await castVoteSkip(btn.channelId, btn.user.id, btn.client);
-      await btn.reply({ content, flags: ephemeral ? MessageFlags.Ephemeral : undefined });
+      // A solo round (DM, or run through interactions) is skipped on the spot and the game goes on; acknowledge first, since revealing
+      // a song downloads its full clip. A server round is a public vote.
+      const solo = !!live && !live.guildId && !live.answered;
+      if (solo) await btn.deferReply({ flags: MessageFlags.Ephemeral });
+      const { content, ephemeral } = await castVoteSkip(btn.channelId, btn.user.id, btn.client, live?.interactive ? followHost(btn) : undefined);
+      if (solo) await btn.editReply({ content }); else await btn.reply({ content, flags: ephemeral ? MessageFlags.Ephemeral : undefined });
     },
   },
 };
 
 export default mediaguessModule;
 
-const NO_ROUND = '❌ There is no active guessing game in this channel.';
+const NO_ROUND = '❌ There is no active guessing game in this channel — start one with `/community guess`.';
 
 /** The Guess button: opens a box to type the answer in (the bot can't read chat here, so guesses arrive as form submissions). */
 async function openGuessBox(btn: ButtonInteraction): Promise<void> {
@@ -147,18 +155,39 @@ async function openGuessBox(btn: ButtonInteraction): Promise<void> {
 /** A submitted guess: only the guesser sees whether it was close; a correct one rewrites the round for everyone. */
 async function guessFromModal(modal: ModalSubmitInteraction): Promise<void> {
   const name = modal.member && 'displayName' in modal.member ? (modal.member.displayName as string) : modal.user.globalName ?? modal.user.username;
-  const result = await submitGuess(modal.channelId ?? '', modal.fields.getTextInputValue(GUESS_INPUT), { id: modal.user.id, name }, modal.client);
-  const say = { 'no-round': NO_ROUND, correct: '✅ That\'s it — you got it!', very_close: '‼️ Very close!', close: '❗ Close — keep going!', wrong: '❌ Not quite — try again!' }[result];
-  await modal.reply({ content: say, flags: MessageFlags.Ephemeral });
+  await modal.deferReply({ flags: MessageFlags.Ephemeral }); // a right answer rewrites the round (and may fetch a song's full clip): acknowledge first
+  const result = await submitGuess(modal.channelId ?? '', modal.fields.getTextInputValue(GUESS_INPUT), { id: modal.user.id, name }, modal.client, followHost(modal));
+  await modal.editReply({ content: GUESS_REPLY[result] });
 }
 
-/** Where an interactive round posts and edits: this interaction's own reply and webhook (valid for 15 minutes). */
-function interactiveHost(btn: ButtonInteraction): InteractiveHost {
+/** What the guesser is told (privately) about their answer. */
+export const GUESS_REPLY = { 'no-round': NO_ROUND, correct: '✅ That\'s it — you got it!', very_close: '‼️ Very close!', close: '❗ Close — keep going!', wrong: '❌ Not quite — try again!' } as const;
+
+/**
+ * Where a game run through interactions posts and edits: this interaction's own follow-ups and webhook (valid for 15 minutes from it).
+ * Every round is anchored to the interaction that ended the one before, so the game keeps going for as long as people keep playing.
+ */
+export function followHost(i: ButtonInteraction | ModalSubmitInteraction | ChatInputCommandInteraction): InteractiveHost {
   return {
-    client: btn.client, channelId: btn.channelId, userId: btn.user.id,
-    send: payload => btn.followUp(payload).then(m => ({ id: m.id })),
-    edit: (id, payload) => btn.webhook.editMessage(id, payload),
+    client: i.client, channelId: i.channelId ?? '', userId: i.user.id,
+    send: payload => i.followUp(payload).then(m => ({ id: m.id })),
+    edit: (id, payload) => i.webhook.editMessage(id, payload),
   };
+}
+
+/** The Stop game button: ends the game, whether a round is live or the next one is about to start. */
+async function stopFromButton(btn: ButtonInteraction): Promise<void> {
+  const type = btn.customId.slice(STOP_PREFIX.length) as MediaType;
+  await btn.deferUpdate(); // revealing the answer can take a moment (a song's full clip)
+  const stopped = await stopGame(btn.channelId, btn.client);
+  if (stopped === 'nothing') { await btn.followUp({ content: '⏹️ There\'s no game running here to stop.', flags: MessageFlags.Ephemeral }); return; }
+  if (stopped === 'pending') {
+    // Stopped in the gap between rounds: this message is the result of the last one, so turn its Stop button into a way to play again.
+    const again = btn.context === InteractionContextType.BotDM ? nextRoundButton(type) : interactiveNextButton(type);
+    await btn.editReply({ content: `${btn.message.content}\n⏹️ Game stopped.`, components: [again] }).catch(() => {});
+  }
+  const who = 'displayName' in (btn.member ?? {}) ? (btn.member as { displayName: string }).displayName : btn.user.globalName ?? btn.user.username;
+  await btn.followUp({ content: `⏹️ **${safeName(who)}** stopped the game.`, allowedMentions: { parse: [] } }).catch(() => {});
 }
 
 /** "Next round" under a finished interactive round: take the button off, and post a fresh round as a new message. */
@@ -169,7 +198,7 @@ async function nextInteractiveRound(btn: ButtonInteraction): Promise<void> {
   const missing = keyMissing(type);
   if (missing) { await btn.reply({ content: missing, flags: MessageFlags.Ephemeral }); return; }
   await btn.update({ components: [] });
-  if (!(await startInteractiveRound(interactiveHost(btn), type).catch(() => false))) {
+  if (!(await startInteractiveRound(followHost(btn), type).catch(() => false))) {
     await btn.editReply({ components: [interactiveNextButton(type)] }).catch(() => {}); // put the button back so they can retry
     await btn.followUp({ content: '😵 I couldn\'t load a new round just now — try again in a moment.', flags: MessageFlags.Ephemeral }).catch(() => {});
   }

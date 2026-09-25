@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import { InteractionContextType } from 'discord.js';
 import { initDb } from '../src/utils/db';
-import { activeGames, castVoteSkip, requestHint, type GameState, type MediaEntry } from '../src/utils/mediagame';
+import { activeGames, cancelPendingNext, castVoteSkip, hooks, requestHint, roundBusy, stopGame, type GameState, type MediaEntry } from '../src/utils/mediagame';
 import mediaguessModule from '../src/features/mediaguess';
 import guess from '../src/legacy/mediaguess/guess';
 import { shouldRespond } from '../src/ai/chat';
@@ -24,13 +24,15 @@ function fakeClient() {
 const customIds = (p: any) => (p.components ?? []).flatMap((r: any) => r.toJSON().components.map((c: any) => c.custom_id));
 
 describe('solo guessing rounds in DMs', () => {
-  test('skip is instant: no vote, no 5-minute wait, and the answer comes with a Next round button instead of an auto-restart', async () => {
+  test('skip is instant: no vote, no 5-minute wait — the answer shows, and the game goes on until someone presses Stop', async () => {
     const f = fakeClient(), state = round();
     expect(await castVoteSkip(state.channelId, 'u1', f.client)).toEqual({ content: '⏭️ Round skipped.', ephemeral: true });
     expect(activeGames.has(state.channelId)).toBe(false);
     expect(f.deleted()).toBe(1);
-    expect(f.sent[0].content).toBe('⏭️ Skipped! The movie was **Heat**.');
-    expect(customIds(f.sent[0])).toEqual(['mg_next:movie']);
+    expect(f.sent[0].content).toBe('⏭️ Skipped! The movie was **Heat**.\n_Next round in 5 seconds… press ⏹️ Stop game to end it._');
+    expect(customIds(f.sent[0])).toEqual(['mg_stop:movie']);
+    expect(roundBusy(state.channelId)).toBe(true); // the next round is already on its way
+    cancelPendingNext(state.channelId);
   });
 
   test('server rounds still need the vote and the delay', async () => {
@@ -54,8 +56,14 @@ describe('solo guessing rounds in DMs', () => {
     const message: any = { guildId: null, channelId: state.channelId, author: { id: 'u1', bot: false, username: 'sam' }, member: null, content: 'heat', react: async (e: string) => { reacts.push(e); }, reply: async () => { throw new Error('no XP reply in DMs'); } };
     await mediaguessModule.handlers.messageCreate!({ data: [message], bot: f.client } as any);
     expect(reacts).toEqual(['✅']);
-    expect(f.sent[0].content).toBe('🎉 You got it! The movie was **Heat**!');
-    expect(customIds(f.sent[0])).toEqual(['mg_next:movie']);
+    expect(f.sent[0].content).toBe('🎉 You got it! The movie was **Heat**!\n_Next round in 5 seconds… press ⏹️ Stop game to end it._');
+    expect(customIds(f.sent[0])).toEqual(['mg_stop:movie']);
+    cancelPendingNext(state.channelId);
+  });
+
+  test('the round message has Hint, Skip and Stop game buttons', async () => {
+    const { buildRound } = await import('../src/utils/mediagame');
+    expect(customIds(await buildRound('movie', media, 'dm'))).toEqual(['mg_hint', 'mg_voteskip', 'mg_stop:movie']);
   });
 
   test('the AI chat stays out of a live round unless it is @mentioned', async () => {
@@ -101,5 +109,53 @@ describe('round start guard', () => {
     expect(await first).toBe(false);
     expect(roundBusy(ch)).toBe(false);
     if (saved !== undefined) Bun.env.TMDB_API_KEY = saved;
+  });
+});
+
+describe('a DM game keeps going until someone stops it', () => {
+  afterEach(() => { hooks.fetchEntry = undefined; hooks.nextDelayMs = undefined; });
+  const second: MediaEntry = { ...media, id: 2, title: 'Ronin', stills: ['https://img/2.jpg'] };
+
+  test('after an answer or a skip the next round is posted by itself, round after round', async () => {
+    hooks.nextDelayMs = 20; let served = 0; hooks.fetchEntry = async () => (served++ % 2 === 0 ? second : media);
+    const f = fakeClient(), state = round();
+    await castVoteSkip(state.channelId, 'u1', f.client); // ends round 1
+    await Bun.sleep(150);
+    const live = activeGames.get(state.channelId)!;
+    expect(live).toBeDefined(); expect(live.media.title).toBe('Ronin'); expect(live.guildId).toBeNull();
+    expect(customIds(f.sent[1])).toEqual(['mg_hint', 'mg_voteskip', 'mg_stop:movie']); // round 2 carries its own Stop button
+    await castVoteSkip(state.channelId, 'u1', f.client); // ends round 2 → round 3 follows
+    await Bun.sleep(150);
+    expect(activeGames.get(state.channelId)!.media.title).toBe('Heat');
+    expect(f.sent.length).toBeGreaterThanOrEqual(4);
+    activeGames.delete(state.channelId);
+  });
+
+  test('Stop game reveals the answer, offers a way to play again, and nothing follows', async () => {
+    hooks.nextDelayMs = 20; hooks.fetchEntry = async () => second;
+    const f = fakeClient(), state = round();
+    expect(await stopGame(state.channelId, f.client)).toBe('round');
+    expect(f.sent[0].content).toBe('⏹️ Game stopped! The movie was **Heat**.\n⏹️ Game stopped.');
+    expect(customIds(f.sent[0])).toEqual(['mg_next:movie']);
+    await Bun.sleep(120);
+    expect(activeGames.has(state.channelId)).toBe(false); expect(roundBusy(state.channelId)).toBe(false); expect(f.sent).toHaveLength(1);
+    expect(await stopGame(state.channelId, f.client)).toBe('nothing');
+  });
+
+  test('Stop game between rounds calls off the round that was about to start', async () => {
+    hooks.nextDelayMs = 60; hooks.fetchEntry = async () => second;
+    const f = fakeClient(), state = round();
+    await castVoteSkip(state.channelId, 'u1', f.client);
+    expect(roundBusy(state.channelId)).toBe(true);
+    expect(await stopGame(state.channelId, f.client)).toBe('pending');
+    await Bun.sleep(150);
+    expect(activeGames.has(state.channelId)).toBe(false); expect(f.sent).toHaveLength(1); // only the skip result: no new round
+  });
+
+  test('a server round is not stopped by the button — an admin stops it with /server guess stop', async () => {
+    const f = fakeClient(), state = round({ guildId: 'g1' });
+    expect(await stopGame(state.channelId, f.client)).toBe('nothing');
+    expect(activeGames.get(state.channelId)).toBe(state); expect(f.sent).toHaveLength(0);
+    activeGames.delete(state.channelId);
   });
 });

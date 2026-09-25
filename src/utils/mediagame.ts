@@ -73,8 +73,10 @@ export interface RoundEdit {
 export const activeGames = new Map<string, GameState>();
 /** Channels whose next round is being fetched/posted right now, so a double click can't post two rounds. */
 const starting = new Set<string>();
-/** A round is live in the channel, or one is on its way. */
-export const roundBusy = (channelId: string) => activeGames.has(channelId) || starting.has(channelId);
+/** Channels whose next round is due in a few seconds: a DM or group-chat game keeps going until someone stops it. */
+const pendingNext = new Map<string, ReturnType<typeof setTimeout>>();
+/** A round is live in the channel, one is on its way, or the next one is about to start. */
+export const roundBusy = (channelId: string) => activeGames.has(channelId) || starting.has(channelId) || pendingNext.has(channelId);
 
 // /voteskip is locked out for the first 5 minutes of a round — gives people
 // a fair shot before the round can be cut short.
@@ -977,13 +979,44 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
 /** guild = a channel an admin set up (guesses are typed, skips are votes); dm = a solo round in a DM with the bot (guesses are typed); interactive = guesses come from a pop-up box. */
 export type RoundMode = 'guild' | 'dm' | 'interactive';
 
-function buildRoundButtons(mode: RoundMode): ActionRowBuilder<ButtonBuilder> {
+function buildRoundButtons(mode: RoundMode, type: MediaType): ActionRowBuilder<ButtonBuilder> {
   const row = new ActionRowBuilder<ButtonBuilder>();
   if (mode === 'interactive') row.addComponents(new ButtonBuilder().setCustomId(GUESS_BUTTON).setLabel('Guess').setEmoji('✏️').setStyle(ButtonStyle.Success));
-  return row.addComponents(
+  row.addComponents(
     new ButtonBuilder().setCustomId('mg_hint').setLabel('Hint').setEmoji('💡').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('mg_voteskip').setLabel(mode === 'guild' ? 'Vote Skip' : 'Skip').setEmoji('⏭️').setStyle(ButtonStyle.Secondary),
   );
+  if (mode !== 'guild') row.addComponents(stopButton(type)); // server channels are stopped by an admin (/server guess stop)
+  return row;
+}
+
+/** Custom id prefix of the Stop button (`mg_stop:<type>`): ends a DM or group-chat game, which otherwise keeps going round after round. */
+export const STOP_PREFIX = 'mg_stop:';
+export const stopButton = (type: MediaType) => new ButtonBuilder().setCustomId(`${STOP_PREFIX}${type}`).setLabel('Stop game').setEmoji('⏹️').setStyle(ButtonStyle.Danger);
+/** A row holding only the Stop button — under a result while the next round is on its way. */
+export const stopRow = (type: MediaType) => new ActionRowBuilder<ButtonBuilder>().addComponents(stopButton(type));
+/** How long after a round ends the next one starts (DMs and group chats; server channels wait 10 seconds). */
+export const NEXT_ROUND_DELAY_MS = 5000;
+const nextDelay = () => hooks.nextDelayMs ?? NEXT_ROUND_DELAY_MS;
+
+/** Runs `run` after `delay` unless the game is stopped first (or something else has started a round in the meantime). */
+function scheduleNext(channelId: string, delay: number, run: () => Promise<unknown>): void {
+  cancelPendingNext(channelId);
+  const timer = setTimeout(() => {
+    pendingNext.delete(channelId);
+    if (activeGames.has(channelId) || starting.has(channelId)) return;
+    void run().catch(() => {});
+  }, delay);
+  timer.unref?.(); // never keep the process alive for a round that hasn't started
+  pendingNext.set(channelId, timer);
+}
+
+/** Cancels a scheduled next round. Returns whether there was one. */
+export function cancelPendingNext(channelId: string): boolean {
+  const t = pendingNext.get(channelId);
+  if (t === undefined) return false;
+  clearTimeout(t); pendingNext.delete(channelId);
+  return true;
 }
 
 /** Custom ids of the interactive round's Guess button and its pop-up box. */
@@ -1082,14 +1115,16 @@ export async function buildRound(type: MediaType, media: MediaEntry, mode: Round
   const isMusic = type === 'music';
   const what = isMusic ? `${ROUND_CLIP_SEC}-second clip` : 'still';
   const how = mode === 'interactive'
-    ? `Press **Guess** to type your answer — anyone here can play!\n` +
+    ? `Press **Guess** — or use \`/guess\` — to answer; anyone here can play!\n` +
       `> 💡 **Hint** — Reveal the next clue\n` +
-      `> ⏭️ **Skip** — The person who started the round can give up and see the answer\n` +
-      `> ⌛ The round ends by itself after ${INTERACTIVE_ROUND_MS / 60_000} minutes`
+      `> ⏭️ **Skip** — The person who started the game can give up on a round\n` +
+      `> ⏹️ **Stop game** — Rounds keep coming until someone stops the game\n` +
+      `> ⌛ A round nobody answers ends by itself after ${INTERACTIVE_ROUND_MS / 60_000} minutes`
     : mode === 'dm'
       ? `Type your answer here, or use the buttons below!\n` +
         `> 💡 **Hint** — Reveal the next clue\n` +
-        `> ⏭️ **Skip** — Give up and see the answer`
+        `> ⏭️ **Skip** — Give up and see the answer\n` +
+        `> ⏹️ **Stop game** — Rounds keep coming until you stop the game`
       : `Type your answer in chat, or use the buttons below!\n` +
         `> 💡 **Hint** / \`/community hint\` — Reveal the next clue for everyone *(shared, 60s cooldown between hints)*\n` +
         `> ⏭️ **Vote Skip** / \`/community voteskip\` — Vote to skip *(2 votes needed, available after 5 min)*`;
@@ -1098,7 +1133,7 @@ export async function buildRound(type: MediaType, media: MediaEntry, mode: Round
     .setTitle(TYPE_LABEL[type])
     .setDescription(`**Can you guess the ${typeStr} from this ${what}?**\n\n${how}`)
     .setFooter({ text: `Good luck! ${type === 'music' ? '🎧' : type === 'game' ? '🎮' : '🍿'}` });
-  const components = [buildRoundButtons(mode)];
+  const components = [buildRoundButtons(mode, type)];
 
   if (isMusic) {
     // No image upfront for music — the album art is a late hint, not a giveaway.
@@ -1118,7 +1153,7 @@ export async function buildRound(type: MediaType, media: MediaEntry, mode: Round
 }
 
 async function postRound(guildId: string | null, channelId: string, type: MediaType, client: Client): Promise<boolean> {
-  const media = await fetchEntry(type, getExcludeIds(channelId));
+  const media = await (hooks.fetchEntry ?? fetchEntry)(type, getExcludeIds(channelId));
   if (!media) {
     console.warn(`[mediaguess] Could not fetch ${type} — check TMDB_API_KEY/RAWG_API_KEY are set`);
     return false;
@@ -1156,7 +1191,9 @@ export async function resolveGame(
   state: GameState,
   client: Client,
   winner: { id: string; name: string; xpGained?: number } | null,
-  reason: 'correct' | 'skip' | 'timeout',
+  reason: 'correct' | 'skip' | 'timeout' | 'stop',
+  /** For a game run through interactions: the interaction that ended this round, which the next round is posted through. */
+  nextHost?: InteractiveHost,
 ): Promise<void> {
   // Atomic claim — delete first so any concurrent resolveGame call sees undefined and exits.
   if (activeGames.get(state.channelId) !== state) return;
@@ -1164,14 +1201,16 @@ export async function resolveGame(
   db.deleteMediaGuessRound(state.channelId).catch(() => {});
   cancelSkipTimer(state.channelId);
   state.answered = true;
-  if (state.interactive) { clearTimeout(state.interactive.timer); await finishInteractive(state, winner, reason); return; }
+  if (state.interactive) { clearTimeout(state.interactive.timer); await finishInteractive(state, winner, reason, nextHost); return; }
   const typeStr = typeNoun(state.type);
   const channel = await sendable(client, state.channelId);
   if (!channel) return;
-  // Server channels roll straight into the next round; a DM waits for the player to ask for one.
+  // Server channels roll straight into the next round after 10 seconds, and a DM does too (after a few) — until someone stops the game.
   const dm = !state.guildId;
-  const next = dm ? '' : '\n_Next round starting in 10 seconds…_';
-  const components = dm ? [nextRoundButton(state.type)] : [];
+  const goOn = reason === 'correct' || reason === 'skip';
+  const seconds = dm ? Math.round(nextDelay() / 1000) : 10;
+  const next = !goOn ? '\n⏹️ Game stopped.' : dm ? `\n_Next round in ${seconds} seconds… press ⏹️ Stop game to end it._` : '\n_Next round starting in 10 seconds…_';
+  const components = dm ? (goOn ? [stopRow(state.type)] : [nextRoundButton(state.type)]) : [];
 
   // Delete the original round message — keeps the channel clean and means a
   // stale Hint/Vote Skip click can't land on a round that's already over.
@@ -1198,7 +1237,7 @@ export async function resolveGame(
           { name: 'Artist', value: state.media.director ?? 'Unknown', inline: false },
           ...(dm ? [] : [{ name: 'XP Awarded', value: xpLine, inline: false }]),
         );
-      if (!dm) embed.setFooter({ text: '🎵 Next song will start in 10 seconds…' });
+      if (goOn) embed.setFooter({ text: dm ? `🎵 Next song in ${seconds} seconds… press ⏹️ Stop game to end it` : '🎵 Next song will start in 10 seconds…' });
       if (state.media.stills[0]) embed.setThumbnail(state.media.stills[0]);
 
       const full = state.media.audioPreview ? await downloadPreview(state.media.audioPreview) : null;
@@ -1213,11 +1252,14 @@ export async function resolveGame(
     }
   } else {
     await channel
-      .send({ content: `⏭️ Skipped! The ${typeStr} was **${state.media.title}**.${next}`, components })
+      .send({ content: `${reason === 'stop' ? '⏹️ Game stopped!' : '⏭️ Skipped!'} The ${typeStr} was **${state.media.title}**.${next}`, components })
       .catch(() => {});
   }
 
-  if (dm) return;
+  if (dm) {
+    if (goOn) scheduleNext(state.channelId, nextDelay(), () => startGame(null, state.channelId, state.type, client));
+    return;
+  }
   setTimeout(async () => {
     // Only start if nothing else has already claimed this channel
     if (!activeGames.has(state.channelId)) {
@@ -1229,17 +1271,17 @@ export async function resolveGame(
 // Shared by /voteskip and the "⏭️ Vote Skip" button so both go through
 // identical logic (delay gate, duplicate-vote check, threshold resolve).
 export async function castVoteSkip(
-  channelId: string, userId: string, client: Client,
+  channelId: string, userId: string, client: Client, nextHost?: InteractiveHost,
 ): Promise<{ content: string; ephemeral: boolean }> {
   const state = activeGames.get(channelId);
   if (!state || state.answered) {
     return { content: '❌ There is no active guessing game in this channel.', ephemeral: true };
   }
 
-  // Solo DM round: no vote and no wait — skipping just reveals the answer.
+  // Solo DM round (or a game run through interactions): no vote and no wait — skipping just reveals the answer, and the game goes on.
   if (!state.guildId) {
     state.answered = true;
-    await resolveGame(state, client, null, 'skip');
+    await resolveGame(state, client, null, 'skip', nextHost);
     return { content: '⏭️ Round skipped.', ephemeral: true };
   }
 
@@ -1270,7 +1312,7 @@ export async function castVoteSkip(
 // guesses come from a pop-up box, and everything after that is an edit through the same interaction's webhook.
 
 /** Test hooks: swap how a round's pick is fetched, or how long an interactive round lasts. */
-export const hooks: { fetchEntry?: typeof fetchEntry; roundMs?: number } = {};
+export const hooks: { fetchEntry?: typeof fetchEntry; roundMs?: number; nextDelayMs?: number } = {};
 
 export interface InteractiveHost {
   client: Client;
@@ -1325,11 +1367,17 @@ export function safeName(name: string): string {
   return escapeMarkdown(name.replace(/[<>]/g, ''), { maskedLink: true }).replace(/@/g, `@${String.fromCharCode(0x200b)}`).slice(0, 40);
 }
 
-/** Rewrites the round's message with the answer (and a Next round button). */
-async function finishInteractive(state: GameState, winner: { id: string; name: string } | null, reason: 'correct' | 'skip' | 'timeout'): Promise<void> {
+/**
+ * Rewrites the round's message with the answer. When the interaction that ended the round is at hand (`nextHost`) the game goes on:
+ * the next round is posted through that interaction after a few seconds, and the message keeps a Stop button until then. Without one
+ * (a round nobody answered, or a stopped game) it ends with a Next round button, which lets someone start again.
+ */
+async function finishInteractive(state: GameState, winner: { id: string; name: string } | null, reason: 'correct' | 'skip' | 'timeout' | 'stop', nextHost?: InteractiveHost): Promise<void> {
   const { media, type } = state;
-  const lead = reason === 'correct' && winner ? `🎉 **${safeName(winner.name)}** got it!` : reason === 'timeout' ? '⌛ Time\'s up!' : '⏭️ Skipped!';
-  const components = [interactiveNextButton(type)];
+  const goOn = !!nextHost && (reason === 'correct' || reason === 'skip');
+  const lead = reason === 'correct' && winner ? `🎉 **${safeName(winner.name)}** got it!` : reason === 'timeout' ? '⌛ Time\'s up!' : reason === 'stop' ? '⏹️ Game stopped!' : '⏭️ Skipped!';
+  const tail = goOn ? `\n-# Next round in ${Math.round(nextDelay() / 1000)} seconds — press ⏹️ Stop game to end it.` : reason === 'timeout' ? '\n-# Nobody answered for a while, so the game has ended.' : '';
+  const components = [goOn ? stopRow(type) : interactiveNextButton(type)];
   let edit: RoundEdit;
   if (type === 'music') {
     const embed = new EmbedBuilder()
@@ -1339,22 +1387,45 @@ async function finishInteractive(state: GameState, winner: { id: string; name: s
     if (media.stills[0]) embed.setThumbnail(media.stills[0]);
     // The 5-second clip was only ever a snippet: the whole preview is the reveal.
     const full = media.audioPreview ? await downloadPreview(media.audioPreview) : null;
-    edit = { content: lead, embeds: [embed], files: full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [], attachments: [], components };
+    edit = { content: `${lead}${tail}`, embeds: [embed], files: full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [], attachments: [], components };
   } else {
-    edit = { content: `${lead} The ${typeNoun(type)} was **${media.title}**.`, embeds: [], attachments: [], components };
+    edit = { content: `${lead} The ${typeNoun(type)} was **${media.title}**.${tail}`, embeds: [], attachments: [], components };
   }
   await state.interactive!.edit(edit).catch(() => {});
+  if (goOn) {
+    scheduleNext(state.channelId, nextDelay(), async () => {
+      // If the next round can't be loaded, swap Stop for Next round so someone can try again.
+      // The person who started the game stays its owner (the only one who can skip), whoever answered last.
+      if (!(await startInteractiveRound({ ...nextHost!, userId: state.interactive!.ownerId }, type))) await state.interactive!.edit({ components: [interactiveNextButton(type)] }).catch(() => {});
+    });
+  }
 }
 
 export type GuessResult = 'no-round' | MatchResult;
 
 /** Checks a typed-in guess against the channel's live round; a correct one ends the round (only the first of several at once can win). */
-export async function submitGuess(channelId: string, text: string, who: { id: string; name: string }, client: Client): Promise<GuessResult> {
+export async function submitGuess(channelId: string, text: string, who: { id: string; name: string }, client: Client, nextHost?: InteractiveHost): Promise<GuessResult> {
   const state = activeGames.get(channelId);
   if (!state || state.answered) return 'no-round';
   const result = checkGuess(text.trim(), state.media.title);
   if (result !== 'correct') return result;
   state.answered = true; // lock before any await so two correct guesses can't both win
-  await resolveGame(state, client, { id: who.id, name: who.name }, 'correct');
+  await resolveGame(state, client, { id: who.id, name: who.name }, 'correct', nextHost);
   return 'correct';
+}
+
+export type StopResult = 'round' | 'pending' | 'nothing';
+
+/**
+ * Ends a DM or group-chat game: the live round is revealed and no further round starts, or a round that is about to start is called off.
+ * Server channels (run by an admin) are stopped with /server guess stop instead, so they report 'nothing' here.
+ */
+export async function stopGame(channelId: string, client: Client): Promise<StopResult> {
+  const state = activeGames.get(channelId);
+  if (state && !state.guildId && !state.answered) {
+    state.answered = true;
+    await resolveGame(state, client, null, 'stop');
+    return 'round';
+  }
+  return cancelPendingNext(channelId) ? 'pending' : 'nothing';
 }
