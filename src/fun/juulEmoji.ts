@@ -47,7 +47,8 @@ export async function batteryLevel(full: Buffer, percent: number): Promise<Buffe
   const c = createCanvas(img.width, img.height), g = c.getContext('2d');
   g.drawImage(img, 0, 0);
   const id = g.getImageData(0, 0, img.width, img.height), d = id.data, W = img.width;
-  const core = (k: number) => d[k + 3]! > 0 && d[k + 1]! > 90 && d[k + 1]! > d[k]! + 40 && d[k + 1]! > d[k + 2]! + 20;
+  // Solid fill only: the soft, nearly transparent row along the art's fill top would otherwise count as fill and stop growth short of it.
+  const core = (k: number) => d[k + 3]! > 200 && d[k + 1]! > 90 && d[k + 1]! > d[k]! + 40 && d[k + 1]! > d[k + 2]! + 20;
   let coreMinY = Infinity, minX = Infinity, maxX = -1, n = 0;
   const fill = [0, 0, 0, 0];
   for (let k = 0; k < d.length; k += 4) if (core(k)) {
@@ -59,11 +60,31 @@ export async function batteryLevel(full: Buffer, percent: number): Promise<Buffe
   for (let ch = 0; ch < 4; ch++) fill[ch]! /= n;
   const spread = Math.max(1, fill[1]! - Math.max(fill[0]!, fill[2]!));
   const greenness = (k: number) => clamp((d[k + 1]! - Math.max(d[k]!, d[k + 2]!)) / spread, 0, 1);
+  const gx = Math.round((minX + maxX) / 2), gk = (Math.max(0, coreMinY - 2) * W + gx) * 4;
+  const gap: RGBA = [d[gk]!, d[gk + 1]!, d[gk + 2]!, d[gk + 3]!]; // what an emptied part of the battery looks like (sampled before anything is changed)
+
+  // The art may leave headroom between the top of its fill and the top of the battery, and then even 100% would not look full.
+  // So grow the fill up to the battery's top edge: each empty row inside the outline gets a copy of a solid fill row, painted *beneath*
+  // what is already there (the outline's soft edge stays on top) and only between the side walls (rounded corners stay untouched).
+  const dark = (k: number) => d[k + 3]! > 150 && Math.max(d[k]!, d[k + 1]!, d[k + 2]!) < 90; // a pixel of the outline
+  let top = coreMinY;
+  while (top > 0 && !dark(((top - 1) * W + gx) * 4)) top--;
+  const solidRow = (coreMinY + 1) * W * 4;
+  for (let y = top; y < coreMinY; y++) {
+    let left = -1, right = -1;
+    for (let x = 0; x < W; x++) if (dark((y * W + x) * 4)) { if (left < 0) left = x; right = x; }
+    for (let x = left + 1; x < right; x++) {
+      const k = (y * W + x) * 4, s = solidRow + x * 4;
+      if (greenness(s) < 0.05) continue;
+      const ea = d[k + 3]! / 255, sa = d[s + 3]! / 255, oa = ea + sa * (1 - ea); // "existing over fill"
+      for (let ch = 0; ch < 3; ch++) d[k + ch] = Math.round((d[k + ch]! * ea + d[s + ch]! * sa * (1 - ea)) / (oa || 1));
+      d[k + 3] = Math.round(oa * 255);
+    }
+  }
+
   // The fill's rows include its anti-aliased edge rows (partly green, partly outline), so an emptied battery leaves none of it behind.
   let minY = Infinity, maxY = -1;
   for (let k = 0; k < d.length; k += 4) if (greenness(k) > 0.15) { const y = Math.floor(k / 4 / W); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
-  const gy = Math.max(0, coreMinY - 2), gx = Math.round((minX + maxX) / 2), gk = (gy * W + gx) * 4;
-  const gap: RGBA = [d[gk]!, d[gk + 1]!, d[gk + 2]!, d[gk + 3]!];
   const fraction = clamp(percent, 0, 100) / 100;
   const cut = maxY + 1 - (maxY - minY + 1) * fraction; // the line above which the fill is empty (a fractional row)
   const tint = fraction <= 0 ? null : fraction <= RED_UP_TO ? RED : fraction <= AMBER_UP_TO ? AMBER : null;
@@ -95,7 +116,7 @@ export async function juulIcons(dir = DIR): Promise<{ name: string; data: Buffer
   if (!(await bf.exists())) return out;
   const full = Buffer.from(await bf.arrayBuffer());
   for (let p = 0; p <= BATTERY_LEVELS; p++) {
-    const data = p === BATTERY_LEVELS ? full : await batteryLevel(full, p);
+    const data = await batteryLevel(full, p); // 100% too: the art itself has headroom, so it isn't a full battery as drawn
     out.push({ name: `battery${p}_${hash(data)}`, data });
   }
   return out;

@@ -12,6 +12,6 @@ const out = path.resolve(Bun.argv[2] ?? path.join(import.meta.dir, '../data/batt
 mkdirSync(out, { recursive: true });
 const full = readFileSync(art);
 for (let p = 0; p <= BATTERY_LEVELS; p++) {
-  writeFileSync(path.join(out, `battery-${String(p).padStart(3, '0')}.png`), p === BATTERY_LEVELS ? full : await batteryLevel(full, p));
+  writeFileSync(path.join(out, `battery-${String(p).padStart(3, '0')}.png`), await batteryLevel(full, p));
 }
 console.log(`wrote ${BATTERY_LEVELS + 1} icons (0–${BATTERY_LEVELS}%) to ${out}`);

@@ -13,6 +13,13 @@ function battery(): Buffer {
   g.fillStyle = '#1fc873'; g.fillRect(44, 32, 40, 76);
   return c.toBuffer('image/png');
 }
+/** A stand-in like the real art: rounded black outline, transparent inside, fill flush to the sides and bottom but with empty headroom on top. */
+function headroomBattery(): Buffer {
+  const c = createCanvas(96, 96), g = c.getContext('2d');
+  g.strokeStyle = '#000'; g.lineWidth = 4; g.beginPath(); g.roundRect(30, 20, 36, 64, 6); g.stroke();
+  g.fillStyle = '#00be64'; g.fillRect(32, 40, 32, 42); // rows 40–81; the inside runs from row 22, so there are 18 empty rows above
+  return c.toBuffer('image/png');
+}
 async function pixel(png: Buffer, x: number, y: number) {
   const img = await loadImage(png), c = createCanvas(img.width, img.height), g = c.getContext('2d');
   g.drawImage(img, 0, 0);
@@ -68,7 +75,28 @@ describe('juul battery icons', () => {
     const art = await readFile(path.resolve(import.meta.dir, '../src/assets/images/juul/battery.png'));
     expect(await greenPixels(art)).toBeGreaterThan(300);
     expect(await greenPixels(await batteryLevel(art, 0))).toBeLessThan(12); // was ~270 before the fringe was handled
-    expect(await greenPixels(await batteryLevel(art, 100))).toBe(await greenPixels(art)); // full is the art itself, byte for byte in effect
+  });
+  test('100% of the shipped art is a full battery: the fill reaches the top edge (the art itself leaves headroom)', async () => {
+    const art = await readFile(path.resolve(import.meta.dir, '../src/assets/images/juul/battery.png'));
+    const full = await batteryLevel(art, 100);
+    expect(await greenPixels(full)).toBeGreaterThan(await greenPixels(art)); // it gained the rows the art left empty
+    // The centre column is solid green from just under the top edge (row 19) to the last solid fill row (81; row 82 is the art's soft bottom edge): no empty band, no seam.
+    for (let y = 19; y <= 81; y++) { const p = await pixel(full, 48, y); expect(p[3], `alpha at row ${y}`).toBe(255); expect(p[1], `green at row ${y}`).toBeGreaterThan(150); expect(p[0], `red at row ${y}`).toBeLessThan(40); }
+    const seam = await pixel(art, 48, 26); expect(seam[3]).toBeLessThan(100); // the art's own soft top row is what used to show as a seam
+    // ...and the outline is untouched: the top edge is still black.
+    expect(await pixel(full, 48, 16)).toEqual([0, 0, 0, 255]);
+  });
+  test('the fill grows into the headroom only inside the outline: rounded corners stay clear, and every level is measured against the whole inside', async () => {
+    const art = headroomBattery();
+    expect((await pixel(art, 48, 30))[3]).toBe(0); // the stand-in has empty headroom above its fill, like the real art
+    const full = await batteryLevel(art, 100);
+    expect((await pixel(full, 48, 26)).slice(0, 3)).toEqual([0, 190, 100]); // headroom is now fill
+    expect((await pixel(full, 28, 18))[3]).toBe(0); // the outer corner, outside the rounded outline, is still transparent
+    expect((await pixel(full, 20, 50))[3]).toBe(0); expect((await pixel(full, 76, 50))[3]).toBe(0); // nothing painted outside the walls
+    const half = await batteryLevel(art, 50);
+    expect((await pixel(half, 48, 40))[3]).toBe(0); // above the middle of the inside: empty
+    expect((await pixel(half, 48, 68)).slice(0, 3)).toEqual([0, 190, 100]); // below it: charged
+    expect((await pixel(await batteryLevel(art, 0), 48, 70))[3]).toBe(0);
   });
   test('icons come only from the art in the folder: none without it, juul + 101 levels with it', async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'juul-art-'));
