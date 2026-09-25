@@ -50,15 +50,31 @@ export interface ChatOptions {
 
 interface ChatResponse { choices?: { message?: { content?: string | null }; finish_reason?: string }[]; error?: { message?: string } }
 
+/**
+ * Reasoning models (OpenAI's gpt-oss on Groq, for one) think before they answer, and that thinking counts against `max_tokens` —
+ * with a small cap they can use it all and return nothing. So for those we ask for low effort (faster and cheaper) and add headroom
+ * for the thinking. Override with LLM_REASONING_EFFORT=low|medium|high (sent to any model), or "off" to send nothing.
+ */
+export const REASONING_HEADROOM = 256;
+export function reasoningEffort(model: string): string | null {
+  const set = Bun.env.LLM_REASONING_EFFORT?.trim().toLowerCase();
+  if (set === 'off') return null;
+  if (set) return set;
+  return /gpt-oss/i.test(model) ? 'low' : null;
+}
+
 export async function chat(messages: ChatMessage[], opts: ChatOptions = {}): Promise<string> {
   const cfg = llmConfig(opts.kind ?? 'chat');
   if (!cfg) throw new LlmUnavailable();
   const doFetch = opts.fetchImpl ?? fetch;
+  const model = opts.model ?? cfg.model;
+  const effort = reasoningEffort(model);
   const body = JSON.stringify({
-    model: opts.model ?? cfg.model,
+    model,
     messages,
     temperature: opts.temperature ?? 0.9,
-    max_tokens: opts.maxTokens ?? 700,
+    max_tokens: (opts.maxTokens ?? 700) + (effort ? REASONING_HEADROOM : 0),
+    ...(effort ? { reasoning_effort: effort } : {}),
     ...(opts.json ? { response_format: { type: 'json_object' } } : {}),
   });
 
