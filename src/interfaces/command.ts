@@ -7,6 +7,7 @@ import {
   SlashCommandBuilder,
   SlashCommandOptionsOnlyBuilder,
   SlashCommandSubcommandsOnlyBuilder,
+  UserContextMenuCommandInteraction,
 } from 'discord.js';
 
 export interface Command {
@@ -18,5 +19,6 @@ export interface Command {
   category?: string;
   run?: (interaction: ChatInputCommandInteraction<CacheType>) => Promise<unknown>;
   runMessage?: (interaction: MessageContextMenuCommandInteraction<CacheType>) => Promise<unknown>;
+  runUser?: (interaction: UserContextMenuCommandInteraction<CacheType>) => Promise<unknown>;
   autocomplete?: (interaction: AutocompleteInteraction<CacheType>) => Promise<unknown>;
 }

@@ -346,8 +346,9 @@ export function pickSub(subs: Sub[], name: string, rename?: string, patch: Parti
 export function defineLeaf(sub: Sub, o: { name?: string; scope?: Scope; permissions?: bigint } = {}): Command {
   const name = o.name ?? sub.name;
   assertName('command', name, name);
-  assertDescription(sub.description, name);
-  const data = new SlashCommandBuilder().setName(name).setDescription(sub.description);
+  const description = sub.premium ? PREMIUM_MARK + sub.description : sub.description;
+  assertDescription(description, name);
+  const data = new SlashCommandBuilder().setName(name).setDescription(description);
   if ((o.scope ?? 'anywhere') === 'anywhere') {
     data.setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall]);
     data.setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]);

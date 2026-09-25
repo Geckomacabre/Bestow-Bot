@@ -81,7 +81,7 @@ describe('other commands with no guild', () => {
   test('lookups/tools/fun that need no network', async () => {
     const cases: [string, string | null, string | null, Record<string, string | number>][] = [
       ['math', null, null, { expression: '2+2' }], ['color', null, 'inspect', { color: 'coral' }], ['qr', null, 'generate', { text: 'hi' }], ['asciify', null, null, { text: 'hi' }],
-      ['ship', null, null, {}], ['juul', null, 'hit', {}], ['juul', null, 'stats', {}], ['rate', null, null, { thing: 'pizza' }], ['say', null, null, { text: 'hello' }],
+      ['ship', null, null, {}], ['juul', null, 'hit', {}], ['juul', null, 'stats', {}], ['rating', null, 'rate', { thing: 'pizza' }], ['say', null, null, { text: 'hello' }],
       ['about', null, null, {}], ['help', null, null, {}],
     ];
     for (const [name, group, sub, options] of cases) {

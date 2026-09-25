@@ -5,6 +5,7 @@ import * as db from '../utils/db';
 import { handleReplyButton, handleReplyModal } from '../ai/conversation';
 import { handleEnterButton } from '../giveaway/service';
 import { handleStudioComponent, handleStudioModal } from '../subcommands/eco/studio';
+import { useAccent } from '../customize/accent';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -57,16 +58,19 @@ export const onInteraction = async (interaction: Interaction) => {
     return;
   }
 
-  if (interaction.isMessageContextMenuCommand()) {
+  // Right-click → Apps: message menus and user menus.
+  if (interaction.isMessageContextMenuCommand() || interaction.isUserContextMenuCommand()) {
     const command = commands.get(interaction.commandName);
-    if (command?.runMessage) {
-      try {
-        await command.runMessage(interaction);
-      } catch (err) {
-        logger.error(`Context menu error for ${interaction.commandName}: ${err}`);
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: 'There was an error.', flags: MessageFlags.Ephemeral }).catch(() => {});
-        }
+    try {
+      await useAccent(interaction);
+      if (interaction.isMessageContextMenuCommand()) await command?.runMessage?.(interaction);
+      else await command?.runUser?.(interaction);
+    } catch (err) {
+      logger.error(`Context menu error for ${interaction.commandName}: ${err}`);
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: 'There was an error.', flags: MessageFlags.Ephemeral }).catch(() => {});
+      } else if (interaction.deferred && !interaction.replied) {
+        await interaction.editReply({ content: 'There was an error.' }).catch(() => {});
       }
     }
     return;
@@ -81,6 +85,7 @@ export const onInteraction = async (interaction: Interaction) => {
 
   try {
     if (typeof command.run === 'function') {
+      await useAccent(interaction);
       await command.run(interaction);
     }
   } catch (error) {

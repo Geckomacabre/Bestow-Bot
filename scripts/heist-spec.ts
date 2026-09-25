@@ -17,7 +17,7 @@ if (Bun.argv.includes('--fetch')) {
 } else {
   const prefix = Bun.argv[2] ?? '';
   for (const s of JSON.parse(readFileSync(file, 'utf8')) as Spec[]) {
-    if (!s.path.startsWith(prefix)) continue;
+    if (s.path !== prefix && !s.path.startsWith(`${prefix} `)) continue;
     console.log(`${s.premium ? '✨ ' : ''}${s.path} — ${s.description}`);
     for (const a of s.args) console.log(`     ${a.required ? '*' : ' '}${a.name}:${a.type}${a.choices.length ? ` [${a.choices.map((c: any) => c.name ?? c).join('|')}]` : ''} — ${a.description}`);
   }

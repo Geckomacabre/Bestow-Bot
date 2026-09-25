@@ -39,7 +39,7 @@ export const REGISTRY: PrivacyEntry[] = [
   // AI — all opt-in, entered by the person
   del('ai_persona', 'Your AI persona'), del('ai_prefs', 'AI memory preference'), del('ai_memory', 'AI memory notes you saved'),
   // Premium — a local mirror of your subscription/grant, plus gift codes you bought or redeemed
-  del('premium_users', 'Premium status'), del('premium_gifts', 'Premium gift codes', 'buyer_id', 'redeemed_by'),
+  del('user_accent', 'Your accent color (/customize color)'), del('premium_users', 'Premium status'), del('premium_gifts', 'Premium gift codes', 'buyer_id', 'redeemed_by'),
   // Giveaways: entries are yours (deleted); a giveaway you hosted belongs to its server, so only your id is blanked. Your id inside the winner lists is scrubbed by deleteData.
   del('giveaway_entries', 'Giveaway entries'),
   { table: 'giveaways', columns: ['host_id'], label: 'Giveaways you hosted', policy: 'anonymize', note: 'the giveaway and its result stay for the server; you are removed as its host and from its winner lists' },
