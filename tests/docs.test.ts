@@ -32,7 +32,7 @@ describe('documentation stays true', () => {
   });
 
   test('no secrets or personal paths are committed anywhere in the repo files we ship', () => {
-    const bad = [/[MN][A-Za-z\d_-]{23,25}\.[\w-]{6}\.[\w-]{27,}/, /sk-[A-Za-z0-9]{32,}/, /gsk_[A-Za-z0-9]{40,}/, /xai-[A-Za-z0-9]{40,}/, /C:\\Users\\gecko/i];
+    const bad = [/[MN][A-Za-z\d_-]{23,25}\.[\w-]{6}\.[\w-]{27,}/, /sk-[A-Za-z0-9]{32,}/, /sk_[A-Za-z0-9]{32,}/, /gsk_[A-Za-z0-9]{40,}/, /xai-[A-Za-z0-9]{40,}/, /C:\\Users\\gecko/i];
     const hits: string[] = [];
     const walk = (dir: string) => {
       for (const f of readdirSync(dir)) {
