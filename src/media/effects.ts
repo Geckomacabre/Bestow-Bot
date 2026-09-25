@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { copyFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { GIF_PALETTE, MediaError, fitEven, ffmpeg, probe, type Probe } from '../framework/media.js';
@@ -69,16 +70,23 @@ export async function imageFilter(job: Job, vf: string, opts: { jpg?: boolean; f
   return { file: out, name: opts.name ?? `result.${opts.jpg ? 'jpg' : 'png'}` };
 }
 
-export const blur = (job: Job, strength: number) => imageFilter(job, `gblur=sigma=${clamp(strength, 1, 40)}:steps=2`);
-export const invert = (job: Job) => imageFilter(job, 'negate');
-export const grayscale = (job: Job) => imageFilter(job, 'hue=s=0');
-export const flip = (job: Job, dir: 'horizontal' | 'vertical' | 'both') => imageFilter(job, dir === 'horizontal' ? 'hflip' : dir === 'vertical' ? 'vflip' : 'hflip,vflip');
+/** `togif`: a still comes out as a (one-frame) GIF instead of a PNG — handy for saving as a Discord favourite. */
+export interface StillOpts { togif?: boolean }
 
-export function pixelate(job: Job, size: number) {
+export const blur = (job: Job, strength: number) => imageFilter(job, `gblur=sigma=${clamp(strength, 0.1, 40)}:steps=2`);
+export const invert = (job: Job, o: StillOpts = {}) => imageFilter(job, 'negate', { forceGif: o.togif });
+export const grayscale = (job: Job, o: StillOpts = {}) => imageFilter(job, 'hue=s=0', { forceGif: o.togif });
+export const flip = (job: Job, dir: 'horizontal' | 'vertical' | 'both', o: StillOpts = {}) => imageFilter(job, dir === 'horizontal' ? 'hflip' : dir === 'vertical' ? 'vflip' : 'hflip,vflip', { forceGif: o.togif });
+
+/** Blocky pixels `size` px across (in the input's own pixels). */
+export function pixelate(job: Job, size: number, o: StillOpts = {}) {
   const { width: w, height: h } = job.info;
-  const s = clamp(size, 2, 64);
-  return imageFilter(job, `scale=${Math.max(1, Math.round(w / s))}:${Math.max(1, Math.round(h / s))}:flags=neighbor,scale=${w}:${h}:flags=neighbor`);
+  const s = clamp(size, 2, 512);
+  return imageFilter(job, `scale=${Math.max(1, Math.round(w / s))}:${Math.max(1, Math.round(h / s))}:flags=neighbor,scale=${w}:${h}:flags=neighbor`, { forceGif: o.togif });
 }
+/** Heist's pixelate sizes: how many blocks fit across the longest side. */
+export const PIXELATE_BLOCKS = { Small: 96, Medium: 48, Large: 24 } as const;
+export const pixelSize = (w: number, h: number, size: keyof typeof PIXELATE_BLOCKS) => Math.max(2, Math.round(Math.max(w, h) / PIXELATE_BLOCKS[size]));
 
 export function rotate(job: Job, degrees: number) {
   const d = ((Math.round(degrees) % 360) + 360) % 360;
@@ -95,9 +103,13 @@ export function fisheye(job: Job) {
   return imageFilter(job, `scale=${w}:${h},lenscorrection=cx=0.5:cy=0.5:k1=0.75:k2=0.05,crop=trunc(iw*0.7/2)*2:trunc(ih*0.7/2)*2,scale=${w}:${h}`);
 }
 
-/** Radial zoom blur: average several progressively zoomed copies. */
+/**
+ * Radial zoom blur: average several progressively zoomed copies. Heist's power runs −10…10; in a still, zooming in or out
+ * streaks the same way, so the sign doesn't change the look and 0 leaves the picture as it is.
+ */
 export function zoomBlur(job: Job, power: number) {
-  const p = clamp(power, 1, 10);
+  const p = clamp(Math.abs(power), 0, 10);
+  if (p === 0) return imageFilter(job, 'null');
   // mix needs identical frame sizes, so work in exact integer dimensions rather than iw/z arithmetic.
   const { w, h } = fitEven(job.info.width, job.info.height, job.info.animated ? MAX_GIF : MAX_STILL);
   const steps = [1, 2, 3, 4, 5, 6].map(x => 1 + x * 0.006 * p);
@@ -153,24 +165,35 @@ async function centeredLines(job: Job, prefix: string, lines: string[], o: { fon
 
 const workWidth = (job: Job, video: boolean) => fitEven(job.info.width, job.info.height, video ? MAX_VIDEO : job.info.animated ? MAX_GIF : MAX_STILL).w;
 
-/** White bar with black text above (or below) the media \u2014 the classic "caption" look. */
-export async function caption(job: Job, rawText: string, bottom = false, video = false): Promise<Out> {
-  const text = stripUnsupported(rawText);
-  if (!text) throw new MediaError('There\'s no text left to draw (emoji aren\'t supported in captions).');
-  const w = workWidth(job, video);
+export interface CaptionOpts extends StillOpts, VideoOpts {
+  /** A second caption in a bar under the media (Heist's `caption_bottom`). */
+  bottomText?: string;
+  /** Put the (only) caption under the media instead of above it (Heist's video `bottom`). */
+  bottom?: boolean;
+  video?: boolean;
+}
+
+/** White bar with black text above (and/or below) the media — the classic "caption" look. */
+export async function caption(job: Job, rawText: string, o: CaptionOpts = {}): Promise<Out> {
+  const main = stripUnsupported(rawText), extra = stripUnsupported(o.bottomText ?? '');
+  const topText = o.bottom ? '' : main, bottomText = o.bottom ? main : extra;
+  if (!topText && !bottomText) throw new MediaError('There\'s no text left to draw (emoji aren\'t supported in captions).');
+  const w = workWidth(job, !!o.video);
   const fontSize = Math.max(16, Math.round(w / 13));
-  const lines = wrapText(text, Math.max(8, Math.floor(w / (fontSize * 0.52))));
+  const wrap = (t: string) => (t ? wrapText(t, Math.max(8, Math.floor(w / (fontSize * 0.52)))) : []);
+  const topLines = wrap(topText), bottomLines = wrap(bottomText);
   const lh = Math.round(fontSize * 1.22);
   const pad = Math.round(fontSize * 0.5);
-  const bar = (lines.length * lh + pad * 2) & ~1;
+  const barOf = (n: number) => (n ? (n * lh + pad * 2) & ~1 : 0);
+  const topBar = barOf(topLines.length), bottomBar = barOf(bottomLines.length);
   const font = await prepFont(job);
-  const top = pad; // first baseline offset inside the bar
-  const draws = await centeredLines(job, 'cap', lines, {
-    font, fontSize, color: 'black', lineHeight: lh,
-    y: i => (bottom ? `h-${bar}+${top + i * lh}` : String(top + i * lh)),
-  });
-  const vf = `pad=iw:ih+${bar}:0:${bottom ? 0 : bar}:color=white,${draws.join(',')}`;
-  return video ? videoFilter(job, vf) : imageFilter(job, vf);
+  const style = { font, fontSize, color: 'black', lineHeight: lh };
+  const draws = [
+    ...await centeredLines(job, 'cap', topLines, { ...style, y: i => String(pad + i * lh) }),
+    ...await centeredLines(job, 'capb', bottomLines, { ...style, y: i => `h-${bottomBar}+${pad + i * lh}` }),
+  ];
+  const vf = `pad=iw:ih+${topBar + bottomBar}:0:${topBar}:color=white,${draws.join(',')}`;
+  return o.video ? videoFilter(job, vf, { audio: o.audio }) : imageFilter(job, vf, { forceGif: o.togif });
 }
 
 /** Impact-style top/bottom text with a black outline. */
@@ -197,25 +220,61 @@ const POS_XY: Record<Position, string> = {
   'bottom-left': 'x=24:y=h-text_h-24', bottom: 'x=(w-text_w)/2:y=h-text_h-24', 'bottom-right': 'x=w-text_w-24:y=h-text_h-24',
 };
 
-export async function watermark(job: Job, rawText: string, opts: { position: Position; opacity: number; size: number; color: string }, video = false): Promise<Out> {
-  const text = stripUnsupported(rawText);
-  if (!text) throw new MediaError('There\'s no text left to draw (emoji aren\'t supported in watermarks).');
-  const font = await prepFont(job);
-  const tf = await textFile(job, 'wm.txt', text.slice(0, 120));
-  const fontSize = Math.max(10, Math.round((job.info.width * clamp(opts.size, 1, 40)) / 100 * 1.6));
-  const color = /^#?[0-9a-f]{6}$/i.test(opts.color) ? opts.color.replace('#', '0x') : 'white';
-  const vf = `drawtext=fontfile=${font}:textfile=${tf}:fontcolor=${color}@${clamp(opts.opacity, 5, 100) / 100}:fontsize=${fontSize}:borderw=1:bordercolor=black@${(clamp(opts.opacity, 5, 100) / 100) * 0.6}:${POS_XY[opts.position]}`;
-  return video ? videoFilter(job, vf) : imageFilter(job, vf);
+/** Heist's watermark fonts → the closest face available here (first file that exists wins). */
+const WM_FONTS: Record<string, string[]> = {
+  'Impact': ['/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Bold.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf', FONT_SRC],
+  'Futura Black': [FONT_SRC], // caption.otf is Futura Extra Black Condensed
+  'Quicksand Bold': [path.resolve(import.meta.dir, '../../assets/fonts/bold.ttf')], // a rounded bold, like Quicksand
+  'Ubuntu Bold': [path.resolve(import.meta.dir, '../../assets/fonts/Ubuntu.ttf')],
+  'Liberation Sans Bold': ['/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf', path.resolve(import.meta.dir, '../../assets/fonts/caption2.ttf')],
+};
+export const WATERMARK_FONTS = Object.keys(WM_FONTS);
+export const WATERMARK_COLORS: Record<string, string> = { White: '#ffffff', Black: '#000000', Red: '#e53935', Yellow: '#ffd600', Orange: '#ff9100', Blue: '#2979ff' };
+
+export interface WatermarkOpts extends VideoOpts {
+  position: Position;
+  /** 0.1–1 */
+  opacity: number;
+  /** Font size in px; unset = about 1/18 of the width. */
+  size?: number | null;
+  /** #rrggbb */
+  color: string;
+  /** One of WATERMARK_FONTS (default Impact). */
+  font?: string;
 }
 
-/** Put one image on another. x/y/scale are percentages of the base. */
+export async function watermark(job: Job, rawText: string, opts: WatermarkOpts, video = false): Promise<Out> {
+  const text = stripUnsupported(rawText);
+  if (!text) throw new MediaError('There\'s no text left to draw (emoji aren\'t supported in watermarks).');
+  const src = (WM_FONTS[opts.font ?? 'Impact'] ?? WM_FONTS.Impact!).find(f => existsSync(f)) ?? FONT_SRC;
+  const font = `wmfont${path.extname(src)}`;
+  await copyFile(src, path.join(job.dir, font));
+  const tf = await textFile(job, 'wm.txt', text.slice(0, 120));
+  const width = fitEven(job.info.width, job.info.height, video ? MAX_VIDEO : job.info.animated ? MAX_GIF : MAX_STILL).w;
+  const fontSize = Math.round(clamp(opts.size ?? width / 18, 8, 400));
+  const color = /^#?[0-9a-f]{6}$/i.test(opts.color) ? opts.color.replace('#', '0x') : '0x000000';
+  const a = clamp(opts.opacity, 0.1, 1);
+  // A thin outline in the opposite tone keeps it readable on any background.
+  const outline = /^0x0{6}$/i.test(color) ? 'white' : 'black';
+  const vf = `drawtext=fontfile=${font}:textfile=${tf}:fontcolor=${color}@${a}:fontsize=${fontSize}:borderw=${Math.max(1, Math.round(fontSize / 28))}:bordercolor=${outline}@${(a * 0.5).toFixed(2)}:${POS_XY[opts.position]}`;
+  return video ? videoFilter(job, vf, { audio: opts.audio }) : imageFilter(job, vf);
+}
+
+/**
+ * Put one image on another, Heist-style: `x`/`y` are pixel offsets from the base's top-left, `scale` multiplies the overlay's own
+ * size (0.1–5) and `opacity` is 0–1. Offsets and size are in the base's original pixels, so they still line up after the base is
+ * scaled down to the output cap.
+ */
 export async function overlay(base: Job, overlayFile: string, opts: { opacity: number; x: number; y: number; scale: number }): Promise<Out> {
   const { info } = base;
   const animated = info.animated;
   const cap = animated ? MAX_GIF : MAX_STILL;
   const fit = fitEven(info.width, info.height, cap);
-  const ow = Math.max(2, Math.round((fit.w * clamp(opts.scale, 1, 100)) / 100 / 2) * 2);
-  const graph = `[0:v]scale=${fit.w}:${fit.h}[b];[1:v]scale=${ow}:-2,format=rgba,colorchannelmixer=aa=${clamp(opts.opacity, 0, 100) / 100}[o];[b][o]overlay=x=(W-w)*${clamp(opts.x, 0, 100) / 100}:y=(H-h)*${clamp(opts.y, 0, 100) / 100}:format=auto`;
+  const k = fit.w / Math.max(1, info.width); // base downscale factor
+  const over = await probe(overlayFile, base.dir);
+  const ow = Math.max(2, Math.round((over.width * clamp(opts.scale, 0.1, 5) * k) / 2) * 2);
+  const x = Math.round(Math.max(0, opts.x) * k), y = Math.round(Math.max(0, opts.y) * k);
+  const graph = `[0:v]scale=${fit.w}:${fit.h}[b];[1:v]scale=${ow}:-2,format=rgba,colorchannelmixer=aa=${clamp(opts.opacity, 0, 1)}[o];[b][o]overlay=x=${x}:y=${y}:format=auto`;
   if (animated) {
     await ffmpeg(['-t', String(MAX_SECONDS), '-i', base.input, '-i', overlayFile, '-filter_complex', `${graph},${GIF_PALETTE}`, '-loop', '0', 'out.gif'], { cwd: base.dir });
     return { file: 'out.gif', name: 'overlay.gif' };
@@ -226,46 +285,52 @@ export async function overlay(base: Job, overlayFile: string, opts: { opacity: n
 
 // ─── Video ───────────────────────────────────────────────────────────────────
 
+/** Heist's video options: `audio: false` drops the sound (default: keep it). */
+export interface VideoOpts { audio?: boolean }
+
 /** Video output: H.264 + AAC, ≤1280px, ≤30s, even dimensions, streamable. */
-export async function videoFilter(job: Job, vf: string, opts: { af?: string; name?: string; extraIn?: string[] } = {}): Promise<Out> {
+export async function videoFilter(job: Job, vf: string, opts: { af?: string; name?: string; extraIn?: string[] } & VideoOpts = {}): Promise<Out> {
   if (!job.info.hasVideo) throw new MediaError('That needs a video or GIF.');
   const cap = fitEven(job.info.width, job.info.height, MAX_VIDEO);
   const scaleCap = Math.max(job.info.width, job.info.height) > MAX_VIDEO ? `scale=${cap.w}:${cap.h},` : '';
   const out = 'out.mp4';
+  const sound = job.info.hasAudio && opts.audio !== false;
   const args = [
     '-t', String(MAX_SECONDS), ...(opts.extraIn ?? []), '-i', job.input,
     '-vf', `${scaleCap}${vf},scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p`,
-    ...(job.info.hasAudio ? (opts.af ? ['-af', opts.af] : []) : ['-an']),
+    ...(sound ? (opts.af ? ['-af', opts.af] : []) : ['-an']),
     '-c:v', 'libx264', '-crf', '27', '-preset', 'veryfast', '-movflags', '+faststart',
-    ...(job.info.hasAudio ? ['-c:a', 'aac', '-b:a', '96k'] : []),
+    ...(sound ? ['-c:a', 'aac', '-b:a', '96k'] : []),
     out,
   ];
   await ffmpeg(args, { cwd: job.dir });
   return { file: out, name: opts.name ?? 'result.mp4' };
 }
 
-export const videoReverse = (job: Job) => videoFilter(job, 'reverse', { af: 'areverse', name: 'reversed.mp4' });
-export const videoScramble = (job: Job) => videoFilter(job, 'random=frames=24', { name: 'scrambled.mp4' });
+export const videoReverse = (job: Job, o: VideoOpts = {}) => videoFilter(job, 'reverse', { af: 'areverse', name: 'reversed.mp4', ...o });
+export const videoScramble = (job: Job, o: VideoOpts = {}) => videoFilter(job, 'random=frames=24', { name: 'scrambled.mp4', ...o });
 
-export function videoRotate(job: Job, degrees: number) {
+export function videoRotate(job: Job, degrees: number, o: VideoOpts = {}) {
   const d = ((Math.round(degrees) % 360) + 360) % 360;
   const vf = d === 90 ? 'transpose=1' : d === 180 ? 'hflip,vflip' : d === 270 ? 'transpose=2' : d === 0 ? 'null' : `rotate=${d}*PI/180:ow=rotw(${d}*PI/180):oh=roth(${d}*PI/180):c=black`;
-  return videoFilter(job, vf, { name: 'rotated.mp4' });
+  return videoFilter(job, vf, { name: 'rotated.mp4', ...o });
 }
 
-export function videoResize(job: Job, factor: number) {
-  const f = clamp(factor, 0.1, 2);
-  return videoFilter(job, `scale=trunc(iw*${f}/2)*2:trunc(ih*${f}/2)*2`, { name: 'resized.mp4' });
+/** Scale by `factor` (0.1–4), keeping the result at most 2560px on its longest side. */
+export function videoResize(job: Job, factor: number, o: VideoOpts = {}) {
+  const f = clamp(factor, 0.1, 4);
+  const { w, h } = fitEven(job.info.width * f, job.info.height * f, 2560);
+  return videoFilter(job, `scale=${w}:${h}`, { name: 'resized.mp4', ...o });
 }
 
 export type Anchor = 'center' | 'top' | 'bottom' | 'left' | 'right';
-export function videoCrop(job: Job, ratio: string, anchor: Anchor) {
+export function videoCrop(job: Job, ratio: string, anchor: Anchor, o: VideoOpts = {}) {
   const m = /^(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)$/.exec(ratio.trim());
   if (!m || Number(m[1]) <= 0 || Number(m[2]) <= 0) throw new MediaError('Give the ratio like `16:9`, `1:1` or `9:16`.');
   const ar = Number(m[1]) / Number(m[2]);
   const x = anchor === 'left' ? '0' : anchor === 'right' ? 'iw-ow' : '(iw-ow)/2';
   const y = anchor === 'top' ? '0' : anchor === 'bottom' ? 'ih-oh' : '(ih-oh)/2';
-  return videoFilter(job, `crop=w='min(iw\\,ih*${ar})':h='min(ih\\,iw/${ar})':x=${x}:y=${y}`, { name: 'cropped.mp4' });
+  return videoFilter(job, `crop=w='min(iw\\,ih*${ar})':h='min(ih\\,iw/${ar})':x=${x}:y=${y}`, { name: 'cropped.mp4', ...o });
 }
 
 /** Chain atempo filters (each limited to 0.5–2×) to reach any multiplier in 0.25–4×. */
@@ -277,25 +342,17 @@ export function atempoChain(mult: number): string {
   parts.push(`atempo=${m.toFixed(4)}`);
   return parts.join(',');
 }
-export function videoSpeed(job: Job, mult: number) {
+export function videoSpeed(job: Job, mult: number, o: VideoOpts = {}) {
   const m = clamp(mult, 0.25, 4);
-  return videoFilter(job, `setpts=PTS/${m}`, { af: atempoChain(m), name: 'speed.mp4' });
+  return videoFilter(job, `setpts=PTS/${m}`, { af: atempoChain(m), name: 'speed.mp4', ...o });
 }
 
-/** Still image + audio → video. */
-export async function imageWithAudio(dir: string, image: string, audio: string, opts: { loop: boolean; volume: number; start: number; end: number }): Promise<Out> {
-  const info = await probe(image, dir);
-  const cap = fitEven(info.width, info.height, MAX_VIDEO);
-  const dur = opts.end > opts.start ? opts.end - opts.start : 0;
-  const audioIn = ['-ss', String(Math.max(0, opts.start)), ...(dur ? ['-t', String(Math.min(dur, 120))] : ['-t', '120']), '-i', audio];
-  await ffmpeg([
-    '-loop', '1', '-framerate', '2', '-i', image, ...audioIn,
-    ...(opts.loop ? [] : []),
-    '-vf', `scale=${cap.w}:${cap.h},format=yuv420p`,
-    '-af', `volume=${clamp(opts.volume, 0, 300) / 100}`,
-    '-c:v', 'libx264', '-tune', 'stillimage', '-crf', '30', '-preset', 'veryfast', '-c:a', 'aac', '-b:a', '128k', '-shortest', '-movflags', '+faststart', 'out.mp4',
-  ], { cwd: dir });
-  return { file: 'out.mp4', name: 'result.mp4' };
+/** An MP4 made by one of the video tools → a looping GIF (Heist's `output: GIF`). */
+export async function mp4ToGif(dir: string, out: Out): Promise<Out> {
+  const info = await probe(out.file, dir);
+  const cap = fitEven(info.width, info.height, MAX_GIF);
+  await ffmpeg(['-t', String(MAX_SECONDS), '-i', out.file, '-vf', `fps=15,scale=${cap.w}:${cap.h}:flags=lanczos,${GIF_PALETTE}`, '-loop', '0', 'out.gif'], { cwd: dir, timeoutMs: 120_000 });
+  return { file: 'out.gif', name: out.name.replace(/\.\w+$/, '.gif') };
 }
 
 // ─── Audio ───────────────────────────────────────────────────────────────────

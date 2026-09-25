@@ -3,7 +3,7 @@ import { readdir, stat } from 'node:fs/promises';
 import { MediaError, withWorkdir } from '../framework/media.js';
 
 /**
- * /media download — fetch a video or audio track from a supported site with yt-dlp.
+ * /download — fetch a video or audio track from a supported site with yt-dlp.
  *
  * Safety: yt-dlp will happily fetch arbitrary URLs through its generic extractor, so only an allow-list of well-known sites is accepted
  * (https only, no credentials). Playlists, live streams and long videos are refused; file size is capped to the server's upload limit.

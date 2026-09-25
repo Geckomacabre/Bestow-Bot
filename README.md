@@ -27,7 +27,7 @@ A server:      https://discord.com/oauth2/authorize?client_id=<CLIENT_ID>&scope=
 | 💰 **Economy** (`/eco`, `/eco-company`) | Wallet card you can restyle (with a live **studio**), bank, daily/monthly/work/hustle/beg/bonus, robbing, businesses, labs, investments, quests, trading cards, **companies** with shared vaults and projects, casino games (blackjack, roulette, crash, slots, plinko, mines, towers…), leaderboards, economy-funded giveaways. Balances change through guarded single-statement updates, so races can't duplicate or lose money. |
 | 🎁 **Giveaways** (`/giveaway`, `/eco giveaway`) | Button-entry giveaways that survive restarts, rerolls that never repeat a winner, and coin-funded pots held in escrow (25% tax on payout, refunded if cancelled). |
 | 🎮 **Games** (`/games`) | Tic-tac-toe, rock-paper-scissors, head-to-head blackjack, snake and a cookie race — all played with buttons, against a friend or the first person to press Join. |
-| 🎬 **Media** (`/media`, `/audio`) | Dozens of image, GIF and video effects, audio effects, frame extraction, and `/media download` (YouTube, TikTok, X, Reddit, SoundCloud… via yt-dlp). |
+| 🎬 **Media** (`/media`, `/audio`) | Dozens of image, GIF and video effects, animated makesweet scenes (billboard, flag, Rubik's cube, heart locket…), audio effects, frame extraction, and `/download` (YouTube, TikTok, X, Reddit, SoundCloud… via yt-dlp). |
 | 🗣️ **Voice** (`/tts`) | Free local voices (Kokoro with an Edge fallback), character voices, singing voices, optional AI singers through an ACE-Step server you run. Output as a file or a Discord **voice message**. |
 | 🤖 **AI** (`/ai`, @mention, DMs) | ChatGPT-style answers with **Reply n/3** conversations, an alternative model (`/ai llama`), image reading, transcripts, fact-checks, geolocation (region level), personas and opt-in memory. Works with any OpenAI-compatible provider, including local ones. Free accounts get **20 requests per hour**; Premium removes the limit. |
 | 🔎 **Lookups** | `/roblox`, `/minecraft`, `/github`, `/steam`, `/valorant`, `/fortnite`, `/youtube`, `/crypto`, `/dns`, `/ip`, `/website`, `/x`. |
@@ -90,7 +90,7 @@ The image includes ffmpeg and yt-dlp, runs as an unprivileged user in production
 | **TTS** | Nothing. The free voices download on first use (about 90 MB, cached in `data/models`). |
 | **AI singers** | Run an [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) API server and set `ACESTEP_URL`. Needs a capable GPU; the bundled singing voices work without it. |
 | **Web search** | Set `SEARXNG_URL` to your own SearXNG instance; otherwise `/search` falls back to Wikipedia. |
-| **/media download** | Needs `yt-dlp` on `PATH` (included in Docker). Some sites demand a login or bot check from datacenter IPs; set `YTDLP_COOKIES` to a cookies file if so. |
+| **/download**, **/soundcloud** | Needs `yt-dlp` on `PATH` (included in Docker). Some sites demand a login or bot check from datacenter IPs; set `YTDLP_COOKIES` to a cookies file if so. |
 | **Lookups** | API keys are optional; see `.env.example`. |
 | **Web dashboard** | `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_SECRET`. Use https in production. |
 

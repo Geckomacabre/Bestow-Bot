@@ -3,7 +3,7 @@ FROM oven/bun:1-debian
 WORKDIR /app
 
 # ffmpeg: all media effects, voice messages, transcription audio prep and safe image decoding.
-# yt-dlp: /media download.  libvips/fontconfig/cmake/build-essential: the optional native image addon (`bun run build:native`).
+# yt-dlp: /download and /soundcloud.  libvips/fontconfig/cmake/build-essential: the optional native image addon (`bun run build:native`).
 # fonts-noto-color-emoji: emoji in generated images.  chromium: /website screenshot (click/delay), scroll and full-page captures.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates openssl ffmpeg python3 python3-pip \
