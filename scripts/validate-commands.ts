@@ -18,7 +18,10 @@ const errors: string[] = [];
 const warn: string[] = [];
 const paths: string[] = [];
 
-type Opt = { type: number; name: string; description?: string; options?: Opt[]; choices?: unknown[] };
+type Opt = {
+  type: number; name: string; description?: string; options?: Opt[]; choices?: unknown[]; required?: boolean; autocomplete?: boolean;
+  min_value?: number; max_value?: number; min_length?: number; max_length?: number;
+};
 type Json = { name: string; type?: number; description?: string; options?: Opt[] };
 
 /**
@@ -50,14 +53,39 @@ for (const [name, cmd] of commands) {
   if (size > LIMITS.payloadChars) errors.push(`/${name}: payload ${size} chars (limit ${LIMITS.payloadChars})`);
   else if (size > LIMITS.payloadChars * 0.85) warn.push(`/${name}: payload ${size} chars is close to the ${LIMITS.payloadChars} limit`);
 
-  const walk = (opts: Opt[] | undefined, prefix: string) => {
+  const walk = (opts: Opt[] | undefined, prefix: string, depth = 0) => {
     if (!opts) return;
     if (opts.length > LIMITS.options) errors.push(`${prefix}: ${opts.length} options (limit ${LIMITS.options})`);
+
+    // Rules Discord enforces when registering — a violation makes the WHOLE registration request fail, taking every command down with it.
+    const names = new Set<string>();
+    for (const o of opts) {
+      if (names.has(o.name)) errors.push(`${prefix}: duplicate option/subcommand name "${o.name}"`);
+      names.add(o.name);
+    }
+    let sawOptional = false;
+    for (const o of opts.filter(x => x.type > 2)) {
+      if (o.required) { if (sawOptional) errors.push(`${prefix}: required option "${o.name}" comes after an optional one (Discord rejects this)`); }
+      else sawOptional = true;
+      const ch = (o.choices ?? []) as { name: string; value: unknown }[];
+      if (ch.length > 25) errors.push(`${prefix} ${o.name}: ${ch.length} choices (limit 25)`);
+      if (ch.length && o.autocomplete) errors.push(`${prefix} ${o.name}: has both choices and autocomplete (not allowed)`);
+      for (const c of ch) {
+        if (!c.name || c.name.length > 100) errors.push(`${prefix} ${o.name}: choice name "${String(c.name).slice(0, 20)}…" must be 1–100 chars`);
+        if (typeof c.value === 'string' && (c.value.length < 1 || c.value.length > 100)) errors.push(`${prefix} ${o.name}: choice value for "${c.name}" must be 1–100 chars`);
+      }
+      if (o.min_value != null && o.max_value != null && o.min_value > o.max_value) errors.push(`${prefix} ${o.name}: min_value > max_value`);
+      if (o.min_length != null && o.max_length != null && o.min_length > o.max_length) errors.push(`${prefix} ${o.name}: min_length > max_length`);
+      if (o.max_length != null && (o.max_length < 1 || o.max_length > 6000)) errors.push(`${prefix} ${o.name}: max_length must be 1–6000`);
+    }
     for (const o of opts) {
       if (o.type === 1 || o.type === 2) {
         const p = `${prefix} ${o.name}`;
-        if (o.type === 1) { subs++; paths.push(`/${p.slice(1)}`); }
-        walk(o.options, p);
+        if (o.type === 2 && depth >= 1) errors.push(`${p}: subcommand groups can't be nested`);
+        if (o.type === 2 && (o.options ?? []).some(x => x.type !== 1)) errors.push(`${p}: a subcommand group may contain only subcommands`);
+        if (o.type === 2 && !(o.options ?? []).length) errors.push(`${p}: empty subcommand group`);
+        if (o.type === 1) { subs++; paths.push(`/${p.slice(1)}`); if ((o.options ?? []).some(x => x.type <= 2)) errors.push(`${p}: a subcommand can only contain plain options`); }
+        walk(o.options, p, depth + (o.type === 2 ? 1 : 0));
       }
     }
   };

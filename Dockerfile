@@ -25,8 +25,7 @@ USER bun
 ENV NODE_ENV=production DB_PATH=/app/data/onyx.db
 VOLUME ["/app/data"]
 EXPOSE 3000
-
-HEALTHCHECK --interval=60s --timeout=10s --start-period=60s --retries=3 \
-  CMD bun -e "fetch('http://127.0.0.1:'+(process.env.WEB_PORT||3000)).then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+# No HEALTHCHECK on purpose: the web dashboard only starts when DISCORD_CLIENT_SECRET is set, so probing it would
+# mark a perfectly healthy bot as unhealthy. The process exits (and `restart: unless-stopped` restarts it) on fatal errors.
 
 CMD ["bun", "run", "start:production"]
