@@ -4,7 +4,7 @@
  *  2. Fun generators about a person are absurd fiction about *public names/handles they were given*, never factual claims.
  */
 
-export const BOT_NAME = 'Onyx';
+export const BOT_NAME = 'Bestow';
 
 export const SAFETY = [
   'Never produce sexual content, content sexualizing minors, slurs, hateful content about protected groups, threats, or instructions for self-harm or serious crime.',

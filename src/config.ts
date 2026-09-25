@@ -1,8 +1,12 @@
+const nodeEnv = Bun.env.NODE_ENV || 'development';
+
+// GUILD_ID is only needed in development, where slash commands register to one server for instant updates.
+// Everywhere else commands register globally and GUILD_ID may be left empty.
 const required = {
   CLIENT_ID: Bun.env.CLIENT_ID,
-  GUILD_ID: Bun.env.GUILD_ID,
   DISCORD_TOKEN: Bun.env.TOKEN,
-  NODE_ENV: Bun.env.NODE_ENV || 'development',
+  NODE_ENV: nodeEnv,
+  ...(nodeEnv === 'development' ? { GUILD_ID: Bun.env.GUILD_ID } : {}),
 };
 
 const missingVars = Object.entries(required)
@@ -33,7 +37,7 @@ interface Config {
 
 const Config: Config = {
   CLIENT_ID: required.CLIENT_ID!,
-  GUILD_ID: required.GUILD_ID!,
+  GUILD_ID: Bun.env.GUILD_ID ?? '',
   DISCORD_TOKEN: required.DISCORD_TOKEN!,
   NODE_ENV: required.NODE_ENV,
   TWITCH_CLIENT_ID: Bun.env.TWITCH_CLIENT_ID,

@@ -7,7 +7,12 @@ import { WALLET_BG_DIR, walletBgPath } from '../src/eco/render';
 import { privacySubs } from '../src/subcommands/privacy/privacy';
 import { fakeInteraction, textOf } from './fakeInteraction';
 
-beforeAll(async () => { await initDb(); });
+beforeAll(async () => {
+  await initDb();
+  // No shipped table currently uses the "keep" policy (server-owned records), so exercise that machinery with a synthetic one.
+  await db`CREATE TABLE IF NOT EXISTS zz_keep (user_id TEXT, note TEXT)`;
+  registerPrivacy({ table: 'zz_keep', columns: ['user_id'], label: 'Server-owned record', policy: 'keep', note: 'kept for the server that created it' });
+});
 
 let n = 0;
 const uid = () => `9${String(++n).padStart(8, '0')}${Date.now() % 1000}`.slice(0, 18);
@@ -20,7 +25,7 @@ async function seed(u: string) {
   await db`INSERT INTO timezones (user_id, timezone) VALUES (${u}, 'Europe/Paris')`;
   await db`INSERT INTO reminders (user_id, channel_id, guild_id, message, fires_at, created_at) VALUES (${u}, 'c1', ${G}, 'buy milk', 9999999999, 1)`;
   await db`INSERT INTO xp (guild_id, user_id, xp, level, total_messages) VALUES (${G}, ${u}, 120, 3, 42)`;
-  await db`INSERT INTO warnings (guild_id, user_id, mod_id, reason, created_at) VALUES (${G}, ${u}, 'mod1', 'spam', 1)`;
+  await db`INSERT INTO zz_keep (user_id, note) VALUES (${u}, 'kept for the server')`;
   await db`INSERT INTO tags (guild_id, name, content, owner_id, uses, created_at) VALUES (${G}, ${`tag-${u}`}, 'hello', ${u}, 0, 1)`;
   await db`INSERT OR REPLACE INTO jackpot (guild_id, amount, seed, last_winner) VALUES (${`jp-${u}`}, 1000, 1000, ${u})`;
   await db`INSERT INTO rep_cooldowns (guild_id, from_user_id, to_user_id, last_rep) VALUES (${G}, ${u}, 'someone-else', 1)`;
@@ -54,9 +59,9 @@ describe('registry coverage (fails when someone adds a table with a user column 
   });
   test('no table stores chat message content (only IDs and counters)', async () => {
     // Columns that legitimately hold text a person or server wrote on purpose. Anything new must be reviewed and added here.
-    const allowed = new Set(['automod_rules.action_reason', 'custom_commands.name', 'eco_bank_ledger.reason', 'eco_ledger.reason', 'eco_company.description', 'eco_company_request.text', 'eco_wallet_style.message', 'mod_cases.reason',
-      'reminders.message', 'rsvp_events.description', 'scheduled_tasks.data', 'sticky_messages.content', 'streaming_config.message', 'tags.content', 'topics.text', 'twitch_feeds.message', 'warnings.reason',
-      'welcome_config.message', 'welcome_config.dm_message', 'welcome_config.leave_message', 'welcome_config.ban_message', 'xp_config.level_up_message', 'youtube_feeds.message', 'economy_config.currency_name']);
+    const allowed = new Set(['custom_commands.name', 'eco_bank_ledger.reason', 'eco_ledger.reason', 'eco_company.description', 'eco_company_request.text', 'eco_wallet_style.message',
+      'reminders.message', 'rsvp_events.description', 'scheduled_tasks.data', 'sticky_messages.content', 'streaming_config.message', 'tags.content', 'topics.text', 'twitch_feeds.message',
+      'xp_config.level_up_message', 'youtube_feeds.message', 'economy_config.currency_name']);
     const tables = (await db`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`) as { name: string }[];
     const suspicious: string[] = [];
     for (const t of tables) for (const c of (await db.unsafe(`PRAGMA table_info(${t.name})`)) as { name: string }[]) {
@@ -73,7 +78,7 @@ describe('export', () => {
     expect(r.name).toBe(`my-data-${a}.json`);
     const j = JSON.parse(r.data.toString());
     expect(j.userId).toBe(a); expect(j.generatedAt).toBe('2026-01-01T00:00:00.000Z');
-    for (const t of ['economy', 'birthdays', 'timezones', 'reminders', 'xp', 'warnings', 'tags', 'juul_state', 'rep_cooldowns']) expect(j.tables[t], t).toBeTruthy();
+    for (const t of ['economy', 'birthdays', 'timezones', 'reminders', 'xp', 'zz_keep', 'tags', 'juul_state', 'rep_cooldowns']) expect(j.tables[t], t).toBeTruthy();
     expect(JSON.stringify(j)).not.toContain(b);
     expect(j.tables.reminders[0].message).toBe('buy milk'); expect(j.tables.economy[0].balance).toBe(500);
     expect(r.rows).toBe(Object.values(j.tables as Record<string, unknown[]>).reduce((s, x) => s + x.length, 0));
@@ -95,18 +100,18 @@ describe('delete', () => {
   test('removes their data everywhere, leaves other people untouched, keeps and reports server records', async () => {
     const a = uid(), b = uid(); await seed(a); await seed(b);
     const before = await summarize(a);
-    expect(before.map(s => s.table)).toEqual(expect.arrayContaining(['economy', 'xp', 'warnings', 'juul_state']));
+    expect(before.map(s => s.table)).toEqual(expect.arrayContaining(['economy', 'xp', 'zz_keep', 'juul_state']));
     const r = await deleteData(a);
     expect(r.deleted).toBeGreaterThan(5); expect(r.anonymized).toBe(2); // jackpot last_winner + tag owner
-    expect(r.kept.map(k => k.table)).toEqual(['warnings']);
+    expect(r.kept.map(k => k.table)).toEqual(['zz_keep']);
     for (const [t, c] of [['economy', 'user_id'], ['birthdays', 'user_id'], ['timezones', 'user_id'], ['reminders', 'user_id'], ['xp', 'user_id'], ['juul_state', 'user_id'], ['eco_ledger', 'user_id'], ['rep_cooldowns', 'from_user_id']] as const)
       expect(await count(t, c, a), `${t} cleared`).toBe(0);
-    expect(await count('warnings', 'user_id', a)).toBe(1);             // the server's record stays
+    expect(await count('zz_keep', 'user_id', a)).toBe(1);             // the server's record stays
     expect(await count('tags', 'owner_id', a)).toBe(0);                 // detached…
     expect(await count('tags', 'name', `tag-${a}`)).toBe(1);            // …but the tag itself remains
     expect(await count('jackpot', 'last_winner', a)).toBe(0);
     for (const [t, c] of [['economy', 'user_id'], ['birthdays', 'user_id'], ['reminders', 'user_id'], ['xp', 'user_id'], ['juul_state', 'user_id'], ['tags', 'owner_id']] as const) expect(await count(t, c, b), `${t} of b intact`).toBe(1);
-    expect((await summarize(a)).map(s => s.table)).toEqual(['warnings']);
+    expect((await summarize(a)).map(s => s.table)).toEqual(['zz_keep']);
   });
   test('is idempotent and removes the wallet background file', async () => {
     const u = uid(); await seed(u);
@@ -157,7 +162,7 @@ describe('/privacy commands', () => {
   test('data lists categories with counts; export attaches a file', async () => {
     const u = uid(); await seed(u);
     let fi = fakeInteraction({ userId: u }); await sub('data').run(fi.interaction);
-    expect(textOf(fi.last())).toContain('Balance, bank and lifetime totals'); expect(textOf(fi.last())).toContain('Warnings from server staff');
+    expect(textOf(fi.last())).toContain('Balance, bank and lifetime totals'); expect(textOf(fi.last())).toContain('Server-owned record');
     fi = fakeInteraction({ userId: u }); await sub('export').run(fi.interaction);
     expect(fi.last().files[0].name).toBe(`my-data-${u}.json`); expect(fi.last().content).toContain('rows across');
     await deleteData(u);

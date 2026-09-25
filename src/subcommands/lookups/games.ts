@@ -97,7 +97,7 @@ export const steamSubs: Sub[] = [
         fields: [['Price', a.free ? 'Free to play' : a.price ? `${a.price}${a.discount ? ` (~~${a.initialPrice}~~ −${a.discount}%)` : ''}` : 'Not available'], ['Playing now', a.players != null ? num(a.players) : null],
           ['Metacritic', a.metacritic], ['Release', a.release], ['Developer', a.developers.join(', ')], ['Publisher', a.publishers.join(', ')], ['Genres', a.genres.join(', ')], ['Platforms', a.platforms.join(', ')],
           ['Reviews', a.recommendations ? `${compact(a.recommendations)} recommendations` : null]],
-        links: [{ label: 'Store page', url }, { label: 'Open in Steam', url: `https://store.steampowered.com/app/${a.id}?utm_source=onyx` }],
+        links: [{ label: 'Store page', url }, { label: 'Open in Steam', url: `https://store.steampowered.com/app/${a.id}?utm_source=bestow` }],
       }));
     }),
   },

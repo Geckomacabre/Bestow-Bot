@@ -18,7 +18,7 @@ async function fetchEpicFreeGames(): Promise<FreeGame[]> {
   try {
     const res = await fetch(
       'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US',
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Onyx/1.0)' }, signal: AbortSignal.timeout(10_000) }
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Bestow/1.0)' }, signal: AbortSignal.timeout(10_000) }
     );
     if (!res.ok) return [];
     const data = await res.json() as any;
@@ -69,7 +69,7 @@ async function fetchSteamFreeGames(): Promise<FreeGame[]> {
   try {
     const res = await fetch(
       'https://store.steampowered.com/api/featuredcategories/?cc=us&l=en',
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Onyx/1.0)' }, signal: AbortSignal.timeout(10_000) }
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Bestow/1.0)' }, signal: AbortSignal.timeout(10_000) }
     );
     if (!res.ok) return [];
     const data = await res.json() as any;
@@ -97,7 +97,7 @@ async function fetchGOGFreeGames(): Promise<FreeGame[]> {
     // GOG catalog filtered to discounted games priced at 0
     const res = await fetch(
       'https://catalog.gog.com/v1/catalog?limit=24&order=desc:trending&priceRange=0%2C0&discounted=eq%3Atrue&productType=in%3Agame%2Cpack%2Cdlc%2Cextras&page=1&countryCode=US&locale=en-US&currencyCode=USD',
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Onyx/1.0)' }, signal: AbortSignal.timeout(10_000) }
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Bestow/1.0)' }, signal: AbortSignal.timeout(10_000) }
     );
     if (!res.ok) return [];
     const data = await res.json() as any;
@@ -128,7 +128,7 @@ export async function fetchEpicUpcomingGames(): Promise<FreeGame[]> {
   try {
     const res = await fetch(
       'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US',
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Onyx/1.0)' }, signal: AbortSignal.timeout(10_000) }
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Bestow/1.0)' }, signal: AbortSignal.timeout(10_000) }
     );
     if (!res.ok) return [];
     const data = await res.json() as any;

@@ -43,7 +43,7 @@ export const MELODIES: Melody[] = [
   { id: 'glorious', label: 'Glorious', blurb: 'Big, heroic and echoing', voice: 'af_alloy', bpm: 88, pattern: [0, 4, 7, 9, 12, 9, 7, 12], vibrato: { f: 5.6, d: 0.4 }, echo: '0.85:0.75:140:0.4' },
   { id: 'goesup', label: 'It goes up', blurb: 'Every word climbs a step higher', voice: 'am_puck', bpm: 132, pattern: [-4, -2, 0, 2, 4, 6, 8, 10, 12, 14], vibrato: { f: 6.5, d: 0.2 }, echo: '0.7:0.4:25:0.12' },
   { id: 'dramatic', label: 'Dramatic', blurb: 'Slow, huge pitch jumps, maximum feeling', voice: 'af_kore', bpm: 60, pattern: [0, 7, 3, 10, 5, 12, 2, 9], vibrato: { f: 4.6, d: 0.5 }, echo: '0.85:0.7:150:0.42' },
-  { id: 'crooner', label: 'Deep crooner', blurb: 'Low, smooth and slightly smug', voice: 'am_onyx', bpm: 78, pattern: [-5, -3, -1, -3, -5, -8, -5, -3], vibrato: { f: 5, d: 0.28 }, echo: '0.85:0.6:80:0.28' },
+  { id: 'crooner', label: 'Deep crooner', blurb: 'Low, smooth and slightly smug', voice: 'am_bestow', bpm: 78, pattern: [-5, -3, -1, -3, -5, -8, -5, -3], vibrato: { f: 5, d: 0.28 }, echo: '0.85:0.6:80:0.28' },
 ];
 
 export const findMelody = (id: string) => MELODIES.find(m => m.id === id) ?? null;

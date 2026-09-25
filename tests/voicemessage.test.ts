@@ -61,7 +61,7 @@ describe('sending', () => {
 
 describe('encoding (real ffmpeg)', () => {
   it('produces Ogg/Opus with the right duration and a real waveform', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-vm-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-vm-'));
     // 1.0 s tone, 1.0 s silence, 1.0 s tone → the waveform's middle third must be quiet.
     await ffmpeg(['-f', 'lavfi', '-i', 'sine=frequency=440:duration=1', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1',
       '-filter_complex', '[1]atrim=duration=1[s];[0][s][2]concat=n=3:v=0:a=1', '-c:a', 'libmp3lame', 'src.mp3'], { cwd: dir });

@@ -22,7 +22,7 @@ RUN bun run build:native || echo "native image addon not built"
 # Run as an unprivileged user; /app/data holds the database, voice models and uploads (mount a volume there).
 RUN mkdir -p /app/data && chown -R bun:bun /app/data
 USER bun
-ENV NODE_ENV=production DB_PATH=/app/data/onyx.db
+ENV NODE_ENV=production DB_PATH=/app/data/bestow.db
 VOLUME ["/app/data"]
 EXPOSE 3000
 # No HEALTHCHECK on purpose: the web dashboard only starts when DISCORD_CLIENT_SECRET is set, so probing it would

@@ -51,51 +51,6 @@ const ConfigCommand: Command = {
       .setName('counting')
       .setDescription('Configure the counting channel'))
 
-    // ── Automod ───────────────────────────────────────────────────────────────
-    .addSubcommandGroup(g => g.setName('automod').setDescription('Manage automod rules')
-      .addSubcommand(s => s.setName('add').setDescription('Add an automod rule')
-        .addStringOption(o => o.setName('name').setDescription('Rule name').setRequired(true))
-        .addStringOption(o => o.setName('trigger').setDescription('spam, caps, links, words, mentions, regex').setRequired(true))
-        .addStringOption(o => o.setName('action').setDescription('delete, warn, timeout, kick, ban').setRequired(true))
-        .addStringOption(o => o.setName('value').setDescription('Trigger value (word list, count, %, regex)'))
-        .addIntegerOption(o => o.setName('duration').setDescription('Timeout duration in seconds'))
-        .addStringOption(o => o.setName('reason').setDescription('Reason shown to user')))
-      .addSubcommand(s => s.setName('list').setDescription('List all automod rules'))
-      .addSubcommand(s => s.setName('delete').setDescription('Delete an automod rule')
-        .addIntegerOption(o => o.setName('id').setDescription('Rule ID').setRequired(true)))
-      .addSubcommand(s => s.setName('toggle').setDescription('Enable or disable a rule')
-        .addIntegerOption(o => o.setName('id').setDescription('Rule ID').setRequired(true))
-        .addBooleanOption(o => o.setName('enabled').setDescription('Enable or disable').setRequired(true))))
-
-    // ── Logs ──────────────────────────────────────────────────────────────────
-    .addSubcommandGroup(g => g.setName('logs').setDescription('Configure server logging')
-      .addSubcommand(s => s.setName('channel').setDescription('Set the log channel')
-        .addChannelOption(o => o.setName('channel').setDescription('Log channel (omit to clear)')))
-      .addSubcommand(s => s.setName('toggle').setDescription('Enable or disable logging')
-        .addBooleanOption(o => o.setName('enabled').setDescription('Enabled').setRequired(true)))
-      .addSubcommand(s => s.setName('ignore').setDescription('Toggle ignoring a channel from logs')
-        .addChannelOption(o => o.setName('channel').setDescription('Channel to toggle').setRequired(true)))
-      .addSubcommand(s => s.setName('events').setDescription('Toggle which events are logged')
-        .addBooleanOption(o => o.setName('joins').setDescription('Log member joins'))
-        .addBooleanOption(o => o.setName('leaves').setDescription('Log member leaves'))
-        .addBooleanOption(o => o.setName('edits').setDescription('Log message edits'))
-        .addBooleanOption(o => o.setName('deletes').setDescription('Log message deletes'))
-        .addBooleanOption(o => o.setName('bans').setDescription('Log bans/unbans'))
-        .addBooleanOption(o => o.setName('nicknames').setDescription('Log nickname changes'))
-        .addBooleanOption(o => o.setName('roles').setDescription('Log role changes'))
-        .addBooleanOption(o => o.setName('commands').setDescription('Log every slash command members use — helps track down raid bots')))
-      .addSubcommand(s => s.setName('view').setDescription('View current log settings')))
-
-    // ── Antiphishing ──────────────────────────────────────────────────────────
-    .addSubcommandGroup(g => g.setName('antiphishing').setDescription('Configure phishing and raid link protection')
-      .addSubcommand(s => s.setName('toggle').setDescription('Enable or disable antiphishing entirely')
-        .addBooleanOption(o => o.setName('enabled').setDescription('Enabled').setRequired(true)))
-      .addSubcommand(s => s.setName('invites').setDescription('Toggle auto-removal of Discord invite links (the #1 raid-spam vector)')
-        .addBooleanOption(o => o.setName('enabled').setDescription('Enabled').setRequired(true)))
-      .addSubcommand(s => s.setName('lookalike').setDescription('Toggle detection of typosquat domains impersonating Discord/Steam/Epic')
-        .addBooleanOption(o => o.setName('enabled').setDescription('Enabled').setRequired(true)))
-      .addSubcommand(s => s.setName('view').setDescription('View current antiphishing settings')))
-
     // ── Streaming ─────────────────────────────────────────────────────────────
     .addSubcommandGroup(g => g.setName('streaming').setDescription('Configure streaming announcements')
       .addSubcommand(s => s.setName('set').setDescription('Configure streaming settings')
@@ -103,18 +58,6 @@ const ConfigCommand: Command = {
         .addRoleOption(o => o.setName('role').setDescription('Role to assign while streaming'))
         .addStringOption(o => o.setName('message').setDescription('Announcement message ({username}, {game}, {url})')))
       .addSubcommand(s => s.setName('view').setDescription('View current streaming settings')))
-
-    // ── Welcome ───────────────────────────────────────────────────────────────
-    .addSubcommandGroup(g => g.setName('welcome').setDescription('Configure welcome messages')
-      .addSubcommand(s => s.setName('channel').setDescription('Set the welcome channel')
-        .addChannelOption(o => o.setName('channel').setDescription('Channel for welcome messages').setRequired(true)))
-      .addSubcommand(s => s.setName('message').setDescription('Set the welcome message')
-        .addStringOption(o => o.setName('text').setDescription('Template: {user}, {username}, {server}, {membercount}').setRequired(true)))
-      .addSubcommand(s => s.setName('dm').setDescription('Set DM sent to new members ("none" to disable)')
-        .addStringOption(o => o.setName('text').setDescription('DM template (use "none" to disable)').setRequired(true)))
-      .addSubcommand(s => s.setName('toggle').setDescription('Enable or disable welcome messages'))
-      .addSubcommand(s => s.setName('test').setDescription('Preview the welcome message for yourself'))
-      .addSubcommand(s => s.setName('view').setDescription('View current welcome settings')))
 
     // ── Starboard ─────────────────────────────────────────────────────────────
     .addSubcommandGroup(g => g.setName('starboard').setDescription('Configure the starboard')
@@ -217,113 +160,6 @@ const ConfigCommand: Command = {
       return;
     }
 
-    // ── Automod ───────────────────────────────────────────────────────────────
-    if (group === 'automod') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      if (sub === 'add') {
-        const name    = interaction.options.getString('name', true);
-        const trigger = interaction.options.getString('trigger', true);
-        const action  = interaction.options.getString('action', true);
-        const value   = interaction.options.getString('value') ?? '';
-        const duration = interaction.options.getInteger('duration');
-        const reason  = interaction.options.getString('reason');
-        if (!TRIGGER_TYPES.includes(trigger as any)) { await interaction.editReply(`❌ Invalid trigger. Choose from: ${TRIGGER_TYPES.join(', ')}`); return; }
-        if (!ACTION_TYPES.includes(action as any))   { await interaction.editReply(`❌ Invalid action. Choose from: ${ACTION_TYPES.join(', ')}`); return; }
-        const rule = await db.createAutomodRule(interaction.guildId!, name, trigger, value, action, duration, reason);
-        await interaction.editReply(`✅ Automod rule **${name}** (ID: ${rule.id}) created. Trigger: \`${trigger}\`, Action: \`${action}\`.`);
-      } else if (sub === 'list') {
-        const rules = await db.getAutomodRules(interaction.guildId!);
-        if (!rules.length) { await interaction.editReply('No automod rules configured.'); return; }
-        await interaction.editReply({ embeds: [new EmbedBuilder().setColor(Colors.Blue).setTitle('Automod Rules').setDescription(rules.map(r => `**#${r.id}** ${r.enabled ? '✅' : '❌'} **${r.name}** — \`${r.trigger_type}\` → \`${r.action}\`${r.trigger_value ? ` (\`${r.trigger_value.slice(0, 30)}\`)` : ''}`).join('\n')).setFooter({ text: `${rules.length} rule(s)` })] });
-      } else if (sub === 'delete') {
-        const id = interaction.options.getInteger('id', true);
-        const ok = await db.deleteAutomodRule(id, interaction.guildId!);
-        await interaction.editReply(ok ? `✅ Rule #${id} deleted.` : `❌ Rule #${id} not found.`);
-      } else if (sub === 'toggle') {
-        const id = interaction.options.getInteger('id', true);
-        const enabled = interaction.options.getBoolean('enabled', true);
-        await db.toggleAutomodRule(id, interaction.guildId!, enabled);
-        await interaction.editReply(`✅ Rule #${id} ${enabled ? 'enabled' : 'disabled'}.`);
-      }
-      return;
-    }
-
-    // ── Logs ──────────────────────────────────────────────────────────────────
-    if (group === 'logs') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      if (sub === 'channel') {
-        const channel = interaction.options.getChannel('channel');
-        await db.setLogChannel(interaction.guildId!, channel?.id ?? null);
-        await interaction.editReply(channel ? `✅ Log channel set to <#${channel.id}>.` : '✅ Log channel cleared.');
-      } else if (sub === 'toggle') {
-        const enabled = interaction.options.getBoolean('enabled', true);
-        await db.updateLogConfig(interaction.guildId!, { enabled: enabled ? 1 : 0 });
-        await interaction.editReply(`✅ Logging ${enabled ? 'enabled' : 'disabled'}.`);
-      } else if (sub === 'ignore') {
-        const channel = interaction.options.getChannel('channel', true);
-        const cfg = await db.getLogConfig(interaction.guildId!);
-        const ignored: string[] = cfg?.ignored_channels ? JSON.parse(cfg.ignored_channels) : [];
-        const idx = ignored.indexOf(channel.id);
-        if (idx >= 0) ignored.splice(idx, 1); else ignored.push(channel.id);
-        await db.updateLogConfig(interaction.guildId!, { ignored_channels: JSON.stringify(ignored) });
-        await interaction.editReply(idx >= 0 ? `✅ <#${channel.id}> is no longer ignored.` : `✅ <#${channel.id}> is now ignored from logs.`);
-      } else if (sub === 'events') {
-        const fields: any = {};
-        const joins   = interaction.options.getBoolean('joins');   if (joins   !== null) fields.log_joins           = joins   ? 1 : 0;
-        const leaves  = interaction.options.getBoolean('leaves');  if (leaves  !== null) fields.log_leaves          = leaves  ? 1 : 0;
-        const edits   = interaction.options.getBoolean('edits');   if (edits   !== null) fields.log_message_edits   = edits   ? 1 : 0;
-        const deletes = interaction.options.getBoolean('deletes'); if (deletes !== null) fields.log_message_deletes = deletes ? 1 : 0;
-        const bans    = interaction.options.getBoolean('bans');    if (bans    !== null) fields.log_bans            = bans    ? 1 : 0;
-        const nicks   = interaction.options.getBoolean('nicknames'); if (nicks !== null) fields.log_nickname_changes = nicks  ? 1 : 0;
-        const roles   = interaction.options.getBoolean('roles');   if (roles   !== null) fields.log_role_changes    = roles   ? 1 : 0;
-        const cmds    = interaction.options.getBoolean('commands'); if (cmds   !== null) fields.log_commands        = cmds    ? 1 : 0;
-        await db.updateLogConfig(interaction.guildId!, fields);
-        await interaction.editReply('✅ Log events updated.');
-      } else {
-        const cfg = await db.getLogConfig(interaction.guildId!);
-        if (!cfg) { await interaction.editReply('Logging not configured yet.'); return; }
-        await interaction.editReply({ embeds: [new EmbedBuilder().setColor(Colors.Blue).setTitle('Log Settings').addFields(
-          { name: 'Channel', value: cfg.channel_id ? `<#${cfg.channel_id}>` : 'Not set', inline: true },
-          { name: 'Enabled', value: cfg.enabled ? '✅' : '❌', inline: true },
-          { name: 'Joins',   value: cfg.log_joins ? '✅' : '❌', inline: true },
-          { name: 'Leaves',  value: cfg.log_leaves ? '✅' : '❌', inline: true },
-          { name: 'Edits',   value: cfg.log_message_edits ? '✅' : '❌', inline: true },
-          { name: 'Deletes', value: cfg.log_message_deletes ? '✅' : '❌', inline: true },
-          { name: 'Bans',    value: cfg.log_bans ? '✅' : '❌', inline: true },
-          { name: 'Nicknames', value: cfg.log_nickname_changes ? '✅' : '❌', inline: true },
-          { name: 'Roles',   value: cfg.log_role_changes ? '✅' : '❌', inline: true },
-          { name: 'Commands', value: cfg.log_commands ? '✅' : '❌', inline: true },
-        )] });
-      }
-      return;
-    }
-
-    // ── Antiphishing ──────────────────────────────────────────────────────────
-    if (group === 'antiphishing') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      if (sub === 'toggle') {
-        const enabled = interaction.options.getBoolean('enabled', true);
-        await db.updateAntiphishingConfig(interaction.guildId!, { enabled: enabled ? 1 : 0 });
-        await interaction.editReply(`✅ Antiphishing ${enabled ? 'enabled' : 'disabled'}.`);
-      } else if (sub === 'invites') {
-        const enabled = interaction.options.getBoolean('enabled', true);
-        await db.updateAntiphishingConfig(interaction.guildId!, { block_invites: enabled ? 1 : 0 });
-        await interaction.editReply(`✅ Invite link removal ${enabled ? 'enabled' : 'disabled'}.`);
-      } else if (sub === 'lookalike') {
-        const enabled = interaction.options.getBoolean('enabled', true);
-        await db.updateAntiphishingConfig(interaction.guildId!, { block_lookalike: enabled ? 1 : 0 });
-        await interaction.editReply(`✅ Lookalike domain detection ${enabled ? 'enabled' : 'disabled'}.`);
-      } else {
-        const cfg = await db.getAntiphishingConfig(interaction.guildId!);
-        await interaction.editReply({ embeds: [new EmbedBuilder().setColor(Colors.Blue).setTitle('Antiphishing Settings').addFields(
-          { name: 'Enabled',            value: cfg.enabled ? '✅' : '❌', inline: true },
-          { name: 'Block Invite Links', value: cfg.block_invites ? '✅' : '❌', inline: true },
-          { name: 'Block Lookalikes',   value: cfg.block_lookalike ? '✅' : '❌', inline: true },
-        ).setFooter({ text: 'Known phishing domains (sinking.yachts feed) are always blocked while enabled — alerts post to your modlog channel.' })] });
-      }
-      return;
-    }
-
     // ── Streaming ─────────────────────────────────────────────────────────────
     if (group === 'streaming') {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -340,55 +176,6 @@ const ConfigCommand: Command = {
           { name: 'Announce Channel', value: cfg.announce_channel_id ? `<#${cfg.announce_channel_id}>` : 'Not set', inline: true },
           { name: 'Streaming Role',  value: cfg.give_role_id ? `<@&${cfg.give_role_id}>` : 'Not set', inline: true },
           { name: 'Message Template', value: cfg.message },
-        )] });
-      }
-      return;
-    }
-
-    // ── Welcome ───────────────────────────────────────────────────────────────
-    if (group === 'welcome') {
-      const config = await db.getWelcomeConfig(interaction.guildId!);
-      const fmt = (msg: string) => msg
-        .replace(/\{user\}/g, `<@${interaction.user.id}>`)
-        .replace(/\{username\}/g, interaction.user.username)
-        .replace(/\{server\}/g, interaction.guild!.name)
-        .replace(/\{membercount\}/g, interaction.guild!.memberCount.toString())
-        .replace(/\{#membercount\}/g, `#${interaction.guild!.memberCount}`);
-
-      if (sub === 'channel') {
-        const channel = interaction.options.getChannel('channel', true);
-        await db.setWelcomeConfig(interaction.guildId!, { channel_id: channel.id });
-        return interaction.reply({ content: `✅ Welcome messages will be sent to <#${channel.id}>.`, flags: MessageFlags.Ephemeral });
-      }
-      if (sub === 'message') {
-        const text = interaction.options.getString('text', true);
-        await db.setWelcomeConfig(interaction.guildId!, { message: text });
-        return interaction.reply({ content: `✅ Welcome message updated.\nPreview: ${fmt(text)}`, flags: MessageFlags.Ephemeral });
-      }
-      if (sub === 'dm') {
-        const text = interaction.options.getString('text', true);
-        const dm_message = text.toLowerCase() === 'none' ? null : text;
-        await db.setWelcomeConfig(interaction.guildId!, { dm_message });
-        return interaction.reply({ content: dm_message ? `✅ DM message set.\nPreview: ${fmt(dm_message)}` : '✅ DM message disabled.', flags: MessageFlags.Ephemeral });
-      }
-      if (sub === 'toggle') {
-        const newState = config ? !config.enabled : true;
-        await db.setWelcomeConfig(interaction.guildId!, { enabled: newState ? 1 : 0 });
-        return interaction.reply({ content: `✅ Welcome messages are now **${newState ? 'enabled' : 'disabled'}**.`, flags: MessageFlags.Ephemeral });
-      }
-      if (sub === 'test') {
-        if (!config?.channel_id) return interaction.reply({ content: 'No welcome channel set. Use `/config welcome channel` first.', flags: MessageFlags.Ephemeral });
-        const channel = interaction.guild!.channels.cache.get(config.channel_id) as any;
-        if (!channel?.isTextBased()) return interaction.reply({ content: 'The configured welcome channel no longer exists.', flags: MessageFlags.Ephemeral });
-        await channel.send(fmt(config.message));
-        return interaction.reply({ content: `✅ Test message sent to <#${config.channel_id}>.`, flags: MessageFlags.Ephemeral });
-      }
-      if (sub === 'view') {
-        return interaction.reply({ flags: MessageFlags.Ephemeral, embeds: [new EmbedBuilder().setColor(Colors.Green).setTitle('👋 Welcome Config').addFields(
-          { name: 'Status',     value: config?.enabled ? '✅ Enabled' : '❌ Disabled', inline: true },
-          { name: 'Channel',    value: config?.channel_id ? `<#${config.channel_id}>` : 'Not set', inline: true },
-          { name: 'Message',    value: config?.message ?? 'Default', inline: false },
-          { name: 'DM Message', value: config?.dm_message ?? 'None', inline: false },
         )] });
       }
       return;

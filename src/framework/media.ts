@@ -26,7 +26,7 @@ async function gated<T>(fn: () => Promise<T>): Promise<T> {
 export class MediaError extends Error {}
 
 export async function withWorkdir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-'));
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-'));
   try { return await fn(dir); } finally { await rm(dir, { recursive: true, force: true }).catch(() => {}); }
 }
 

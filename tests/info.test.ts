@@ -54,7 +54,7 @@ describe('/bot', () => {
     expect(u.searchParams.get('integration_type')).toBe('1'); expect(u.searchParams.get('scope')).toBe('applications.commands'); expect(u.searchParams.has('permissions')).toBe(false);
   });
   test('about and invite render', async () => {
-    const client = { user: { id: '999', username: 'Onyx', displayAvatarURL: () => 'https://cdn.discordapp.com/x.png' }, guilds: { cache: { size: 3 } }, ws: { ping: 42.4 } };
+    const client = { user: { id: '999', username: 'Bestow', displayAvatarURL: () => 'https://cdn.discordapp.com/x.png' }, guilds: { cache: { size: 3 } }, ws: { ping: 42.4 } };
     for (const name of ['about', 'invite']) {
       const fi = fakeInteraction(); (fi.interaction as unknown as { client: unknown }).client = client;
       await botSubs.find(s => s.name === name)!.run(fi.interaction);

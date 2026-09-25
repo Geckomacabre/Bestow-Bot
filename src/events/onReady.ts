@@ -25,8 +25,11 @@ export const onReady = async (Bot: Client) => {
       });
       logger.info(`Successfully registered ${commandData.length} guild commands`);
     } else {
-      await rest.put(Routes.applicationGuildCommands(Config.CLIENT_ID, Config.GUILD_ID), { body: [] });
-      logger.info('Cleared guild commands');
+      // Remove leftover dev-server commands so they don't show up twice (only possible if a dev server is configured).
+      if (Config.GUILD_ID) {
+        await rest.put(Routes.applicationGuildCommands(Config.CLIENT_ID, Config.GUILD_ID), { body: [] });
+        logger.info('Cleared guild commands');
+      }
 
       logger.info('Production mode: Registering global commands...');
       await rest.put(Routes.applicationCommands(Config.CLIENT_ID), { body: commandData });

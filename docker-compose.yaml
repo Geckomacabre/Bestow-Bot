@@ -6,9 +6,9 @@ services:
       - .env
     environment:
       # Inside the container the database lives on the named volume below.
-      DB_PATH: /app/data/onyx.db
+      DB_PATH: /app/data/bestow.db
     volumes:
-      - onyx-data:/app/data
+      - bestow-data:/app/data
     ports:
       - "3000:3000"      # web dashboard (remove if you don't use it)
 
@@ -18,4 +18,4 @@ services:
   #   restart: unless-stopped
 
 volumes:
-  onyx-data:
+  bestow-data:

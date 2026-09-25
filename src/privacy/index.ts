@@ -102,16 +102,14 @@ export const POLICY = {
     'Your Discord user ID, so your balance, level, reputation and settings stay yours across sessions.',
     'Things you deliberately give it: birthday, timezone, reminders, wallet style, juul flavour, trading cards and other game progress.',
     'Counters like how many messages you\'ve sent for levels — **never the text of your messages**.',
-    'Moderation records (warnings, cases) and support tickets created by a server\'s staff. Those belong to that server.',
   ],
   neverStores: [
-    'The content of chat messages (features like auto-moderation read messages in memory to act on them, then discard them).',
+    'The content of chat messages (the few features that react to messages, like counting or @mention chat, read them in memory and discard them).',
     'Direct messages, email addresses, phone numbers, IP addresses or your location.',
   ],
   sharing: [
     'Your data is never sold, rented or shared for advertising or analytics. There is no tracking and no telemetry.',
     'Some commands send *what you type into that command* to a public service to get an answer: /crypto → CoinGecko, Blockstream, Blockscout, mempool.space · /net → Cloudflare DNS, ipwho.is, check-host.net, thum.io · /tools → LRCLIB, paste.rs (public paste), Wikipedia/your search instance, open.er-api.com, Google Translate, vxtwitter · /fun action → nekos.best · /roblox, /minecraft, /github, /steam, /valorant, /fortnite → those services\' public APIs.',
     'AI features (if the server\'s owner turned them on) send your prompt to the AI provider the bot owner configured.',
-    'Servers may choose to log edits, deletes and command usage into their own log channels; that\'s visible to that server\'s staff, not stored by the bot.',
   ],
 } as const;

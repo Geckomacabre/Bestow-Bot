@@ -25,7 +25,7 @@ export const botSubs: Sub[] = [
       const c = i.client;
       await i.reply({
         ...card({
-          title: `${c.user?.username ?? 'Onyx'} v${pkg.version}`, color: 0x5865f2, thumbnail: c.user?.displayAvatarURL({ extension: 'png', size: 256 }),
+          title: `${c.user?.username ?? 'Bestow'} v${pkg.version}`, color: 0x5865f2, thumbnail: c.user?.displayAvatarURL({ extension: 'png', size: 256 }),
           description: 'Economy, media tools, lookups, AI and community tooling in one bot — with no tracking and no ads. Try `/help`, and see exactly what\'s stored about you with `/privacy data`.',
           fields: [['Servers', c.guilds.cache.size.toLocaleString('en-US')], ['Uptime', fmtUptime(process.uptime())], ['Runtime', `Bun ${Bun.version}`], ['Memory', `${(process.memoryUsage.rss() / 1048576).toFixed(0)} MB`], ['Ping', `${Math.round(c.ws.ping)} ms`]],
           footer: 'Open source (GPL-3.0-or-later), derived from TMCBot.',

@@ -148,7 +148,7 @@ async function pollReddit(bot: Client) {
     try {
       const url = `https://www.reddit.com/r/${feed.subreddit}/new.json?limit=5`;
       const res = await fetch(url, {
-        headers: { 'User-Agent': 'Onyx/1.0' },
+        headers: { 'User-Agent': 'Bestow/1.0' },
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) continue;

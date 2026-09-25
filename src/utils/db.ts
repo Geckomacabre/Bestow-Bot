@@ -6,103 +6,12 @@ import path from 'node:path';
 
 export type IConfig = { guild_id: string };
 
-export type IVerifyConfig = {
-  guild_id: string;
-  channel_id: string;
-  message_id: string | null;
-  unverified_role_id: string | null;
-  member_role_id: string;
-};
-
 export type ICounting = {
   guild_id: string;
   channel_id: string;
   count: number;
   highscore?: number;
   last_msg?: { message_id: string; author_id: string; number: number; failed?: boolean } | null;
-};
-
-export type IModCase = {
-  id: number;
-  guild_id: string;
-  case_num: number;
-  type: 'ban' | 'unban' | 'kick' | 'timeout' | 'removetimeout' | 'warn' | 'report';
-  user_id: string;
-  user_tag: string;
-  mod_id: string;
-  mod_tag: string;
-  reason: string | null;
-  created_at: number;
-  expires_at: number | null;
-  active: number;
-};
-
-export type IModConfig = {
-  guild_id: string;
-  modlog_channel_id: string | null;
-  dm_on_punish: number;
-  next_case_num: number;
-};
-
-export type IWarning = {
-  id: number;
-  guild_id: string;
-  user_id: string;
-  mod_id: string;
-  reason: string;
-  created_at: number;
-};
-
-export type IAutomodRule = {
-  id: number;
-  guild_id: string;
-  name: string;
-  enabled: number;
-  trigger_type: string;
-  trigger_value: string;
-  action: string;
-  action_duration: number | null;
-  action_reason: string | null;
-};
-
-export type ILogConfig = {
-  guild_id: string;
-  channel_id: string | null;
-  member_log_channel_id: string | null;
-  message_log_channel_id: string | null;
-  voice_log_channel_id: string | null;
-  server_log_channel_id: string | null;
-  enabled: number;
-  log_joins: number;
-  log_leaves: number;
-  log_message_edits: number;
-  log_message_deletes: number;
-  log_bans: number;
-  log_nickname_changes: number;
-  log_role_changes: number;
-  log_member_profile: number;
-  log_voice_events: number;
-  log_emoji_changes: number;
-  log_server_updates: number;
-  log_channel_changes: number;
-  ignored_channels: string;
-  command_log_channel_id: string | null;
-  log_commands: number;
-};
-
-export type IAntiphishingConfig = {
-  guild_id: string;
-  enabled: number;
-  block_invites: number;
-  block_lookalike: number;
-};
-
-export type IAutorole = {
-  id: number;
-  guild_id: string;
-  role_id: string;
-  wait_seconds: number;
-  target: 'all' | 'humans' | 'bots';
 };
 
 export type IRoleCommand = {
@@ -115,13 +24,6 @@ export type IRoleCommand = {
   ignore_roles: string;
 };
 
-export type IVoiceRole = {
-  id: number;
-  guild_id: string;
-  voice_channel_id: string;
-  role_id: string;
-};
-
 export type IReputation = {
   guild_id: string;
   user_id: string;
@@ -131,41 +33,6 @@ export type IReputation = {
 export type IRepConfig = {
   guild_id: string;
   cooldown_seconds: number;
-};
-
-export type ITicketConfig = {
-  guild_id: string;
-  category_id: string | null;
-  log_channel_id: string | null;
-  support_role_id: string | null;
-  next_ticket_num: number;
-};
-
-export type IStreamVcConfig = {
-  guild_id: string;
-  vc_id: string | null;
-  alert_channel_id: string | null;
-  required_role_id: string | null; // role needed to be eligible to request (e.g. Self Promo)
-};
-
-export type IStreamVcApprover = {
-  guild_id: string;
-  target_id: string;
-  is_role: number; // 1 = role, 0 = user
-};
-
-export type ITicket = {
-  id: number;
-  guild_id: string;
-  channel_id: string;
-  user_id: string;
-  ticket_num: number;
-  status: string;
-  topic: string | null;
-  created_at: number;
-  closed_at: number | null;
-  claimed_by: string | null;
-  rating: number | null;
 };
 
 export type IReminder = {
@@ -376,23 +243,6 @@ export type ITimezoneMessage = {
   message_id: string;
 };
 
-export type IWelcomeConfig = {
-  guild_id: string;
-  channel_id: string | null;
-  message: string;
-  image_url: string | null;
-  dm_message: string | null;
-  enabled: number;
-  leave_channel_id: string | null;
-  leave_message: string | null;
-  leave_image_url: string | null;
-  leave_enabled: number;
-  ban_channel_id: string | null;
-  ban_message: string | null;
-  ban_image_url: string | null;
-  ban_enabled: number;
-};
-
 export type IStatChannel = {
   id: number;
   guild_id: string;
@@ -483,94 +333,6 @@ export async function initDb() {
     FOREIGN KEY (guild_id) REFERENCES config(guild_id) ON DELETE CASCADE
   )`;
 
-  await db`CREATE TABLE IF NOT EXISTS mod_config (
-    guild_id           TEXT PRIMARY KEY,
-    modlog_channel_id  TEXT,
-    dm_on_punish       INTEGER NOT NULL DEFAULT 1,
-    next_case_num      INTEGER NOT NULL DEFAULT 1
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS mod_cases (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id    TEXT NOT NULL,
-    case_num    INTEGER NOT NULL,
-    type        TEXT NOT NULL,
-    user_id     TEXT NOT NULL,
-    user_tag    TEXT NOT NULL,
-    mod_id      TEXT NOT NULL,
-    mod_tag     TEXT NOT NULL,
-    reason      TEXT,
-    created_at  INTEGER NOT NULL,
-    expires_at  INTEGER,
-    active      INTEGER NOT NULL DEFAULT 1
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS warnings (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id   TEXT NOT NULL,
-    user_id    TEXT NOT NULL,
-    mod_id     TEXT NOT NULL,
-    reason     TEXT NOT NULL,
-    created_at INTEGER NOT NULL
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS automod_rules (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id        TEXT NOT NULL,
-    name            TEXT NOT NULL,
-    enabled         INTEGER NOT NULL DEFAULT 1,
-    trigger_type    TEXT NOT NULL,
-    trigger_value   TEXT NOT NULL DEFAULT '',
-    action          TEXT NOT NULL,
-    action_duration INTEGER,
-    action_reason   TEXT
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS log_config (
-    guild_id              TEXT PRIMARY KEY,
-    channel_id            TEXT,
-    enabled               INTEGER NOT NULL DEFAULT 1,
-    log_joins             INTEGER NOT NULL DEFAULT 1,
-    log_leaves            INTEGER NOT NULL DEFAULT 1,
-    log_message_edits     INTEGER NOT NULL DEFAULT 1,
-    log_message_deletes   INTEGER NOT NULL DEFAULT 1,
-    log_bans              INTEGER NOT NULL DEFAULT 1,
-    log_nickname_changes  INTEGER NOT NULL DEFAULT 1,
-    log_role_changes      INTEGER NOT NULL DEFAULT 1,
-    log_member_profile    INTEGER NOT NULL DEFAULT 1,
-    log_emoji_changes     INTEGER NOT NULL DEFAULT 1,
-    log_server_updates    INTEGER NOT NULL DEFAULT 1,
-    log_channel_changes   INTEGER NOT NULL DEFAULT 1,
-    ignored_channels      TEXT NOT NULL DEFAULT '[]'
-  )`;
-
-  try { await db`ALTER TABLE log_config ADD COLUMN log_member_profile INTEGER NOT NULL DEFAULT 1`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN log_emoji_changes INTEGER NOT NULL DEFAULT 1`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN log_server_updates INTEGER NOT NULL DEFAULT 1`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN log_channel_changes INTEGER NOT NULL DEFAULT 1`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN member_log_channel_id TEXT`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN message_log_channel_id TEXT`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN voice_log_channel_id TEXT`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN server_log_channel_id TEXT`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN log_voice_events INTEGER NOT NULL DEFAULT 1`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN command_log_channel_id TEXT`; } catch {}
-  try { await db`ALTER TABLE log_config ADD COLUMN log_commands INTEGER NOT NULL DEFAULT 1`; } catch {}
-
-  await db`CREATE TABLE IF NOT EXISTS antiphishing_config (
-    guild_id        TEXT PRIMARY KEY,
-    enabled         INTEGER NOT NULL DEFAULT 1,
-    block_invites   INTEGER NOT NULL DEFAULT 1,
-    block_lookalike INTEGER NOT NULL DEFAULT 1
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS autoroles (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id     TEXT NOT NULL,
-    role_id      TEXT NOT NULL,
-    wait_seconds INTEGER NOT NULL DEFAULT 0
-  )`;
-  try { await db`ALTER TABLE autoroles ADD COLUMN target TEXT NOT NULL DEFAULT 'all'`; } catch {}
-
   await db`CREATE TABLE IF NOT EXISTS rolecommands (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id      TEXT NOT NULL,
@@ -579,13 +341,6 @@ export async function initDb() {
     group_name    TEXT,
     require_roles TEXT NOT NULL DEFAULT '[]',
     ignore_roles  TEXT NOT NULL DEFAULT '[]'
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS voiceroles (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id         TEXT NOT NULL,
-    voice_channel_id TEXT NOT NULL,
-    role_id          TEXT NOT NULL
   )`;
 
   await db`CREATE TABLE IF NOT EXISTS reputation (
@@ -606,43 +361,6 @@ export async function initDb() {
     to_user_id   TEXT NOT NULL,
     last_rep     INTEGER NOT NULL,
     PRIMARY KEY (guild_id, from_user_id, to_user_id)
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS ticket_config (
-    guild_id        TEXT PRIMARY KEY,
-    category_id     TEXT,
-    log_channel_id  TEXT,
-    support_role_id TEXT,
-    next_ticket_num INTEGER NOT NULL DEFAULT 1
-  )`;
-
-  await db`CREATE TABLE IF NOT EXISTS tickets (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id   TEXT NOT NULL,
-    channel_id TEXT NOT NULL,
-    user_id    TEXT NOT NULL,
-    ticket_num INTEGER NOT NULL,
-    status     TEXT NOT NULL DEFAULT 'open',
-    topic      TEXT,
-    created_at INTEGER NOT NULL,
-    closed_at  INTEGER
-  )`;
-  try { await db`ALTER TABLE tickets ADD COLUMN claimed_by TEXT`; } catch {}
-  try { await db`ALTER TABLE tickets ADD COLUMN rating INTEGER`; } catch {}
-
-  await db`CREATE TABLE IF NOT EXISTS streamvc_config (
-    guild_id         TEXT PRIMARY KEY,
-    vc_id            TEXT,
-    alert_channel_id TEXT,
-    required_role_id TEXT
-  )`;
-  try { await db`ALTER TABLE streamvc_config ADD COLUMN required_role_id TEXT`; } catch {}
-
-  await db`CREATE TABLE IF NOT EXISTS streamvc_approvers (
-    guild_id  TEXT NOT NULL,
-    target_id TEXT NOT NULL,
-    is_role   INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (guild_id, target_id)
   )`;
 
   await db`CREATE TABLE IF NOT EXISTS reminders (
@@ -906,31 +624,6 @@ export async function initDb() {
     UNIQUE (guild_id, name)
   )`;
 
-  await db`CREATE TABLE IF NOT EXISTS welcome_config (
-    guild_id   TEXT PRIMARY KEY,
-    channel_id TEXT,
-    message    TEXT NOT NULL DEFAULT 'Welcome {user} to **{server}**! You are member #{membercount}.',
-    dm_message TEXT,
-    enabled    INTEGER NOT NULL DEFAULT 1
-  )`;
-  try { await db`ALTER TABLE welcome_config ADD COLUMN image_url TEXT`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN leave_channel_id TEXT`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN leave_message TEXT`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN leave_image_url TEXT`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN leave_enabled INTEGER NOT NULL DEFAULT 1`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN ban_channel_id TEXT`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN ban_message TEXT`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN ban_image_url TEXT`; } catch {}
-  try { await db`ALTER TABLE welcome_config ADD COLUMN ban_enabled INTEGER NOT NULL DEFAULT 1`; } catch {}
-
-  await db`CREATE TABLE IF NOT EXISTS verify_config (
-    guild_id           TEXT PRIMARY KEY,
-    channel_id         TEXT NOT NULL DEFAULT '',
-    message_id         TEXT,
-    unverified_role_id TEXT,
-    member_role_id     TEXT NOT NULL DEFAULT ''
-  )`;
-
   await db`CREATE TABLE IF NOT EXISTS stat_channels (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id   TEXT NOT NULL,
@@ -1104,7 +797,7 @@ export async function initDb() {
   )`;
   try { await db`DELETE FROM game_xp_daily WHERE date < date('now', '-7 days')`; } catch {}
 
-  // Onyx additions (ledger, bank, businesses, cards, companies …). Dynamic import: the
+  // Bestow additions (ledger, bank, businesses, cards, companies …). Dynamic import: the
   // schema module needs `db` from this file, so a static import would be circular.
   const { initEcoSchema } = await import('../eco/schema.js');
   await initEcoSchema();
@@ -1248,22 +941,16 @@ export async function deleteBotConfig(key: string): Promise<void> {
 
 // ─── Guild cleanup ────────────────────────────────────────────────────────────
 
+/** Deletes everything a server configured when the bot is removed from it. */
 export async function removeGuild(guild_id: string) {
   await db`DELETE FROM config WHERE guild_id = ${guild_id}`;
   for (const table of [
-    'counting', 'mod_config', 'mod_cases', 'warnings', 'automod_rules',
-    'log_config', 'autoroles', 'rolecommands', 'voiceroles', 'reputation',
-    'rep_config', 'rep_cooldowns', 'ticket_config', 'tickets', 'reminders',
-    'custom_commands', 'twitch_feeds', 'youtube_feeds', 'reddit_feeds',
-    'rss_feeds', 'serverstats', 'streaming_config', 'rsvp_events',
-    'economy_config', 'xp', 'xp_config', 'level_roles',
-    'free_game_config', 'free_game_posted', 'birthdays', 'birthday_config',
-    'timezone_user', 'timezone_message',
-    'welcome_config', 'stat_channels', 'reaction_roles',
-    'topic_channels', 'topics', 'starboard_config', 'starboard_posts',
-    'tags', 'news_config', 'verify_config',
-    'streamvc_config', 'streamvc_approvers', 'antiphishing_config', 'mediaguess_rounds', 'mediaguess_config',
-    'economy_drought',
+    'counting', 'rolecommands', 'reputation', 'rep_config', 'rep_cooldowns', 'reminders',
+    'custom_commands', 'twitch_feeds', 'youtube_feeds', 'reddit_feeds', 'rss_feeds', 'serverstats',
+    'streaming_config', 'rsvp_events', 'economy_config', 'xp', 'xp_config', 'level_roles',
+    'free_game_config', 'free_game_posted', 'birthdays', 'birthday_config', 'timezone_user', 'timezone_message',
+    'stat_channels', 'reaction_roles', 'topic_channels', 'topics', 'starboard_config', 'starboard_posts',
+    'tags', 'news_config', 'mediaguess_rounds', 'mediaguess_config', 'economy_drought',
   ]) {
     await db`DELETE FROM ${db(table)} WHERE guild_id = ${guild_id}`.catch(() => {});
   }
@@ -1327,207 +1014,15 @@ export async function removeCountingByChannelId(guild_id: string, channel_id: st
 
 // ─── Mod config ───────────────────────────────────────────────────────────────
 
-export async function getModConfig(guild_id: string): Promise<IModConfig> {
-  const [row] = await db`SELECT * FROM mod_config WHERE guild_id = ${guild_id}`;
-  if (row) return row as IModConfig;
-  await ensureConfig(guild_id);
-  await db`INSERT OR IGNORE INTO mod_config (guild_id) VALUES (${guild_id})`;
-  return { guild_id, modlog_channel_id: null, dm_on_punish: 1, next_case_num: 1 };
-}
-
-export async function setModlogChannel(guild_id: string, channel_id: string | null) {
-  await ensureConfig(guild_id);
-  await db`
-    INSERT INTO mod_config (guild_id, modlog_channel_id) VALUES (${guild_id}, ${channel_id})
-    ON CONFLICT(guild_id) DO UPDATE SET modlog_channel_id = excluded.modlog_channel_id
-  `;
-}
-
-export async function createModCase(
-  guild_id: string,
-  type: IModCase['type'],
-  user_id: string,
-  user_tag: string,
-  mod_id: string,
-  mod_tag: string,
-  reason: string | null,
-  expires_at: number | null = null
-): Promise<IModCase> {
-  await ensureConfig(guild_id);
-  await db`INSERT OR IGNORE INTO mod_config (guild_id) VALUES (${guild_id})`;
-  const cfg = await getModConfig(guild_id);
-  const case_num = cfg.next_case_num;
-  await db`UPDATE mod_config SET next_case_num = next_case_num + 1 WHERE guild_id = ${guild_id}`;
-  const created_at = Date.now();
-  const [row] = await db`
-    INSERT INTO mod_cases (guild_id, case_num, type, user_id, user_tag, mod_id, mod_tag, reason, created_at, expires_at)
-    VALUES (${guild_id}, ${case_num}, ${type}, ${user_id}, ${user_tag}, ${mod_id}, ${mod_tag}, ${reason}, ${created_at}, ${expires_at})
-    RETURNING *
-  `;
-  return row as IModCase;
-}
-
-export async function getModCase(guild_id: string, case_num: number): Promise<IModCase | null> {
-  const [row] = await db`SELECT * FROM mod_cases WHERE guild_id = ${guild_id} AND case_num = ${case_num}`;
-  return (row as IModCase) || null;
-}
-
-export async function updateModCaseReason(guild_id: string, case_num: number, reason: string) {
-  await db`UPDATE mod_cases SET reason = ${reason} WHERE guild_id = ${guild_id} AND case_num = ${case_num}`;
-}
-
-export async function getActiveBans(guild_id: string): Promise<IModCase[]> {
-  const rows = await db`SELECT * FROM mod_cases WHERE guild_id = ${guild_id} AND type = 'ban' AND active = 1 AND expires_at IS NOT NULL`;
-  return rows as IModCase[];
-}
-
-export async function deactivateModCase(guild_id: string, case_num: number) {
-  await db`UPDATE mod_cases SET active = 0 WHERE guild_id = ${guild_id} AND case_num = ${case_num}`;
-}
-
 // ─── Warnings ─────────────────────────────────────────────────────────────────
-
-export async function addWarning(guild_id: string, user_id: string, mod_id: string, reason: string): Promise<IWarning> {
-  const [row] = await db`
-    INSERT INTO warnings (guild_id, user_id, mod_id, reason, created_at)
-    VALUES (${guild_id}, ${user_id}, ${mod_id}, ${reason}, ${Date.now()})
-    RETURNING *
-  `;
-  return row as IWarning;
-}
-
-export async function getWarnings(guild_id: string, user_id: string): Promise<IWarning[]> {
-  const rows = await db`SELECT * FROM warnings WHERE guild_id = ${guild_id} AND user_id = ${user_id} ORDER BY created_at DESC`;
-  return rows as IWarning[];
-}
-
-export async function deleteWarning(id: number, guild_id: string): Promise<boolean> {
-  const result = await db`DELETE FROM warnings WHERE id = ${id} AND guild_id = ${guild_id} RETURNING id`;
-  return result.length > 0;
-}
-
-export async function clearWarnings(guild_id: string, user_id: string): Promise<number> {
-  const result = await db`DELETE FROM warnings WHERE guild_id = ${guild_id} AND user_id = ${user_id} RETURNING id`;
-  return result.length;
-}
 
 // ─── Automod ──────────────────────────────────────────────────────────────────
 
-export async function getAutomodRules(guild_id: string): Promise<IAutomodRule[]> {
-  const rows = await db`SELECT * FROM automod_rules WHERE guild_id = ${guild_id} ORDER BY id`;
-  return rows as IAutomodRule[];
-}
-
-export async function getAutomodRule(id: number, guild_id: string): Promise<IAutomodRule | null> {
-  const [row] = await db`SELECT * FROM automod_rules WHERE id = ${id} AND guild_id = ${guild_id}`;
-  return (row as IAutomodRule) || null;
-}
-
-export async function createAutomodRule(
-  guild_id: string,
-  name: string,
-  trigger_type: string,
-  trigger_value: string,
-  action: string,
-  action_duration: number | null,
-  action_reason: string | null
-): Promise<IAutomodRule> {
-  await ensureConfig(guild_id);
-  const [row] = await db`
-    INSERT INTO automod_rules (guild_id, name, trigger_type, trigger_value, action, action_duration, action_reason)
-    VALUES (${guild_id}, ${name}, ${trigger_type}, ${trigger_value}, ${action}, ${action_duration}, ${action_reason})
-    RETURNING *
-  `;
-  return row as IAutomodRule;
-}
-
-export async function deleteAutomodRule(id: number, guild_id: string): Promise<boolean> {
-  const result = await db`DELETE FROM automod_rules WHERE id = ${id} AND guild_id = ${guild_id} RETURNING id`;
-  return result.length > 0;
-}
-
-export async function toggleAutomodRule(id: number, guild_id: string, enabled: boolean) {
-  await db`UPDATE automod_rules SET enabled = ${enabled ? 1 : 0} WHERE id = ${id} AND guild_id = ${guild_id}`;
-}
-
 // ─── Log config ───────────────────────────────────────────────────────────────
-
-export async function getLogConfig(guild_id: string): Promise<ILogConfig | null> {
-  const [row] = await db`SELECT * FROM log_config WHERE guild_id = ${guild_id}`;
-  return (row as ILogConfig) || null;
-}
-
-export async function setLogChannel(guild_id: string, channel_id: string | null) {
-  await ensureConfig(guild_id);
-  await db`
-    INSERT INTO log_config (guild_id, channel_id) VALUES (${guild_id}, ${channel_id})
-    ON CONFLICT(guild_id) DO UPDATE SET channel_id = excluded.channel_id
-  `;
-}
-
-export async function updateLogConfig(guild_id: string, fields: Partial<Omit<ILogConfig, 'guild_id'>>) {
-  await ensureConfig(guild_id);
-  await db`INSERT OR IGNORE INTO log_config (guild_id) VALUES (${guild_id})`;
-  if (fields.channel_id !== undefined) await db`UPDATE log_config SET channel_id = ${fields.channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.enabled !== undefined) await db`UPDATE log_config SET enabled = ${fields.enabled} WHERE guild_id = ${guild_id}`;
-  if (fields.log_joins !== undefined) await db`UPDATE log_config SET log_joins = ${fields.log_joins} WHERE guild_id = ${guild_id}`;
-  if (fields.log_leaves !== undefined) await db`UPDATE log_config SET log_leaves = ${fields.log_leaves} WHERE guild_id = ${guild_id}`;
-  if (fields.log_message_edits !== undefined) await db`UPDATE log_config SET log_message_edits = ${fields.log_message_edits} WHERE guild_id = ${guild_id}`;
-  if (fields.log_message_deletes !== undefined) await db`UPDATE log_config SET log_message_deletes = ${fields.log_message_deletes} WHERE guild_id = ${guild_id}`;
-  if (fields.log_bans !== undefined) await db`UPDATE log_config SET log_bans = ${fields.log_bans} WHERE guild_id = ${guild_id}`;
-  if (fields.log_nickname_changes !== undefined) await db`UPDATE log_config SET log_nickname_changes = ${fields.log_nickname_changes} WHERE guild_id = ${guild_id}`;
-  if (fields.log_role_changes !== undefined) await db`UPDATE log_config SET log_role_changes = ${fields.log_role_changes} WHERE guild_id = ${guild_id}`;
-  if (fields.log_member_profile !== undefined) await db`UPDATE log_config SET log_member_profile = ${fields.log_member_profile} WHERE guild_id = ${guild_id}`;
-  if (fields.log_emoji_changes !== undefined) await db`UPDATE log_config SET log_emoji_changes = ${fields.log_emoji_changes} WHERE guild_id = ${guild_id}`;
-  if (fields.log_server_updates !== undefined) await db`UPDATE log_config SET log_server_updates = ${fields.log_server_updates} WHERE guild_id = ${guild_id}`;
-  if (fields.log_channel_changes !== undefined) await db`UPDATE log_config SET log_channel_changes = ${fields.log_channel_changes} WHERE guild_id = ${guild_id}`;
-  if (fields.log_voice_events !== undefined) await db`UPDATE log_config SET log_voice_events = ${fields.log_voice_events} WHERE guild_id = ${guild_id}`;
-  if (fields.member_log_channel_id !== undefined) await db`UPDATE log_config SET member_log_channel_id = ${fields.member_log_channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.message_log_channel_id !== undefined) await db`UPDATE log_config SET message_log_channel_id = ${fields.message_log_channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.voice_log_channel_id !== undefined) await db`UPDATE log_config SET voice_log_channel_id = ${fields.voice_log_channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.server_log_channel_id !== undefined) await db`UPDATE log_config SET server_log_channel_id = ${fields.server_log_channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.ignored_channels !== undefined) await db`UPDATE log_config SET ignored_channels = ${fields.ignored_channels} WHERE guild_id = ${guild_id}`;
-  if (fields.command_log_channel_id !== undefined) await db`UPDATE log_config SET command_log_channel_id = ${fields.command_log_channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.log_commands !== undefined) await db`UPDATE log_config SET log_commands = ${fields.log_commands} WHERE guild_id = ${guild_id}`;
-}
 
 // ─── Antiphishing ─────────────────────────────────────────────────────────────
 
-export async function getAntiphishingConfig(guild_id: string): Promise<IAntiphishingConfig> {
-  const [row] = await db`SELECT * FROM antiphishing_config WHERE guild_id = ${guild_id}`;
-  if (row) return row as IAntiphishingConfig;
-  return { guild_id, enabled: 1, block_invites: 1, block_lookalike: 1 };
-}
-
-export async function updateAntiphishingConfig(guild_id: string, fields: Partial<Omit<IAntiphishingConfig, 'guild_id'>>): Promise<void> {
-  await ensureConfig(guild_id);
-  await db`INSERT OR IGNORE INTO antiphishing_config (guild_id) VALUES (${guild_id})`;
-  if (fields.enabled !== undefined) await db`UPDATE antiphishing_config SET enabled = ${fields.enabled} WHERE guild_id = ${guild_id}`;
-  if (fields.block_invites !== undefined) await db`UPDATE antiphishing_config SET block_invites = ${fields.block_invites} WHERE guild_id = ${guild_id}`;
-  if (fields.block_lookalike !== undefined) await db`UPDATE antiphishing_config SET block_lookalike = ${fields.block_lookalike} WHERE guild_id = ${guild_id}`;
-}
-
 // ─── Autorole ─────────────────────────────────────────────────────────────────
-
-export async function getAutoroles(guild_id: string): Promise<IAutorole[]> {
-  const rows = await db`SELECT * FROM autoroles WHERE guild_id = ${guild_id}`;
-  return rows as IAutorole[];
-}
-
-export async function addAutorole(guild_id: string, role_id: string, wait_seconds = 0, target: IAutorole['target'] = 'all'): Promise<IAutorole> {
-  await ensureConfig(guild_id);
-  const [row] = await db`
-    INSERT INTO autoroles (guild_id, role_id, wait_seconds, target)
-    VALUES (${guild_id}, ${role_id}, ${wait_seconds}, ${target})
-    RETURNING *
-  `;
-  return row as IAutorole;
-}
-
-export async function removeAutorole(id: number, guild_id: string): Promise<boolean> {
-  const result = await db`DELETE FROM autoroles WHERE id = ${id} AND guild_id = ${guild_id} RETURNING id`;
-  return result.length > 0;
-}
 
 // ─── Role commands ────────────────────────────────────────────────────────────
 
@@ -1557,31 +1052,6 @@ export async function getRoleCommandByName(guild_id: string, name: string): Prom
 }
 
 // ─── Voice roles ──────────────────────────────────────────────────────────────
-
-export async function getVoiceRoles(guild_id: string): Promise<IVoiceRole[]> {
-  const rows = await db`SELECT * FROM voiceroles WHERE guild_id = ${guild_id}`;
-  return rows as IVoiceRole[];
-}
-
-export async function getVoiceRolesForChannel(guild_id: string, voice_channel_id: string): Promise<IVoiceRole[]> {
-  const rows = await db`SELECT * FROM voiceroles WHERE guild_id = ${guild_id} AND voice_channel_id = ${voice_channel_id}`;
-  return rows as IVoiceRole[];
-}
-
-export async function addVoiceRole(guild_id: string, voice_channel_id: string, role_id: string): Promise<IVoiceRole> {
-  await ensureConfig(guild_id);
-  const [row] = await db`
-    INSERT INTO voiceroles (guild_id, voice_channel_id, role_id)
-    VALUES (${guild_id}, ${voice_channel_id}, ${role_id})
-    RETURNING *
-  `;
-  return row as IVoiceRole;
-}
-
-export async function removeVoiceRole(id: number, guild_id: string): Promise<boolean> {
-  const result = await db`DELETE FROM voiceroles WHERE id = ${id} AND guild_id = ${guild_id} RETURNING id`;
-  return result.length > 0;
-}
 
 // ─── Reputation ───────────────────────────────────────────────────────────────
 
@@ -1632,152 +1102,9 @@ export async function setRepCooldown(guild_id: string, from_user_id: string, to_
 
 // ─── Tickets ──────────────────────────────────────────────────────────────────
 
-export async function getTicketConfig(guild_id: string): Promise<ITicketConfig | null> {
-  const [row] = await db`SELECT * FROM ticket_config WHERE guild_id = ${guild_id}`;
-  return (row as ITicketConfig) || null;
-}
-
-export async function setTicketConfig(guild_id: string, fields: Partial<Omit<ITicketConfig, 'guild_id' | 'next_ticket_num'>>) {
-  await ensureConfig(guild_id);
-  await db`
-    INSERT INTO ticket_config (guild_id, category_id, log_channel_id, support_role_id)
-    VALUES (${guild_id}, ${fields.category_id ?? null}, ${fields.log_channel_id ?? null}, ${fields.support_role_id ?? null})
-    ON CONFLICT(guild_id) DO UPDATE SET
-      category_id = COALESCE(excluded.category_id, category_id),
-      log_channel_id = COALESCE(excluded.log_channel_id, log_channel_id),
-      support_role_id = COALESCE(excluded.support_role_id, support_role_id)
-  `;
-}
-
 // ─── Stream VC request-to-join ──────────────────────────────────────────────────
 
-export async function getStreamVcConfig(guild_id: string): Promise<IStreamVcConfig | null> {
-  const [row] = await db`SELECT * FROM streamvc_config WHERE guild_id = ${guild_id}`;
-  return (row as IStreamVcConfig) || null;
-}
-
-export async function setStreamVcConfig(guild_id: string, fields: Partial<Omit<IStreamVcConfig, 'guild_id'>>) {
-  await db`
-    INSERT INTO streamvc_config (guild_id, vc_id, alert_channel_id, required_role_id)
-    VALUES (${guild_id}, ${fields.vc_id ?? null}, ${fields.alert_channel_id ?? null}, ${fields.required_role_id ?? null})
-    ON CONFLICT(guild_id) DO UPDATE SET
-      vc_id = COALESCE(excluded.vc_id, vc_id),
-      alert_channel_id = COALESCE(excluded.alert_channel_id, alert_channel_id),
-      required_role_id = COALESCE(excluded.required_role_id, required_role_id)
-  `;
-}
-
-export async function getStreamVcApprovers(guild_id: string): Promise<IStreamVcApprover[]> {
-  const rows = await db`SELECT * FROM streamvc_approvers WHERE guild_id = ${guild_id}`;
-  return rows as IStreamVcApprover[];
-}
-
-export async function addStreamVcApprover(guild_id: string, target_id: string, is_role: boolean) {
-  await db`
-    INSERT INTO streamvc_approvers (guild_id, target_id, is_role)
-    VALUES (${guild_id}, ${target_id}, ${is_role ? 1 : 0})
-    ON CONFLICT(guild_id, target_id) DO UPDATE SET is_role = excluded.is_role
-  `;
-}
-
-export async function removeStreamVcApprover(guild_id: string, target_id: string): Promise<boolean> {
-  const rows = await db`DELETE FROM streamvc_approvers WHERE guild_id = ${guild_id} AND target_id = ${target_id} RETURNING target_id`;
-  return (rows as unknown[]).length > 0;
-}
-
-export async function createTicket(guild_id: string, channel_id: string, user_id: string, topic: string | null): Promise<ITicket> {
-  await ensureConfig(guild_id);
-  await db`INSERT OR IGNORE INTO ticket_config (guild_id) VALUES (${guild_id})`;
-  const cfg = await getTicketConfig(guild_id);
-  const ticket_num = cfg?.next_ticket_num ?? 1;
-  await db`UPDATE ticket_config SET next_ticket_num = next_ticket_num + 1 WHERE guild_id = ${guild_id}`;
-  const [row] = await db`
-    INSERT INTO tickets (guild_id, channel_id, user_id, ticket_num, topic, created_at)
-    VALUES (${guild_id}, ${channel_id}, ${user_id}, ${ticket_num}, ${topic}, ${Date.now()})
-    RETURNING *
-  `;
-  return row as ITicket;
-}
-
-export async function getTicketByChannel(channel_id: string): Promise<ITicket | null> {
-  const [row] = await db`SELECT * FROM tickets WHERE channel_id = ${channel_id} AND status = 'open'`;
-  return (row as ITicket) || null;
-}
-
-export async function getTicketByChannelAny(channel_id: string): Promise<ITicket | null> {
-  const [row] = await db`SELECT * FROM tickets WHERE channel_id = ${channel_id}`;
-  return (row as ITicket) || null;
-}
-
-export async function closeTicket(channel_id: string): Promise<ITicket | null> {
-  const [row] = await db`
-    UPDATE tickets SET status = 'closed', closed_at = ${Date.now()}
-    WHERE channel_id = ${channel_id} AND status = 'open'
-    RETURNING *
-  `;
-  return (row as ITicket) || null;
-}
-
-export async function reopenTicket(channel_id: string): Promise<ITicket | null> {
-  const [row] = await db`
-    UPDATE tickets SET status = 'open', closed_at = NULL
-    WHERE channel_id = ${channel_id} AND status = 'closed'
-    RETURNING *
-  `;
-  return (row as ITicket) || null;
-}
-
-export async function claimTicket(channel_id: string, user_id: string): Promise<ITicket | null> {
-  const [row] = await db`
-    UPDATE tickets SET claimed_by = ${user_id} WHERE channel_id = ${channel_id} RETURNING *
-  `;
-  return (row as ITicket) || null;
-}
-
-export async function unclaimTicket(channel_id: string): Promise<ITicket | null> {
-  const [row] = await db`
-    UPDATE tickets SET claimed_by = NULL WHERE channel_id = ${channel_id} RETURNING *
-  `;
-  return (row as ITicket) || null;
-}
-
-export async function rateTicket(channel_id: string, rating: number): Promise<void> {
-  await db`UPDATE tickets SET rating = ${rating} WHERE channel_id = ${channel_id}`;
-}
-
-export async function getModRatings(guild_id: string, user_id: string): Promise<{ rating: number; ticket_num: number; topic: string | null }[]> {
-  return await db`
-    SELECT rating, ticket_num, topic FROM tickets
-    WHERE guild_id = ${guild_id} AND claimed_by = ${user_id} AND rating IS NOT NULL
-    ORDER BY ticket_num DESC
-  ` as any;
-}
-
 // Only guilds that have somewhere to post results — a log channel configured.
-export async function getAllTicketConfigs(): Promise<ITicketConfig[]> {
-  const rows = await db`SELECT * FROM ticket_config WHERE log_channel_id IS NOT NULL`;
-  return rows as ITicketConfig[];
-}
-
-export async function getOpenTickets(guild_id: string): Promise<ITicket[]> {
-  const rows = await db`SELECT * FROM tickets WHERE guild_id = ${guild_id} AND status = 'open'`;
-  return rows as ITicket[];
-}
-
-export async function getMonthlyTicketStats(guild_id: string, since: number): Promise<{
-  opened: number; closed: number; avgRating: number | null; ratingCount: number;
-}> {
-  const [openedRow] = await db`SELECT COUNT(*) as c FROM tickets WHERE guild_id = ${guild_id} AND created_at >= ${since}`;
-  const [closedRow] = await db`SELECT COUNT(*) as c FROM tickets WHERE guild_id = ${guild_id} AND closed_at >= ${since}`;
-  const [ratingRow] = await db`SELECT AVG(rating) as avg, COUNT(rating) as c FROM tickets WHERE guild_id = ${guild_id} AND closed_at >= ${since} AND rating IS NOT NULL`;
-  return {
-    opened: Number((openedRow as any)?.c ?? 0),
-    closed: Number((closedRow as any)?.c ?? 0),
-    avgRating: (ratingRow as any)?.avg != null ? Number((ratingRow as any).avg) : null,
-    ratingCount: Number((ratingRow as any)?.c ?? 0),
-  };
-}
-
 // ─── Reminders ────────────────────────────────────────────────────────────────
 
 export async function createReminder(user_id: string, channel_id: string, guild_id: string | null, message: string, fires_at: number): Promise<IReminder> {
@@ -2627,43 +1954,7 @@ export async function getTimezoneMessages(): Promise<{ channel_id: string; messa
 
 // ─── Welcome config ───────────────────────────────────────────────────────────
 
-export async function getWelcomeConfig(guild_id: string): Promise<IWelcomeConfig | null> {
-  const [row] = await db`SELECT * FROM welcome_config WHERE guild_id = ${guild_id}`;
-  return (row as IWelcomeConfig) || null;
-}
-
-export async function setWelcomeConfig(guild_id: string, fields: Partial<Omit<IWelcomeConfig, 'guild_id'>>) {
-  await ensureConfig(guild_id);
-  await db`INSERT OR IGNORE INTO welcome_config (guild_id) VALUES (${guild_id})`;
-  if (fields.channel_id !== undefined) await db`UPDATE welcome_config SET channel_id = ${fields.channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.message !== undefined) await db`UPDATE welcome_config SET message = ${fields.message} WHERE guild_id = ${guild_id}`;
-  if (fields.image_url !== undefined) await db`UPDATE welcome_config SET image_url = ${fields.image_url} WHERE guild_id = ${guild_id}`;
-  if (fields.dm_message !== undefined) await db`UPDATE welcome_config SET dm_message = ${fields.dm_message} WHERE guild_id = ${guild_id}`;
-  if (fields.enabled !== undefined) await db`UPDATE welcome_config SET enabled = ${fields.enabled} WHERE guild_id = ${guild_id}`;
-  if (fields.leave_channel_id !== undefined) await db`UPDATE welcome_config SET leave_channel_id = ${fields.leave_channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.leave_message !== undefined) await db`UPDATE welcome_config SET leave_message = ${fields.leave_message} WHERE guild_id = ${guild_id}`;
-  if (fields.leave_image_url !== undefined) await db`UPDATE welcome_config SET leave_image_url = ${fields.leave_image_url} WHERE guild_id = ${guild_id}`;
-  if (fields.leave_enabled !== undefined) await db`UPDATE welcome_config SET leave_enabled = ${fields.leave_enabled} WHERE guild_id = ${guild_id}`;
-  if (fields.ban_channel_id !== undefined) await db`UPDATE welcome_config SET ban_channel_id = ${fields.ban_channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.ban_message !== undefined) await db`UPDATE welcome_config SET ban_message = ${fields.ban_message} WHERE guild_id = ${guild_id}`;
-  if (fields.ban_image_url !== undefined) await db`UPDATE welcome_config SET ban_image_url = ${fields.ban_image_url} WHERE guild_id = ${guild_id}`;
-  if (fields.ban_enabled !== undefined) await db`UPDATE welcome_config SET ban_enabled = ${fields.ban_enabled} WHERE guild_id = ${guild_id}`;
-}
-
 // ─── Verify config ────────────────────────────────────────────────────────────
-
-export async function getVerifyConfig(guild_id: string): Promise<IVerifyConfig | null> {
-  const [row] = await db`SELECT * FROM verify_config WHERE guild_id = ${guild_id}`;
-  return (row as IVerifyConfig) ?? null;
-}
-
-export async function setVerifyConfig(guild_id: string, fields: Partial<Omit<IVerifyConfig, 'guild_id'>>) {
-  await db`INSERT OR IGNORE INTO verify_config (guild_id, channel_id, member_role_id) VALUES (${guild_id}, '', '')`;
-  if (fields.channel_id !== undefined) await db`UPDATE verify_config SET channel_id = ${fields.channel_id} WHERE guild_id = ${guild_id}`;
-  if (fields.message_id !== undefined) await db`UPDATE verify_config SET message_id = ${fields.message_id} WHERE guild_id = ${guild_id}`;
-  if (fields.unverified_role_id !== undefined) await db`UPDATE verify_config SET unverified_role_id = ${fields.unverified_role_id} WHERE guild_id = ${guild_id}`;
-  if (fields.member_role_id !== undefined) await db`UPDATE verify_config SET member_role_id = ${fields.member_role_id} WHERE guild_id = ${guild_id}`;
-}
 
 // ─── Stat channels ────────────────────────────────────────────────────────────
 

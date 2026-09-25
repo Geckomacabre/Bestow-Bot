@@ -1,10 +1,8 @@
-# Onyx
+# Bestow
 
 A multipurpose Discord bot: an economy with real depth, media editing, free text-to-speech and singing, AI tools, game/dev lookups, moderation, tickets, levels and more — with **no tracking, no data selling, and a `/privacy` command that shows, exports and erases exactly what it stores about you**.
 
 Built with TypeScript, [Bun](https://bun.sh) and [discord.js](https://discord.js.org). Derived from TMCBot (GPL-3.0-or-later); the AI ideas come from an earlier llmcord-based bot. See [COMMANDS.md](COMMANDS.md) for every command (generated from the code, so it's always accurate).
-
-> **Name:** "Onyx" is a placeholder. Rename it by changing the bot's name in the Discord Developer Portal, `package.json`, and the few strings that say "Onyx" (`grep -rn Onyx src`).
 
 ## What's in it
 
@@ -44,7 +42,7 @@ There is deliberately **no music player and no giveaway system**.
 cp .env.example .env      # then fill in TOKEN, CLIENT_ID, GUILD_ID (see the comments in the file)
 bun install
 ```
-Keep the database (`./data/onyx.db` by default) on a **local disk**. The bot refuses to start with the database inside OneDrive/Dropbox/iCloud, because sync clients corrupt SQLite files.
+Keep the database (`./data/bestow.db` by default) on a **local disk**. The bot refuses to start with the database inside OneDrive/Dropbox/iCloud, because sync clients corrupt SQLite files.
 
 ### 3. Run
 ```bash
@@ -56,7 +54,7 @@ Slash commands are registered on startup: with `NODE_ENV=development` only in `G
 ```bash
 docker compose up -d --build
 ```
-The image includes ffmpeg and yt-dlp, runs as an unprivileged user, and keeps its database, voice models and uploads on the `onyx-data` volume.
+The image includes ffmpeg and yt-dlp, runs as an unprivileged user, and keeps its database, voice models and uploads on the `bestow-data` volume.
 
 ## Optional features
 

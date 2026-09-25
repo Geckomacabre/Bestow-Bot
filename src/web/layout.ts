@@ -11,9 +11,6 @@ const guildNav = (guildId: string): NavItem[] => [
   { label: 'Overview',       href: `/servers/${guildId}`,              icon: '🏠' },
   { label: 'Economy',        href: `/servers/${guildId}/economy`,      icon: '💰' },
   { label: 'Leveling',       href: `/servers/${guildId}/leveling`,     icon: '⭐' },
-  { label: 'Welcome',        href: `/servers/${guildId}/welcome`,      icon: '👋' },
-  { label: 'Automod',        href: `/servers/${guildId}/automod`,      icon: '🛡️' },
-  { label: 'Logs',           href: `/servers/${guildId}/logs`,         icon: '📋' },
   { label: 'Reaction Roles', href: `/servers/${guildId}/reaction-roles`, icon: '🎭' },
   { label: 'Topics',         href: `/servers/${guildId}/topics`,       icon: '💬' },
   { label: 'Starboard',      href: `/servers/${guildId}/starboard`,    icon: '⭐' },
@@ -39,7 +36,7 @@ export function layout(opts: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escHtml(title)} — Onyx Dashboard</title>
+  <title>${escHtml(title)} — Bestow Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -104,7 +101,7 @@ export function layout(opts: {
     <!-- Brand -->
     <a href="/servers" class="flex items-center gap-3 px-5 py-4 border-b" style="border-color:#1e3a5f;">
       <span class="text-2xl">🤖</span>
-      <span class="font-bold text-lg text-white">Onyx</span>
+      <span class="font-bold text-lg text-white">Bestow</span>
     </a>
 
     <!-- Guild info -->
@@ -175,7 +172,7 @@ export function errorPage(message: string, user?: SessionUser): string {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Error — Onyx Dashboard</title>
+  <title>Error — Bestow Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex items-center justify-center">
@@ -195,13 +192,13 @@ export function landingPage(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Onyx Dashboard</title>
+  <title>Bestow Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex items-center justify-center">
   <div class="text-center max-w-md">
     <div class="text-6xl mb-4">🤖</div>
-    <h1 class="text-4xl font-bold mb-2 text-white">Onyx Dashboard</h1>
+    <h1 class="text-4xl font-bold mb-2 text-white">Bestow Dashboard</h1>
     <p class="text-gray-400 mb-8">Configure your server settings, manage economy, and more.</p>
     <a href="/auth/login"
        class="inline-flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition">
@@ -219,7 +216,7 @@ export function serversPage(user: SessionUser, guilds: Array<{ id: string; name:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Select Server — Onyx Dashboard</title>
+  <title>Select Server — Bestow Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #1a1a2e; }
@@ -231,7 +228,7 @@ export function serversPage(user: SessionUser, guilds: Array<{ id: string; name:
   <header class="px-8 py-4 border-b flex items-center justify-between" style="background:#16213e; border-color:#1e3a5f;">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🤖</span>
-      <span class="text-xl font-bold text-white">Onyx Dashboard</span>
+      <span class="text-xl font-bold text-white">Bestow Dashboard</span>
     </div>
     <div class="flex items-center gap-4">
       <img src="${userAvatarUrl(user.id, user.avatar)}" class="w-8 h-8 rounded-full">
@@ -242,7 +239,7 @@ export function serversPage(user: SessionUser, guilds: Array<{ id: string; name:
 
   <main class="max-w-4xl mx-auto px-6 py-10">
     <h2 class="text-2xl font-bold mb-2 text-white">Select a Server</h2>
-    <p class="text-gray-400 mb-8">You can only manage servers where you have the <strong>Manage Server</strong> permission and Onyx is present.</p>
+    <p class="text-gray-400 mb-8">You can only manage servers where you have the <strong>Manage Server</strong> permission and Bestow is present.</p>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       ${guilds.map(g => /* html */`

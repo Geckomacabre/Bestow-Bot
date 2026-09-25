@@ -17,10 +17,7 @@ import * as db from '../utils/db';
 import { overviewPage } from './pages/overview';
 import { economyPage, handleEconomySave } from './pages/economy';
 import { levelingPage, handleLevelingSave } from './pages/leveling';
-import { welcomePage, handleWelcomeSave } from './pages/welcome';
 import { starboardPage, handleStarboardSave } from './pages/starboard';
-import { automodPage } from './pages/automod';
-import { logsPage, handleLogsSave } from './pages/logs';
 import { reactionRolesPage } from './pages/reactionroles';
 import { topicsPage } from './pages/topics';
 import { birthdaysPage, handleBirthdaySave } from './pages/birthdays';
@@ -37,7 +34,7 @@ const CLIENT_SECRET = Bun.env.DISCORD_CLIENT_SECRET;
 
 function getSessionFromCookie(cookieHeader: string | null): SessionUser | null {
   if (!cookieHeader) return null;
-  const match = cookieHeader.match(/onyx_session=([^;]+)/);
+  const match = cookieHeader.match(/bestow_session=([^;]+)/);
   if (!match) return null;
   return getSession(decodeURIComponent(match[1]!));
 }
@@ -46,11 +43,11 @@ function getSessionFromCookie(cookieHeader: string | null): SessionUser | null {
 const SECURE = WEB_URL.startsWith('https://') ? '; Secure' : '';
 
 function sessionCookie(id: string): string {
-  return `onyx_session=${encodeURIComponent(id)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400${SECURE}`;
+  return `bestow_session=${encodeURIComponent(id)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400${SECURE}`;
 }
 
 function clearCookie(): string {
-  return `onyx_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${SECURE}`;
+  return `bestow_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${SECURE}`;
 }
 
 function redirect(url: string, extra?: Record<string, string>): Response {
@@ -160,7 +157,7 @@ export function startWebServer() {
 
   app.get('/auth/logout', ({ request }) => {
     const cookie = request.headers.get('cookie');
-    const match = cookie?.match(/onyx_session=([^;]+)/);
+    const match = cookie?.match(/bestow_session=([^;]+)/);
     if (match) deleteSession(decodeURIComponent(match[1]!));
     return redirect('/', { 'Set-Cookie': clearCookie() });
   });
@@ -241,23 +238,6 @@ export function startWebServer() {
     return flashRedirect(`/servers/${params.guildId}/leveling`, 'Level role removed.');
   });
 
-  // Welcome
-  app.get('/servers/:guildId/welcome', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const channels = await getGuildTextChannels(params.guildId);
-    const { flash, flashType } = getFlash(new URL(request.url));
-    return html(await welcomePage(auth.user, auth.guild!, channels, flash, flashType));
-  });
-
-  app.post('/servers/:guildId/welcome', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const body: any = parseBody(await request.text());
-    await handleWelcomeSave(params.guildId, body);
-    return flashRedirect(`/servers/${params.guildId}/welcome`, 'Welcome settings saved!');
-  });
-
   // Starboard
   app.get('/servers/:guildId/starboard', async ({ request, params }) => {
     const auth = await requireGuildAccess(request, params.guildId);
@@ -273,54 +253,6 @@ export function startWebServer() {
     const body: any = parseBody(await request.text());
     await handleStarboardSave(params.guildId, body);
     return flashRedirect(`/servers/${params.guildId}/starboard`, 'Starboard settings saved!');
-  });
-
-  // Automod
-  app.get('/servers/:guildId/automod', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const { flash, flashType } = getFlash(new URL(request.url));
-    return html(await automodPage(auth.user, auth.guild!, flash, flashType));
-  });
-
-  app.post('/servers/:guildId/automod/add', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const body: any = parseBody(await request.text());
-    if (!body.name || !body.trigger_type || !body.action) {
-      return flashRedirect(`/servers/${params.guildId}/automod`, 'Name, trigger type, and action are required.', 'error');
-    }
-    await db.createAutomodRule(
-      params.guildId, body.name, body.trigger_type, body.trigger_value || '',
-      body.action, body.action_duration ? parseInt(body.action_duration) : null,
-      body.action_reason || null
-    );
-    return flashRedirect(`/servers/${params.guildId}/automod`, 'Automod rule added!');
-  });
-
-  app.post('/servers/:guildId/automod/remove', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const body: any = parseBody(await request.text());
-    await db.deleteAutomodRule(parseInt(body.id), params.guildId);
-    return flashRedirect(`/servers/${params.guildId}/automod`, 'Automod rule removed.');
-  });
-
-  // Logs
-  app.get('/servers/:guildId/logs', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const channels = await getGuildTextChannels(params.guildId);
-    const { flash, flashType } = getFlash(new URL(request.url));
-    return html(await logsPage(auth.user, auth.guild!, channels, flash, flashType));
-  });
-
-  app.post('/servers/:guildId/logs', async ({ request, params }) => {
-    const auth = await requireGuildAccess(request, params.guildId);
-    if (auth instanceof Response) return auth;
-    const body: any = parseBody(await request.text());
-    await handleLogsSave(params.guildId, body);
-    return flashRedirect(`/servers/${params.guildId}/logs`, 'Log settings saved!');
   });
 
   // Reaction Roles

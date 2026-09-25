@@ -4,7 +4,7 @@
  * Every table that has a column identifying a user MUST appear here, either as
  *  - `delete`  : rows are removed by /privacy delete,
  *  - `anonymize`: the row belongs to a server (a tag, a jackpot history) so the user id is blanked instead,
- *  - `keep`    : a server's own safety record (warnings, cases, tickets) — exported to the person, but not deletable by them,
+ *  - `keep`    : a server-owned record the person can export but not delete (none exist today; the machinery is kept for future use),
  * and tests/privacy.test.ts fails if a new table with a user column is added without an entry, so nothing can slip through unnoticed.
  */
 
@@ -40,10 +40,6 @@ export const REGISTRY: PrivacyEntry[] = [
   del('ai_persona', 'Your AI persona'), del('ai_prefs', 'AI memory preference'), del('ai_memory', 'AI memory notes you saved'),
   // Content you authored for a server: kept for the server, detached from you
   { table: 'tags', columns: ['owner_id'], label: 'Tags you created', policy: 'anonymize', note: 'the tag stays for the server; you are removed as its owner' },
-  // Server safety records — the server's data, not deletable by the person concerned
-  { table: 'warnings', columns: ['user_id'], label: 'Warnings from server staff', policy: 'keep', note: 'moderation records belong to the server; ask its staff to remove them' },
-  { table: 'mod_cases', columns: ['user_id'], label: 'Moderation cases', policy: 'keep', note: 'moderation records belong to the server; ask its staff to remove them' },
-  { table: 'tickets', columns: ['user_id'], label: 'Support tickets you opened', policy: 'keep', note: 'ticket records belong to the server; ask its staff to remove them' },
 ];
 
 /**
@@ -52,11 +48,7 @@ export const REGISTRY: PrivacyEntry[] = [
  */
 export const EXEMPT: Record<string, string> = {
   'eco_company': 'owner_id: shared company; deletion is refused while you own one (transfer or disband first)',
-  'streamvc_approvers': 'target_id is a server-configured user or role, part of that server\'s configuration',
   'mediaguess_rounds': 'transient game state; user_hints is a counter map for the current round and is cleared when the round ends',
-  'autoroles': 'target is a role',
-  'log_config': 'configuration columns, not people',
-  'verify_config': 'configuration columns, not people',
   'twitch_feeds': 'twitch_username is a streamer the server follows',
 };
 

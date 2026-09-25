@@ -17,7 +17,7 @@ let base = '';
 beforeAll(async () => {
   Bun.env.ALLOW_PRIVATE_URLS = '1';
   if (!haveFfmpeg) return;
-  dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-cmd-test-'));
+  dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-cmd-test-'));
   await makeSamples(dir);
   server = Bun.serve({
     port: 0,

@@ -21,7 +21,7 @@ describe('makeZip', () => {
     const win = process.platform === 'win32';
     const bin = win ? 'C:\\Windows\\System32\\tar.exe' : Bun.which('unzip');
     if (!bin || (win && !(await Bun.file(bin).exists()))) return;
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-zip-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-zip-'));
     const payload = Buffer.from(Array.from({ length: 5000 }, (_, i) => (i * 7) % 251));
     await writeFile(path.join(dir, 'x.zip'), makeZip([{ name: 'one.txt', data: Buffer.from('first file\n') }, { name: 'frames/two.bin', data: payload }]));
     const ex = Bun.spawnSync(win ? [bin, '-xf', 'x.zip'] : [bin, '-o', 'x.zip'], { cwd: dir });

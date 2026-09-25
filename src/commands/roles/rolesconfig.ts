@@ -43,26 +43,6 @@ const RolesConfig: Command = {
       .addSubcommand(s => s.setName('remove').setDescription('Remove a self-assignable role by ID')
         .addIntegerOption(o => o.setName('id').setDescription('Role command ID').setRequired(true)))
       .addSubcommand(s => s.setName('list').setDescription('List all self-assignable roles')))
-    .addSubcommandGroup(g => g.setName('auto').setDescription('Roles assigned automatically to new members')
-      .addSubcommand(s => s.setName('add').setDescription('Add an autorole')
-        .addRoleOption(o => o.setName('role').setDescription('Role to assign').setRequired(true))
-        .addIntegerOption(o => o.setName('delay').setDescription('Seconds to wait before assigning (0 = instant)').setMinValue(0))
-        .addStringOption(o => o.setName('target').setDescription('Who this applies to (default: everyone)').setChoices(
-          { name: 'Everyone', value: 'all' },
-          { name: 'Humans only', value: 'humans' },
-          { name: 'Bots only', value: 'bots' },
-        )))
-      .addSubcommand(s => s.setName('remove').setDescription('Remove an autorole by ID')
-        .addIntegerOption(o => o.setName('id').setDescription('Autorole ID').setRequired(true)))
-      .addSubcommand(s => s.setName('list').setDescription('List all autoroles'))
-      .addSubcommand(s => s.setName('test').setDescription('Diagnose autorole setup — checks permissions and hierarchy')))
-    .addSubcommandGroup(g => g.setName('voice').setDescription('Roles assigned when joining a voice channel')
-      .addSubcommand(s => s.setName('add').setDescription('Add a voice role binding')
-        .addChannelOption(o => o.setName('channel').setDescription('Voice channel').setRequired(true).addChannelTypes(ChannelType.GuildVoice))
-        .addRoleOption(o => o.setName('role').setDescription('Role to assign').setRequired(true)))
-      .addSubcommand(s => s.setName('remove').setDescription('Remove a voice role binding by ID')
-        .addIntegerOption(o => o.setName('id').setDescription('Binding ID').setRequired(true)))
-      .addSubcommand(s => s.setName('list').setDescription('List all voice role bindings')))
     .addSubcommandGroup(g => g.setName('reaction').setDescription('Roles assigned via emoji reactions')
       .addSubcommand(s => s.setName('add').setDescription('Add a reaction role to a message')
         .addStringOption(o => o.setName('message_link').setDescription('Message link or channel_id/message_id').setRequired(true))
@@ -132,82 +112,6 @@ const RolesConfig: Command = {
         const container = new ContainerBuilder().setAccentColor(Colors.Blurple)
           .addTextDisplayComponents(new TextDisplayBuilder().setContent(
             `**Self-Assignable Roles**\n\n${cmds.map(c => `**#${c.id}** \`${c.name}\` → <@&${c.role_id}>${c.group_name ? ` [${c.group_name}]` : ''}`).join('\n')}`
-          ));
-        await interaction.editReply({ flags: IS_CV2, components: [container] });
-      }
-      return;
-    }
-
-    // ── /rolesconfig auto ─────────────────────────────────────────────────────
-    if (group === 'auto') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      if (sub === 'add') {
-        const role = interaction.options.getRole('role', true);
-        const delay = interaction.options.getInteger('delay') ?? 0;
-        const target = (interaction.options.getString('target') ?? 'all') as 'all' | 'humans' | 'bots';
-        const ar = await db.addAutorole(guildId, role.id, delay, target);
-        const who = target === 'all' ? 'new members' : target === 'humans' ? 'new human members' : 'new bots';
-        await interaction.editReply(cv2Text(`✅ <@&${role.id}> will be assigned to ${who}${delay ? ` after ${delay}s` : ' instantly'}. (ID: ${ar.id})`));
-      } else if (sub === 'remove') {
-        const id = interaction.options.getInteger('id', true);
-        const ok = await db.removeAutorole(id, guildId);
-        await interaction.editReply(cv2Text(ok ? `✅ Autorole #${id} removed.` : `❌ Autorole #${id} not found.`));
-      } else if (sub === 'test') {
-        const roles = await db.getAutoroles(guildId);
-        const botMember = await guild.members.fetchMe();
-        const botHasManageRoles = botMember.permissions.has(PermissionFlagsBits.ManageRoles);
-        const botHighestPos = botMember.roles.highest.position;
-        const lines: string[] = [];
-        lines.push(`**Bot has Manage Roles:** ${botHasManageRoles ? '✅ Yes' : '❌ No — grant this in Server Settings → Roles'}`);
-        lines.push(`**Bot highest role position:** ${botHighestPos}`);
-        lines.push('');
-        if (!roles.length) {
-          lines.push('❌ No autoroles configured. Use `/rolesconfig auto add` to add one.');
-        } else {
-          lines.push(`**Configured autoroles (${roles.length}):**`);
-          for (const ar of roles) {
-            const role = guild.roles.cache.get(ar.role_id);
-            if (!role) {
-              lines.push(`• <@&${ar.role_id}> — ❌ **Role not found** (deleted? Remove with \`/rolesconfig auto remove ${ar.id}\`)`);
-              continue;
-            }
-            const canAssign = botHasManageRoles && botHighestPos > role.position;
-            lines.push(`• <@&${role.id}> (pos ${role.position})${ar.target !== 'all' ? ` — ${ar.target} only` : ''}${ar.wait_seconds ? ` — ${ar.wait_seconds}s delay` : ''} — ${canAssign ? '✅ Bot can assign this' : `❌ Bot cannot assign — bot role (pos ${botHighestPos}) must be above this role (pos ${role.position})`}`);
-          }
-        }
-        const container = new ContainerBuilder().setAccentColor(botHasManageRoles ? Colors.Green : Colors.Red)
-          .addTextDisplayComponents(new TextDisplayBuilder().setContent(`**Autorole Diagnostics**\n\n${lines.join('\n')}`));
-        await interaction.editReply({ flags: IS_CV2, components: [container] });
-      } else {
-        const roles = await db.getAutoroles(guildId);
-        if (!roles.length) { await interaction.editReply(cv2Text('No autoroles configured.')); return; }
-        const container = new ContainerBuilder().setAccentColor(Colors.Blurple)
-          .addTextDisplayComponents(new TextDisplayBuilder().setContent(
-            `**Autoroles**\n\n${roles.map(r => `**#${r.id}** <@&${r.role_id}>${r.target !== 'all' ? ` — ${r.target} only` : ''}${r.wait_seconds ? ` — ${r.wait_seconds}s delay` : ''}`).join('\n')}`
-          ));
-        await interaction.editReply({ flags: IS_CV2, components: [container] });
-      }
-      return;
-    }
-
-    // ── /rolesconfig voice ────────────────────────────────────────────────────
-    if (group === 'voice') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      if (sub === 'add') {
-        const channel = interaction.options.getChannel('channel', true);
-        const role = interaction.options.getRole('role', true);
-        const vr = await db.addVoiceRole(guildId, channel.id, role.id);
-        await interaction.editReply(cv2Text(`✅ <@&${role.id}> will be assigned when joining <#${channel.id}> (ID: ${vr.id}).`));
-      } else if (sub === 'remove') {
-        const id = interaction.options.getInteger('id', true);
-        const ok = await db.removeVoiceRole(id, guildId);
-        await interaction.editReply(cv2Text(ok ? `✅ Voice role #${id} removed.` : `❌ Voice role #${id} not found.`));
-      } else {
-        const vrs = await db.getVoiceRoles(guildId);
-        if (!vrs.length) { await interaction.editReply(cv2Text('No voice role bindings configured.')); return; }
-        const container = new ContainerBuilder().setAccentColor(Colors.Blurple)
-          .addTextDisplayComponents(new TextDisplayBuilder().setContent(
-            `**Voice Roles**\n\n${vrs.map(v => `**#${v.id}** <#${v.voice_channel_id}> → <@&${v.role_id}>`).join('\n')}`
           ));
         await interaction.editReply({ flags: IS_CV2, components: [container] });
       }

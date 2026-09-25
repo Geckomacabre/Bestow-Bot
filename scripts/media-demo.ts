@@ -11,7 +11,7 @@ import { makeSamples } from '../tests/fixtures';
 
 const outDir = path.resolve(Bun.argv[2] ?? './media-demo');
 mkdirSync(outDir, { recursive: true });
-const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-demo-'));
+const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-demo-'));
 await makeSamples(dir);
 const job = (f: string) => fx.makeJob(dir, f);
 const save = (name: string, out: fx.Out) => { const dest = path.join(outDir, `${name}${path.extname(out.file)}`); copyFileSync(path.join(dir, out.file), dest); console.log('✔', name); };
@@ -30,6 +30,6 @@ const stills: [string, () => Promise<fx.Out>][] = [
   ['caption', async () => fx.caption(await job('sample.png'), 'when the bot finally works and you did not have to fix anything')],
   ['caption-bottom', async () => fx.caption(await job('sample.png'), 'bottom caption', true)],
   ['meme', async () => fx.meme(await job('sample.png'), 'one does not simply', 'ship a discord bot')],
-  ['watermark', async () => fx.watermark(await job('sample.png'), '@onyx', { position: 'bottom-right', opacity: 70, size: 6, color: '#ffffff' })],
+  ['watermark', async () => fx.watermark(await job('sample.png'), '@bestow', { position: 'bottom-right', opacity: 70, size: 6, color: '#ffffff' })],
 ];
 for (const [n, f] of stills) { try { save(n, await f()); } catch (e) { console.log('✘', n, (e as Error).message); } }

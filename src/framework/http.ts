@@ -1,7 +1,7 @@
 /** Small fetch wrapper shared by all the lookup commands: timeout, UA, error shape, TTL cache. */
 
 // Plain and short on purpose: some APIs (nekos.best, Cloudflare-fronted ones) reject browser-like or URL-bearing agents.
-export const USER_AGENT = Bun.env.BOT_CONTACT ? `OnyxBot/1.0 (${Bun.env.BOT_CONTACT})` : 'OnyxBot/1.0';
+export const USER_AGENT = Bun.env.BOT_CONTACT ? `BestowBot/1.0 (${Bun.env.BOT_CONTACT})` : 'BestowBot/1.0';
 
 export class HttpError extends Error {
   constructor(public status: number, public url: string, message?: string) {

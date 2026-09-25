@@ -245,7 +245,7 @@ describe('speech-to-text', () => {
 interface FakeMsgOpts { content?: string; authorId?: string; bot?: boolean; guildId?: string | null; mentionsBot?: boolean; everyone?: boolean; chain?: { id: string; name: string; content: string; bot?: boolean }[]; replyToBot?: boolean; images?: string[]; guildName?: string }
 function fakeMessage(o: FakeMsgOpts = {}) {
   const replies: any[] = []; let typing = 0;
-  const botUser = { id: 'bot1', username: 'Onyx' };
+  const botUser = { id: 'bot1', username: 'Bestow' };
   const chain = o.chain ?? [];
   const mk = (i: number): any => {
     const m = chain[i]!;
@@ -271,7 +271,7 @@ describe('chat on mention', () => {
   test('mention parsing and message construction', () => {
     expect(stripMention('<@bot1> hi <@!bot1>  there', 'bot1')).toBe('hi there'); expect(stripMention('<@other> hi', 'bot1')).toBe('<@other> hi');
     expect(userContent('hi', [])).toBe('hi'); expect(userContent('', ['data:x'])).toEqual([{ type: 'text', text: 'What do you see in this image?' }, { type: 'image_url', image_url: { url: 'data:x' } }]);
-    expect(chainToMessages([{ authorId: 'u1', name: 'Al', content: 'q?' }, { authorId: 'bot1', name: 'Onyx', content: 'a.' }, { authorId: 'u2', name: 'Bo', content: '   ' }], 'bot1')).toEqual([{ role: 'user', content: 'Al: q?' }, { role: 'assistant', content: 'a.' }]);
+    expect(chainToMessages([{ authorId: 'u1', name: 'Al', content: 'q?' }, { authorId: 'bot1', name: 'Bestow', content: 'a.' }, { authorId: 'u2', name: 'Bo', content: '   ' }], 'bot1')).toEqual([{ role: 'user', content: 'Al: q?' }, { role: 'assistant', content: 'a.' }]);
   });
   test('a mention gets a reply that pings nobody, carrying persona + opted-in notes and the person\'s name', async () => {
     const u = uid(); await store.setPersona(u, 'a grumpy pirate'); await store.setMemoryEnabled(u, true); await store.addNote(u, 'has a dog named Rex');
@@ -303,7 +303,7 @@ describe('chat on mention', () => {
   test('DMs always get an answer; replying to the bot\'s own message continues the conversation with the reply chain as context', async () => {
     expect(await handleAiMessage(fakeMessage({ guildId: null, mentionsBot: false, content: 'hey' }).msg, deps())).toBe('replied');
     calls.length = 0;
-    const chain = [{ id: 'sam', name: 'Sam', content: '<@bot1> name a colour' }, { id: 'bot1', name: 'Onyx', content: 'Teal.', bot: true }];
+    const chain = [{ id: 'sam', name: 'Sam', content: '<@bot1> name a colour' }, { id: 'bot1', name: 'Bestow', content: 'Teal.', bot: true }];
     const { msg } = fakeMessage({ mentionsBot: false, content: 'and another?', chain });
     expect(await handleAiMessage(msg, deps())).toBe('replied');
     const m = chatCalls()[0]!.body.messages;

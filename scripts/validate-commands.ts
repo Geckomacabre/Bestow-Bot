@@ -5,11 +5,11 @@
  *   bun run validate            # summary + errors
  *   bun run validate --list     # also print every command path
  */
-Bun.env.DB_PATH ??= ':memory:';
+Bun.env.DB_PATH = ':memory:';
 Bun.env.LOG_LEVEL ??= 'warn';
-Bun.env.TOKEN ??= 'validate';
-Bun.env.CLIENT_ID ??= '1';
-Bun.env.GUILD_ID ??= '1';
+Bun.env.TOKEN = 'validate';
+Bun.env.CLIENT_ID = '1';
+Bun.env.GUILD_ID = '1';
 
 const { default: commands } = await import('../src/handlers/commandHandler');
 

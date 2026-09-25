@@ -21,7 +21,7 @@ export const KOKORO_VOICES: VoiceDef[] = [
   K('af_sarah', 'Sarah', 'en-US', 'Female'), K('af_sky', 'Sky', 'en-US', 'Female'),
   K('am_adam', 'Adam', 'en-US', 'Male'), K('am_echo', 'Echo', 'en-US', 'Male'), K('am_eric', 'Eric', 'en-US', 'Male'),
   K('am_fenrir', 'Fenrir', 'en-US', 'Male'), K('am_liam', 'Liam', 'en-US', 'Male'), K('am_michael', 'Michael', 'en-US', 'Male'),
-  K('am_onyx', 'Onyx', 'en-US', 'Male'), K('am_puck', 'Puck', 'en-US', 'Male'), K('am_santa', 'Santa', 'en-US', 'Male'),
+  K('am_bestow', 'Bestow', 'en-US', 'Male'), K('am_puck', 'Puck', 'en-US', 'Male'), K('am_santa', 'Santa', 'en-US', 'Male'),
   K('bf_alice', 'Alice', 'en-GB', 'Female'), K('bf_emma', 'Emma', 'en-GB', 'Female'), K('bf_isabella', 'Isabella', 'en-GB', 'Female'), K('bf_lily', 'Lily', 'en-GB', 'Female'),
   K('bm_daniel', 'Daniel', 'en-GB', 'Male'), K('bm_fable', 'Fable', 'en-GB', 'Male'), K('bm_george', 'George', 'en-GB', 'Male'), K('bm_lewis', 'Lewis', 'en-GB', 'Male'),
 ];
@@ -55,7 +55,7 @@ export const SING_VOICES: VoiceDef[] = [
  */
 export const CHAR_STYLES: Record<string, { label: string; base: string; gender: 'Female' | 'Male'; blurb: string; fx: string }> = {
   trooper: { label: 'Helmet trooper', base: 'am_adam', gender: 'Male', blurb: 'crackly radio helmet', fx: 'highpass=f=320,lowpass=f=3100,acrusher=bits=9:mode=lin:mix=0.35,aecho=0.6:0.5:9:0.3,volume=1.5' },
-  masked: { label: 'Masked caller', base: 'am_onyx', gender: 'Male', blurb: 'low, raspy and creepy', fx: 'asetrate=20100,aresample=24000,atempo=0.9,lowpass=f=4200,tremolo=f=6:d=0.25,aecho=0.7:0.6:38:0.32' },
+  masked: { label: 'Masked caller', base: 'am_bestow', gender: 'Male', blurb: 'low, raspy and creepy', fx: 'asetrate=20100,aresample=24000,atempo=0.9,lowpass=f=4200,tremolo=f=6:d=0.25,aecho=0.7:0.6:38:0.32' },
   rascal: { label: 'Raspy rascal', base: 'am_puck', gender: 'Male', blurb: 'scrappy, fast and gravelly', fx: 'asetrate=27600,aresample=24000,atempo=0.95,acrusher=bits=10:mode=log:mix=0.35,highpass=f=150' },
   robot: { label: 'Robot', base: 'af_alloy', gender: 'Female', blurb: 'metallic and monotone', fx: 'tremolo=f=95:d=0.85,aecho=0.8:0.9:7:0.5,highpass=f=200' },
 };
@@ -89,7 +89,7 @@ export function findVoice(id: string | null | undefined): VoiceDef | null {
   return ALL_VOICES.find(v => v.id.toLowerCase() === q) ?? ALL_VOICES.find(v => v.label.toLowerCase() === q) ?? null;
 }
 
-const FEATURED = ['af_heart', 'am_onyx', 'bf_emma'];
+const FEATURED = ['af_heart', 'am_bestow', 'bf_emma'];
 export function searchVoices(query: string, limit = 25): VoiceDef[] {
   const q = query.toLowerCase().trim();
   if (!q) {

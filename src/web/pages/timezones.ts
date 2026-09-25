@@ -19,7 +19,7 @@ export async function timezonesPage(
       <div class="card">
         <h2 class="text-lg font-bold mb-1 text-white">Timezone Live Message</h2>
         <p class="text-sm text-gray-400 mb-5">
-          Onyx will post and continuously update a message in the selected channel showing all members' timezones.
+          Bestow will post and continuously update a message in the selected channel showing all members' timezones.
         </p>
         <div class="form-group">
           <label>Channel</label>

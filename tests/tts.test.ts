@@ -32,13 +32,13 @@ describe('voices', () => {
   });
   test('findVoice resolves ids, labels, defaults and rejects unknowns', () => {
     expect(findVoice(null)!.id).toBe(DEFAULT_VOICE);
-    expect(findVoice('AM_ONYX')!.id).toBe('am_onyx');
+    expect(findVoice('AM_BESTOW')!.id).toBe('am_bestow');
     expect(findVoice('Heart')!.id).toBe('af_heart');
     expect(findVoice('edge:en-US-AriaNeural')!.engine).toBe('edge');
     expect(findVoice('nope')).toBeNull();
   });
   test('searchVoices filters by name, language and gender and caps at 25', () => {
-    expect(searchVoices('onyx').map(v => v.id)).toContain('am_onyx');
+    expect(searchVoices('bestow').map(v => v.id)).toContain('am_bestow');
     expect(searchVoices('ja-JP').every(v => v.lang === 'ja-JP')).toBe(true);
     expect(searchVoices('male').length).toBeGreaterThan(0);
     expect(searchVoices('').length).toBeLessThanOrEqual(25);
@@ -63,7 +63,7 @@ describe('synthesis (opt-in)', () => {
     const normal = await speak(text, 'af_heart', 1);
     const fast = await speak(text, 'af_heart', 1.6);
     expect(normal.voice.engine).toBe('kokoro');
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-tts-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-tts-'));
     await writeFile(path.join(dir, 'a.mp3'), normal.mp3);
     await writeFile(path.join(dir, 'b.mp3'), fast.mp3);
     const a = await probe('a.mp3', dir), b = await probe('b.mp3', dir);

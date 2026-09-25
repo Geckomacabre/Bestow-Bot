@@ -62,7 +62,7 @@ export const PASTE_MAX = 100_000;
 export async function paste(text: string): Promise<string> {
   if (!text.trim()) throw new LookupError('There\'s nothing to paste.');
   if (Buffer.byteLength(text) > PASTE_MAX) throw new LookupError(`That's too long to paste (limit ${PASTE_MAX / 1000} KB).`);
-  const url = (await (await fetch('https://paste.rs/', { method: 'POST', body: text, headers: { 'User-Agent': 'OnyxBot/1.0', 'Content-Type': 'text/plain; charset=utf-8' }, signal: AbortSignal.timeout(15_000) })).text()).trim();
+  const url = (await (await fetch('https://paste.rs/', { method: 'POST', body: text, headers: { 'User-Agent': 'BestowBot/1.0', 'Content-Type': 'text/plain; charset=utf-8' }, signal: AbortSignal.timeout(15_000) })).text()).trim();
   if (!/^https:\/\/paste\.rs\/[A-Za-z0-9]+/.test(url)) throw new LookupError('The paste service didn\'t accept that.');
   return url.split(/\s/)[0]!;
 }

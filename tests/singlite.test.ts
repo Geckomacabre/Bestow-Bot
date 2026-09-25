@@ -95,7 +95,7 @@ describe('rendering (real ffmpeg, synthetic 220 Hz "words")', () => {
   };
 
   it('shifts each note to the requested pitch and keeps the beat grid', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-sing-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-sing-'));
     const bpm = 120, beat = 0.5;
     const semis = [0, 12, -12, 7];
     // 1.2 s words so every note (even after pitching) has plenty of sound to measure.
@@ -118,7 +118,7 @@ describe('rendering (real ffmpeg, synthetic 220 Hz "words")', () => {
   }, 60_000);
 
   it('a note is stretched or squeezed to fit its beat', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-sing-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-sing-'));
     const long = await renderMelody(dir, [{ wav: sine(220, 1.5), seconds: 1.5, semitones: 0, beats: 2 }], { bpm: 120, vibrato: { f: 5, d: 0 }, echo: null }, 'long.mp3');
     const short = await renderMelody(dir, [{ wav: sine(220, 0.1), seconds: 0.1, semitones: 0, beats: 2 }], { bpm: 120, vibrato: { f: 5, d: 0 }, echo: null }, 'short.mp3');
     expect((await probe(long, dir)).duration).toBeCloseTo(1, 0);
@@ -126,12 +126,12 @@ describe('rendering (real ffmpeg, synthetic 220 Hz "words")', () => {
   }, 60_000);
 
   it('refuses to render nothing', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-sing-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-sing-'));
     await expect(renderMelody(dir, [], { bpm: 100, vibrato: { f: 5, d: 0.2 }, echo: null })).rejects.toThrow(/nothing to sing/);
   });
 
   it('every melody\'s effect chain is accepted by ffmpeg', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-sing-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-sing-'));
     for (const m of MELODIES) {
       const file = await renderMelody(dir, [0, 2, 4].map(st => ({ wav: sine(200, 0.3), seconds: 0.3, semitones: st + m.pattern[0]!, beats: 1 })), m, `${m.id}.mp3`);
       expect((await probe(file, dir)).hasAudio, m.id).toBe(true);
@@ -144,7 +144,7 @@ describe('singing with the real Kokoro model (opt-in)', () => {
   real('every sing-song voice produces audio of about the planned length', async () => {
     for (const m of MELODIES) {
       const r = await singLite('Happy birthday to you, happy birthday to you', m.id);
-      const dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-sing-'));
+      const dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-sing-'));
       await Bun.write(path.join(dir, 'x.mp3'), r.mp3);
       const p = await probe('x.mp3', dir);
       expect(p.hasAudio, m.id).toBe(true);

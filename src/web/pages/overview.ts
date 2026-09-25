@@ -34,9 +34,6 @@ export async function overviewPage(user: SessionUser, guild: APIGuild, flash?: s
         ${[
           { href: 'economy',       icon: '💰', label: 'Economy' },
           { href: 'leveling',      icon: '⭐', label: 'Leveling' },
-          { href: 'welcome',       icon: '👋', label: 'Welcome' },
-          { href: 'automod',       icon: '🛡️', label: 'Automod' },
-          { href: 'logs',          icon: '📋', label: 'Logs' },
           { href: 'reaction-roles',icon: '🎭', label: 'Reaction Roles' },
           { href: 'starboard',     icon: '⭐', label: 'Starboard' },
         ].map(item => /* html */`

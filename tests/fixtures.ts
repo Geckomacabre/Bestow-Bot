@@ -14,7 +14,7 @@ export async function makeSamples(dir: string) {
   for (let x = 0; x <= 640; x += 40) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 400); g.stroke(); }
   for (let y = 0; y <= 400; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(640, y); g.stroke(); }
   g.fillStyle = '#1e272e'; g.beginPath(); g.arc(200, 200, 90, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#fff'; g.font = 'bold 64px sans-serif'; g.fillText('ONYX', 380, 220);
+  g.fillStyle = '#fff'; g.font = 'bold 64px sans-serif'; g.fillText('BESTOW', 380, 220);
   g.fillStyle = '#e84393'; g.fillRect(40, 40, 90, 60);
   await writeFile(path.join(dir, 'sample.png'), c.toBuffer('image/png'));
 

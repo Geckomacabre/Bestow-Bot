@@ -196,10 +196,10 @@ describe('tools commands (offline paths)', () => {
     expect(textOf((await run('convert', { query: '5 blorp to zork' })).last())).toContain('❌');
   });
   test('qr command sends a scannable PNG', async () => {
-    const fi = await run('qr', { text: 'https://example.com/onyx', color: '#1a3d8f' });
+    const fi = await run('qr', { text: 'https://example.com/bestow', color: '#1a3d8f' });
     const file = fi.last().files[0]; expect(file.name).toBe('qr.png');
     const { scanQrBuffer } = await import('../src/lookups/qr');
-    expect(await scanQrBuffer(file.attachment as Buffer)).toBe('https://example.com/onyx');
+    expect(await scanQrBuffer(file.attachment as Buffer)).toBe('https://example.com/bestow');
     expect(textOf((await run('qr', { text: 'x', color: 'nope' })).last())).toContain('❌');
   });
   test('qr-scan reads a code from an attached image URL served locally', async () => {

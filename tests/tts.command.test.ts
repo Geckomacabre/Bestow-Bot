@@ -136,9 +136,9 @@ describe('/tts command', () => {
 const real = Bun.env.RUN_TTS_TEST === '1' ? test : test.skip;
 describe('/tts with the real local model (opt-in)', () => {
   real('speech voice → speech.mp3', async () => {
-    const r = await run({ text: 'Testing one two three', voice: 'am_onyx' });
+    const r = await run({ text: 'Testing one two three', voice: 'am_bestow' });
     expect(r.file?.name).toBe('speech.mp3');
-    expect(r.text).toContain('Onyx');
+    expect(r.text).toContain('Bestow');
     expect(Buffer.from(r.file.attachment).length).toBeGreaterThan(2000);
   }, 120_000);
 

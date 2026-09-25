@@ -12,7 +12,7 @@ const it = haveFfmpeg ? test : test.skip;
 let dir = '';
 beforeAll(async () => {
   if (!haveFfmpeg) return;
-  dir = await mkdtemp(path.join(os.tmpdir(), 'onyx-media-test-'));
+  dir = await mkdtemp(path.join(os.tmpdir(), 'bestow-media-test-'));
   await makeSamples(dir);
 });
 
@@ -113,7 +113,7 @@ describe('image effects (still)', () => {
 
   it('watermark supports every position', async () => {
     for (const position of fx.POSITIONS) {
-      const out = await fx.watermark(await job('sample.png'), 'onyx', { position, opacity: 70, size: 6, color: '#ffcc00' });
+      const out = await fx.watermark(await job('sample.png'), 'bestow', { position, opacity: 70, size: 6, color: '#ffcc00' });
       expect((await info(out)).width).toBe(640);
     }
   }, 120_000);

@@ -2,8 +2,6 @@ import { Interaction, MessageFlags } from 'discord.js';
 import commands from '../handlers/commandHandler';
 import logger from '../utils/logger';
 import * as db from '../utils/db';
-import { checkCommandSpam } from '../features/spamdetect/index.js';
-import { logCommandUsage } from '../features/logs/index.js';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -51,12 +49,7 @@ export const onInteraction = async (interaction: Interaction) => {
   const command = commands.get(interaction.commandName);
   if (!command) return;
 
-  // Raid scripts hammer slash commands — catch it before the command even runs.
-  if (interaction.guildId && await checkCommandSpam(interaction, db)) return;
 
-  // Fire-and-forget so logging never adds latency to the command response, and
-  // still fires even if the command itself throws below.
-  logCommandUsage(interaction, db).catch(() => {});
 
   try {
     if (typeof command.run === 'function') {

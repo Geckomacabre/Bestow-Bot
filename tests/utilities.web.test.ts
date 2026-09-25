@@ -104,8 +104,8 @@ describe('web parsers', () => {
     const t = await tweet('https://x.com/jack/status/20'); expect(t.text).toContain('twttr');
   }, 60_000);
   live('live: paste.rs round trip', async () => {
-    const url = await paste(`onyx test ${Date.now()}`); expect(url).toMatch(/^https:\/\/paste\.rs\//);
-    expect(await (await fetch(url)).text()).toContain('onyx test');
+    const url = await paste(`bestow test ${Date.now()}`); expect(url).toMatch(/^https:\/\/paste\.rs\//);
+    expect(await (await fetch(url)).text()).toContain('bestow test');
   }, 30_000);
 });
 

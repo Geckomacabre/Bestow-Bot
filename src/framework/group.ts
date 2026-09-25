@@ -3,6 +3,7 @@ import {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
   InteractionContextType,
+  MessageFlags,
   PermissionsBitField,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
@@ -30,6 +31,28 @@ export interface Sub {
   options?: (s: SlashCommandSubcommandBuilder) => unknown;
   run: RunFn;
   autocomplete?: AutoFn;
+  /**
+   * Permissions the invoker must hold. A folded command loses its own `default_member_permissions`
+   * (Discord only supports those on the top-level command), so the requirement is enforced here at run time.
+   */
+  permissions?: bigint;
+  /** Refuse outside servers (DMs / user-install). */
+  guildOnly?: boolean;
+}
+
+/** Wraps a sub's handler with its permission / guild-only requirements. */
+function guarded(sub: Sub): RunFn {
+  if (!sub.permissions && !sub.guildOnly) return sub.run;
+  return async interaction => {
+    if ((sub.guildOnly || sub.permissions) && !interaction.inGuild()) {
+      return interaction.reply({ content: '❌ That only works in a server.', flags: MessageFlags.Ephemeral });
+    }
+    if (sub.permissions && !interaction.memberPermissions?.has(sub.permissions)) {
+      const names = new PermissionsBitField(sub.permissions).toArray().map(p => p.replace(/([a-z])([A-Z])/g, '$1 $2')).join(', ');
+      return interaction.reply({ content: `❌ You need the **${names}** permission for that.`, flags: MessageFlags.Ephemeral });
+    }
+    return sub.run(interaction);
+  };
 }
 
 export interface SubGroup {
@@ -102,7 +125,7 @@ export function defineGroup(def: GroupDef): Command {
     if (seen.has(sub.name)) throw new Error(`[defineGroup] duplicate name "${sub.name}" in ${def.name}`);
     seen.add(sub.name);
     data.addSubcommand(buildSub(sub, `${def.name} ${sub.name}`));
-    runMap.set(`/${sub.name}`, sub.run);
+    runMap.set(`/${sub.name}`, guarded(sub));
     if (sub.autocomplete) autoMap.set(`/${sub.name}`, sub.autocomplete);
   }
 
@@ -120,7 +143,7 @@ export function defineGroup(def: GroupDef): Command {
       if (inGroup.has(sub.name)) throw new Error(`[defineGroup] duplicate name "${sub.name}" in ${def.name} ${group.name}`);
       inGroup.add(sub.name);
       g.addSubcommand(buildSub(sub, `${def.name} ${group.name} ${sub.name}`));
-      runMap.set(`${group.name}/${sub.name}`, sub.run);
+      runMap.set(`${group.name}/${sub.name}`, guarded(sub));
       if (sub.autocomplete) autoMap.set(`${group.name}/${sub.name}`, sub.autocomplete);
     }
     data.addSubcommandGroup(g);
@@ -225,10 +248,12 @@ function applyJsonOptions(sub: SlashCommandSubcommandBuilder, opts: JsonOption[]
  * interaction.options.getSubcommand() still returns the leaf name inside a group.
  */
 export function groupFromCommand(cmd: Command, name?: string): SubGroup {
-  const json = cmd.data.toJSON() as { name: string; description: string; options?: JsonOption[] };
+  const json = cmd.data.toJSON() as CmdJson;
   const subs = (json.options ?? []).filter(o => o.type === 1);
   if (subs.length === 0 || !cmd.run) throw new Error(`[groupFromCommand] ${json.name} has no subcommands or no run()`);
+  if ((json.options ?? []).some(o => o.type === 2)) throw new Error(`[groupFromCommand] ${json.name} has nested groups; use foldCommand()`);
   const run = cmd.run;
+  const meta = metaOf(json);
   return {
     name: name ?? json.name,
     description: json.description,
@@ -238,8 +263,65 @@ export function groupFromCommand(cmd: Command, name?: string): SubGroup {
       options: b => applyJsonOptions(b as SlashCommandSubcommandBuilder, s.options ?? []),
       run,
       autocomplete: cmd.autocomplete,
+      ...meta,
     })),
   };
+}
+
+interface CmdJson { name: string; description: string; options?: JsonOption[]; default_member_permissions?: string | null; contexts?: number[] }
+
+/** Permission / guild-only requirements of a command, expressed the way Sub carries them. */
+function metaOf(json: CmdJson): Pick<Sub, 'permissions' | 'guildOnly'> {
+  const perms = json.default_member_permissions ? BigInt(json.default_member_permissions) : undefined;
+  const guildOnly = !!json.contexts?.length && json.contexts.every(c => c === 0);
+  return { ...(perms ? { permissions: perms } : {}), ...(guildOnly ? { guildOnly: true } : {}) };
+}
+
+type Leaf = { group: string | null; sub: string };
+
+/**
+ * Presents `i` as if the command had been invoked under its ORIGINAL subcommand/group names.
+ * A folded command's handler keeps calling getSubcommand()/getSubcommandGroup(), which would otherwise report the parent's names.
+ */
+export function spoofLeaf<T extends ChatInputCommandInteraction | AutocompleteInteraction>(i: T, leaf: Leaf): T {
+  const bindGet = (target: object, prop: string | symbol) => { const v = Reflect.get(target, prop, target); return typeof v === 'function' ? v.bind(target) : v; };
+  const opts = new Proxy(i.options as object, {
+    get(target, prop) {
+      if (prop === 'getSubcommand') return () => leaf.sub;
+      if (prop === 'getSubcommandGroup') return () => leaf.group;
+      return bindGet(target, prop);
+    },
+  });
+  return new Proxy(i as object, { get(target, prop) { return prop === 'options' ? opts : bindGet(target, prop); } }) as T;
+}
+
+/**
+ * Mount an existing command that has subcommands AND/OR nested groups as ONE subcommand group of a parent.
+ * Discord only allows two levels (`/parent group sub`), so the source's own groups are flattened into `group-sub` names
+ * (e.g. `/levelconfig roles add` → `/config levels roles-add`). Handlers still see their original names via spoofLeaf().
+ */
+export function foldCommand(cmd: Command, o: { name?: string; description?: string } = {}): SubGroup {
+  const json = cmd.data.toJSON() as CmdJson;
+  const run = cmd.run;
+  if (!run) throw new Error(`[foldCommand] ${json.name} has no run()`);
+  const meta = metaOf(json);
+  const subs: Sub[] = [];
+  const add = (s: JsonOption, group: string | null) => {
+    const name = (group ? `${group}-${s.name}` : s.name).slice(0, 32);
+    subs.push({
+      name, description: s.description,
+      options: b => applyJsonOptions(b as SlashCommandSubcommandBuilder, s.options ?? []),
+      run: i => run(spoofLeaf(i, { group, sub: s.name })),
+      autocomplete: cmd.autocomplete ? i => cmd.autocomplete!(spoofLeaf(i, { group, sub: s.name })) : undefined,
+      ...meta,
+    });
+  };
+  for (const opt of json.options ?? []) {
+    if (opt.type === 1) add(opt, null);
+    else if (opt.type === 2) for (const s of opt.options ?? []) add(s, opt.name);
+  }
+  if (!subs.length) throw new Error(`[foldCommand] ${json.name} has no subcommands; use fromCommand()`);
+  return { name: o.name ?? json.name, description: o.description ?? json.description, subs };
 }
 
 /**
@@ -247,7 +329,7 @@ export function groupFromCommand(cmd: Command, name?: string): SubGroup {
  * the command's own name). The command must not itself use subcommands.
  */
 export function fromCommand(cmd: Command, name?: string): Sub {
-  const json = cmd.data.toJSON() as { name: string; description: string; options?: JsonOption[] };
+  const json = cmd.data.toJSON() as CmdJson;
   const opts = json.options ?? [];
   if (opts.some(o => o.type === 1 || o.type === 2)) {
     throw new Error(`[fromCommand] ${json.name} already has subcommands; mount it as its own group instead`);
@@ -259,5 +341,6 @@ export function fromCommand(cmd: Command, name?: string): Sub {
     options: b => applyJsonOptions(b as SlashCommandSubcommandBuilder, opts),
     run: cmd.run,
     autocomplete: cmd.autocomplete,
+    ...metaOf(json),
   };
 }
