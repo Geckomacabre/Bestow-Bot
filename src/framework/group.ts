@@ -324,6 +324,35 @@ export function foldCommand(cmd: Command, o: { name?: string; description?: stri
   return { name: o.name ?? json.name, description: o.description ?? json.description, subs };
 }
 
+/** Finds a sub by name in a list and (optionally) renames it — used to re-mount handler modules at a new command path. */
+export function pickSub(subs: Sub[], name: string, rename?: string, patch: Partial<Sub> = {}): Sub {
+  const s = subs.find(x => x.name === name);
+  if (!s) throw new Error(`[pickSub] no subcommand "${name}" (have: ${subs.map(x => x.name).join(', ')})`);
+  return { ...s, name: rename ?? s.name, ...patch };
+}
+
+/**
+ * A top-level command with NO subcommands (`/math expression`), built from a Sub. Same scope rules as defineGroup:
+ * 'anywhere' (default) = usable via user install, in any server, DMs and group DMs.
+ */
+export function defineLeaf(sub: Sub, o: { name?: string; scope?: Scope; permissions?: bigint } = {}): Command {
+  const name = o.name ?? sub.name;
+  assertName('command', name, name);
+  assertDescription(sub.description, name);
+  const data = new SlashCommandBuilder().setName(name).setDescription(sub.description);
+  if ((o.scope ?? 'anywhere') === 'anywhere') {
+    data.setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall]);
+    data.setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]);
+  } else {
+    data.setIntegrationTypes([ApplicationIntegrationType.GuildInstall]);
+    data.setContexts([InteractionContextType.Guild]);
+  }
+  // A Sub's option callback only uses the add*Option methods, which SlashCommandBuilder shares with the subcommand builder.
+  sub.options?.(data as unknown as SlashCommandSubcommandBuilder);
+  const run = guarded({ ...sub, permissions: o.permissions ?? sub.permissions });
+  return { data: data as never, run, autocomplete: sub.autocomplete };
+}
+
 /**
  * Mount an existing top-level Command as a subcommand. `name` renames it (default:
  * the command's own name). The command must not itself use subcommands.

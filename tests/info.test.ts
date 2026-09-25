@@ -20,22 +20,22 @@ describe('/help over the real command registry', () => {
     for (const cat of new Set(list.map(c => c.category))) expect(o, cat).toContain(categoryLabel(cat));
   });
   test('command and category views', () => {
-    const t = commandView(list, '/tools')!;
-    expect(t).toContain('/tools qr'); expect(t).toContain('/tools math <expression>'); expect(t.length).toBeLessThanOrEqual(3300);
-    expect(commandView(list, 'fun')).toContain('/fun juul hit');
-    expect(commandView(list, 'privacy')).toContain('/privacy delete');
-    expect(categoryView(list, 'lookups')).toContain('/crypto'); expect(categoryView(list, 'nope')).toBeUndefined(); expect(commandView(list, 'nope')).toBeUndefined();
+    const t = commandView(list, '/qr')!;
+    expect(t).toContain('/qr generate'); expect(t).toContain('/qr scan'); expect(t.length).toBeLessThanOrEqual(3300);
+    expect(commandView(list, 'juul')).toContain('/juul hit');
+    expect(commandView(list, 'settings')).toContain('/settings privacy delete');
+    expect(categoryView(list, 'utility')).toContain('/crypto'); expect(categoryView(list, 'nope')).toBeUndefined(); expect(commandView(list, 'nope')).toBeUndefined();
     // the biggest command still fits
     for (const c of list) expect(commandView(list, c.name)!.length, c.name).toBeLessThanOrEqual(3300);
     for (const cat of new Set(list.map(c => c.category))) expect(categoryView(list, cat)!.length, cat).toBeLessThanOrEqual(3300);
   });
   test('autocomplete returns valid choices (≤25, names ≤100 chars) that resolve back to a view', () => {
-    for (const q of ['', 't', 'fun', 'eco', 'zzzz', '/pri']) {
+    for (const q of ['', 't', 'fun', 'eco', 'zzzz', '/set']) {
       const s = suggestions(list, q);
       expect(s.length).toBeLessThanOrEqual(25);
       for (const x of s) { expect(x.name.length).toBeLessThanOrEqual(100); expect(x.value.length).toBeLessThanOrEqual(100); expect(helpFor(list, x.value).found, x.value).toBe(true); }
     }
-    expect(suggestions(list, 'privacy').some(x => x.value === 'privacy')).toBe(true);
+    expect(suggestions(list, 'settings').some(x => x.value === 'settings')).toBe(true);
   });
   test('unknown queries get a helpful, non-crashing answer', () => {
     expect(helpFor(list, 'crypt').found).toBe(false); expect(helpFor(list, 'crypt').text).toContain('/crypto');
