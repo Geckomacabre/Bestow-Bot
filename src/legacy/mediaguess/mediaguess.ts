@@ -66,15 +66,15 @@ const MediaGuess: Command = {
       const channel = interaction.options.getChannel('channel', true) as TextChannel;
 
       if ((type === 'movie' || type === 'tv') && !Bun.env.TMDB_API_KEY) {
-        await interaction.reply({ content: '❌ `TMDB_API_KEY` isn\'t set in the bot\'s environment — movie/TV guessing needs it. Ask whoever hosts the bot to add one (free at themoviedb.org).', flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: '❌ `TMDB_API_KEY` isn\'t set in the bot\'s environment — movie/TV guessing needs it. Ask whoever hosts the bot to add one (free at themoviedb.org).' });
         return;
       }
       if (type === 'game' && !Bun.env.RAWG_API_KEY) {
-        await interaction.reply({ content: '❌ `RAWG_API_KEY` isn\'t set in the bot\'s environment — game guessing needs it. Ask whoever hosts the bot to add one (free at rawg.io/apidocs).', flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: '❌ `RAWG_API_KEY` isn\'t set in the bot\'s environment — game guessing needs it. Ask whoever hosts the bot to add one (free at rawg.io/apidocs).' });
         return;
       }
 
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      await interaction.deferReply();
       await db.setMediaGuessConfig(guildId, type, channel.id);
 
       // Stop any existing game in that channel before starting a new one
@@ -95,7 +95,7 @@ const MediaGuess: Command = {
     else if (sub === 'stop') {
       const state = activeGames.get(interaction.channelId);
       if (!state) {
-        await interaction.reply({ content: '❌ No active guessing game in this channel.', flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: '❌ No active guessing game in this channel.' });
         return;
       }
 
@@ -108,7 +108,6 @@ const MediaGuess: Command = {
 
       await interaction.reply({
         content: `🛑 Game stopped. The answer was **${state.media.title}**. Configure a new game with \`/server guess setup\`.`,
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -116,7 +115,7 @@ const MediaGuess: Command = {
     else if (sub === 'skip') {
       const state = activeGames.get(interaction.channelId);
       if (!state || state.answered) {
-        await interaction.reply({ content: '❌ No active guessing game in this channel.', flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: '❌ No active guessing game in this channel.' });
         return;
       }
 
@@ -146,7 +145,7 @@ const MediaGuess: Command = {
         .setTitle('🎮 Guessing Game Config')
         .addFields(fields);
 
-      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+      await interaction.reply({ embeds: [embed] });
     }
   },
 };

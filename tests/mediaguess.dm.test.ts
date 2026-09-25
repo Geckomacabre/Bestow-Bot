@@ -26,7 +26,7 @@ const customIds = (p: any) => (p.components ?? []).flatMap((r: any) => r.toJSON(
 describe('solo guessing rounds in DMs', () => {
   test('skip is instant: no vote, no 5-minute wait — the answer shows, and the game goes on until someone presses Stop', async () => {
     const f = fakeClient(), state = round();
-    expect(await castVoteSkip(state.channelId, 'u1', f.client)).toEqual({ content: '⏭️ Round skipped.', ephemeral: true });
+    expect(await castVoteSkip(state.channelId, 'u1', f.client)).toEqual({ content: '⏭️ Round skipped.' });
     expect(activeGames.has(state.channelId)).toBe(false);
     expect(f.deleted()).toBe(1);
     expect(f.sent[0].content).toBe('⏭️ Skipped! The movie was **Heat**.\n_Next round in 5 seconds… press ⏹️ Stop game to end it._');

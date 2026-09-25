@@ -1,20 +1,24 @@
 import {
   ApplicationIntegrationType, ChatInputCommandInteraction,
-  InteractionContextType, MessageFlags, SlashCommandBuilder,
+  InteractionContextType, SlashCommandBuilder,
 } from 'discord.js';
 import { Command } from '../../interfaces/command';
-import { castVoteSkip } from '../../utils/mediagame';
+import { followHost } from '../../features/mediaguess';
+import { activeGames, castVoteSkip } from '../../utils/mediagame';
 
 const VoteSkip: Command = {
   data: new SlashCommandBuilder()
     .setName('voteskip')
-    .setDescription('Vote to skip the guessing game round (2 votes, after 5 min; instant in DMs)')
+    .setDescription('Skip the guessing game round (the starter alone, or 2 votes; servers wait 5 min)')
     .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM]),
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]),
 
   async run(interaction: ChatInputCommandInteraction) {
-    const { content, ephemeral } = await castVoteSkip(interaction.channelId, interaction.user.id, interaction.client);
-    await interaction.reply({ content, flags: ephemeral ? MessageFlags.Ephemeral : undefined });
+    const live = activeGames.get(interaction.channelId);
+    // Revealing a song fetches its full clip, so acknowledge first; a game run through interactions goes on through this reply.
+    await interaction.deferReply();
+    const { content } = await castVoteSkip(interaction.channelId, interaction.user.id, interaction.client, live?.interactive ? followHost(interaction) : undefined);
+    await interaction.editReply({ content });
   },
 };
 

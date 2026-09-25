@@ -30,11 +30,11 @@ const guess: Sub = {
     const type = interaction.options.getString('type', true) as MediaType;
     const missing = keyMissing(type);
     if (missing) {
-      await interaction.reply({ content: missing, flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: missing });
       return;
     }
     if (roundBusy(interaction.channelId)) {
-      await interaction.reply({ content: '❌ There\'s already a round going — make a guess, or use **Skip**.', flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: '❌ There\'s already a round going — make a guess, or use **Skip**.' });
       return;
     }
 
@@ -50,7 +50,7 @@ const guess: Sub = {
       return;
     }
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
     const started = await startGame(null, interaction.channelId, type, interaction.client).catch(() => false);
     await interaction.editReply(started ? '✅ Round started — type your guess below! Rounds keep coming until you press ⏹️ **Stop game**.' : '😵 I couldn\'t load a round just now — try again in a moment.');
   },

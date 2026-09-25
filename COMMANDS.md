@@ -155,7 +155,7 @@ Levels, reputation, birthdays, reminders and small extras
 - `/community gif <query>` — Search for a GIF using Tenor
 - `/community guess <type>` — Play the movie, TV, game or song guessing game right here
 - `/community hint` — Reveal the next clue for the guessing game round in this channel
-- `/community voteskip` — Vote to skip the guessing game round (2 votes, after 5 min; instant in DMs)
+- `/community voteskip` — Skip the guessing game round (the starter alone, or 2 votes; servers wait 5 min)
 - `/community weekly` — Claim your weekly reward
 - `/community yearly` — Claim your yearly reward
 - `/community protection` — Hire mob protection for 24 hours (5,000) — nobody can rob you

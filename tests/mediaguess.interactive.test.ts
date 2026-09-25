@@ -240,25 +240,42 @@ describe('the buttons and the pop-up box', () => {
   test('the box acknowledges first, then answers privately — and a correct answer ends the round for everyone and the game goes on', async () => {
     hooks.nextDelayMs = 25; stub(); const { h, edits } = host(); await startInteractiveRound(h, 'movie');
     const wrong = modal(h.channelId, 'Casablanca'); await dispatch(wrong.i);
-    expect(wrong.out.deferred[0].flags).toBeTruthy(); // ephemeral
-    expect(wrong.out.edits[0].content).toContain('Not quite');
-    const close = modal(h.channelId, 'Hea'); await dispatch(close.i); expect(close.out.edits[0].content).toMatch(/Close|Very close/);
+    expect(wrong.out.deferred[0]?.flags).toBeFalsy(); // public: not ephemeral
+    expect(wrong.out.edits[0].content).toBe('**Sam G** guessed **Casablanca** — ❌ not quite.');
+    const close = modal(h.channelId, 'Hea'); await dispatch(close.i); expect(close.out.edits[0].content).toMatch(/guessed \*\*Hea\*\* — (‼️ very close|❗ close)!/);
     hooks.fetchEntry = async () => second;
     const right = modal(h.channelId, 'heat'); await dispatch(right.i);
-    expect(right.out.edits[0].content).toContain('you got it'); expect(edits[0]!.payload.content).toContain('**Sam G** got it! The movie was **Heat**.');
+    expect(right.out.edits[0].content).toBe('**Sam G** guessed **heat** — ✅ correct!'); expect(edits[0]!.payload.content).toContain('**Sam G** got it! The movie was **Heat**.');
     await Bun.sleep(150);
     expect(right.out.followUps).toHaveLength(1); expect(ids(right.out.followUps[0])).toEqual(ROUND_BUTTONS); // round 2 came through the answering interaction
     const late = modal('somewhere-else', 'heat'); await dispatch(late.i); expect(late.out.edits[0].content).toContain('no active guessing game');
   });
-  test('only the person who started the game can skip a round, but skipping goes straight on', async () => {
+  test('the person who started the game can skip a round on their own — no vote, no other players — and the game goes straight on', async () => {
     hooks.nextDelayMs = 25; stub(); const { h, edits } = host(undefined, 'starter'); await startInteractiveRound(h, 'movie');
-    const other = button('mg_voteskip', h.channelId, 'someone-else'); await dispatch(other.i);
-    expect(other.out.replies[0].content).toContain('Only <@starter> can skip'); expect(activeGames.has(h.channelId)).toBe(true); expect(edits).toHaveLength(0);
     hooks.fetchEntry = async () => second;
     const owner = button('mg_voteskip', h.channelId, 'starter'); await dispatch(owner.i);
-    expect(owner.out.deferred[0].flags).toBeTruthy(); expect(owner.out.updates[0]).toEqual({ content: '⏭️ Round skipped.' });
+    expect(owner.out.deferred[0]?.flags).toBeFalsy(); expect(owner.out.updates[0]).toEqual({ content: '⏭️ **U** skipped the round.', allowedMentions: { parse: [] } });
     expect(edits[0]!.payload.content).toContain('Skipped'); await Bun.sleep(150);
     expect(owner.out.followUps).toHaveLength(1); expect(activeGames.get(h.channelId)!.media.title).toBe('Ronin');
+  });
+  test('anyone else needs two people to vote: one vote is only recorded, the second (different) person skips it', async () => {
+    hooks.nextDelayMs = 25; stub(); const { h, edits } = host(undefined, 'starter'); await startInteractiveRound(h, 'movie');
+    const first = button('mg_voteskip', h.channelId, 'friend-1'); await dispatch(first.i);
+    expect(first.out.updates[0].content).toContain('Skip vote recorded: **1/2**'); expect(first.out.updates[0].content).toContain('the person who started the game can skip on their own');
+    expect(activeGames.has(h.channelId)).toBe(true); expect(edits).toHaveLength(0);
+    const again = button('mg_voteskip', h.channelId, 'friend-1'); await dispatch(again.i); // the same person twice is still one vote
+    expect(again.out.updates[0].content).toContain('already voted'); expect(activeGames.has(h.channelId)).toBe(true);
+    hooks.fetchEntry = async () => second;
+    const second2 = button('mg_voteskip', h.channelId, 'friend-2'); await dispatch(second2.i);
+    expect(second2.out.updates[0].content).toBe('⏭️ **2/2** skip votes — skipping this round!');
+    expect(edits[0]!.payload.content).toContain('⏭️ Skipped! The movie was **Heat**.'); await Bun.sleep(150);
+    expect(second2.out.followUps).toHaveLength(1); expect(activeGames.get(h.channelId)!.media.title).toBe('Ronin'); // the game goes on, through the voter's interaction
+    expect(activeGames.get(h.channelId)!.voteskips.size).toBe(0); // the next round starts with no votes
+  });
+  test('the votes are public messages, like everything else in the game', async () => {
+    stub(); const { h } = host(undefined, 'starter'); await startInteractiveRound(h, 'movie');
+    const v = button('mg_voteskip', h.channelId, 'friend-1'); await dispatch(v.i);
+    expect(v.out.deferred[0]?.flags).toBeFalsy(); expect(v.out.updates[0].flags).toBeUndefined();
   });
   test('Stop game ends a live round, tells the chat who stopped it, and nothing follows', async () => {
     stub(); const { h, edits } = host(); await startInteractiveRound(h, 'movie');
@@ -304,10 +321,10 @@ describe('/guess <answer>', () => {
   };
   test('is the fast way to answer: a private answer for wrong and close guesses, and a right one wins the round', async () => {
     hooks.nextDelayMs = 25; stub(); const { h, edits } = host(); await startInteractiveRound(h, 'movie');
-    const wrong = await run(h.channelId, 'Casablanca'); expect(wrong.deferred[0].flags).toBeTruthy(); expect(wrong.edits[0].content).toContain('Not quite');
-    expect((await run(h.channelId, 'Hea')).edits[0].content).toMatch(/Close|Very close/);
+    const wrong = await run(h.channelId, 'Casablanca'); expect(wrong.deferred[0]?.flags).toBeFalsy(); expect(wrong.edits[0].content).toBe('**Sam G** guessed **Casablanca** — ❌ not quite.');
+    expect((await run(h.channelId, 'Hea')).edits[0].content).toMatch(/guessed \*\*Hea\*\* — (‼️ very close|❗ close)!/);
     hooks.fetchEntry = async () => second;
-    const right = await run(h.channelId, 'heat'); expect(right.edits[0].content).toContain('you got it');
+    const right = await run(h.channelId, 'heat'); expect(right.edits[0].content).toBe('**Sam G** guessed **heat** — ✅ correct!');
     expect(edits[0]!.payload.content).toContain('**Sam G** got it!');
     await Bun.sleep(150);
     expect(right.followUps).toHaveLength(1); expect(ids(right.followUps[0])).toEqual(ROUND_BUTTONS); // the next round is posted through this command's follow-up
@@ -362,5 +379,106 @@ describe('/community guess', () => {
     const replies: any[] = [];
     await guess.run({ context: InteractionContextType.PrivateChannel, channelId: h.channelId, user: { id: 'x' }, client: {}, options: { getString: () => 'movie' }, reply: async (p: any) => { replies.push(p); } } as any);
     delete Bun.env.TMDB_API_KEY; expect(replies[0].content).toContain('already a round going');
+  });
+});
+
+describe('every reply from the guessing game is public', () => {
+  test('nothing in the game\'s source asks for a private (ephemeral) reply', async () => {
+    const { readFileSync, readdirSync } = await import('node:fs');
+    const path = await import('node:path');
+    const root = path.resolve(import.meta.dir, '..');
+    const files = ['src/features/mediaguess/index.ts', 'src/commands/fun/guess.ts', 'src/utils/mediagame.ts',
+      ...readdirSync(path.join(root, 'src/legacy/mediaguess')).map(f => `src/legacy/mediaguess/${f}`)];
+    for (const f of files) expect(readFileSync(path.join(root, f), 'utf8'), f).not.toMatch(/Ephemeral|ephemeral/);
+  });
+
+  test('a whole game — start, guesses, hints, skip, stop, and the refusals — never sends a private reply', async () => {
+    const PRIVATE = 64; // MessageFlags.Ephemeral
+    const isPrivate = (p: any) => !!p && typeof p === 'object' && (Number(p.flags ?? 0) & PRIVATE) !== 0;
+    hooks.nextDelayMs = 20; stub(); Bun.env.TMDB_API_KEY = 'test';
+    const sent: any[] = [];
+    const record = (fn?: (p: any) => any) => async (p: any) => { sent.push(p); return fn ? fn(p) : {}; };
+    const fake = (extra: Record<string, unknown>) => ({ client: {}, user: { id: 'u1', username: 'sam', globalName: 'Sam' }, member: null, guildId: null, message: { content: '' }, webhook: { editMessage: async () => ({}) },
+      reply: record(), deferReply: record(), editReply: record(), followUp: record(() => ({ id: 'f1' })), deferUpdate: async () => {}, update: record(), ...extra }) as any;
+    const dispatch = (i: any) => mediaguessModule.handlers.interactionCreate!({ data: [i] } as any);
+
+    // Start a game the way the command does, then play it.
+    const ch = chan();
+    await guess.run(fake({ context: InteractionContextType.PrivateChannel, channelId: ch, options: { getString: () => 'movie' }, editReply: record(() => ({ id: 'round-msg' })) }));
+    await guessCommand.run!(fake({ channelId: ch, options: { getString: () => 'Casablanca' } }));
+    await guessCommand.run!(fake({ channelId: ch, options: { getString: () => 'Hea' } }));
+    await dispatch(fake({ isModalSubmit: () => false, isButton: () => true, customId: 'mg_hint', channelId: ch }));
+    await dispatch(fake({ isModalSubmit: () => false, isButton: () => true, customId: 'mg_voteskip', channelId: ch, user: { id: 'intruder', username: 'x' } })); // not the starter
+    await dispatch(fake({ isModalSubmit: () => true, customId: GUESS_MODAL, channelId: ch, fields: { getTextInputValue: () => 'Casablanca' } }));
+    await guessCommand.run!(fake({ channelId: ch, options: { getString: () => 'heat' } })); // a right answer
+    await dispatch(fake({ isModalSubmit: () => false, isButton: () => true, customId: 'mg_stop:movie', channelId: ch, context: InteractionContextType.PrivateChannel })); // stop between rounds
+    await dispatch(fake({ isModalSubmit: () => false, isButton: () => true, customId: 'mg_stop:movie', channelId: chan(), context: InteractionContextType.PrivateChannel })); // nothing to stop
+    await dispatch(fake({ isModalSubmit: () => false, isButton: () => true, customId: GUESS_BUTTON, channelId: chan() })); // no round to guess in
+    await guessCommand.run!(fake({ channelId: chan(), options: { getString: () => 'anything' } })); // no round
+    await guess.run(fake({ context: InteractionContextType.PrivateChannel, channelId: ch, options: { getString: () => 'movie' } })); // a game is already going
+    delete Bun.env.TMDB_API_KEY;
+    await guess.run(fake({ context: InteractionContextType.PrivateChannel, channelId: chan(), options: { getString: () => 'movie' } })); // no API key
+    expect(sent.length).toBeGreaterThan(10);
+    const privateOnes = sent.filter(isPrivate);
+    expect(privateOnes, `these replies were private: ${JSON.stringify(privateOnes).slice(0, 300)}`).toEqual([]);
+  });
+});
+
+describe('skipping in a group-chat game (the engine)', () => {
+  test('the starter skips alone; anyone else needs two votes; a starter\'s vote is never needed', async () => {
+    hooks.nextDelayMs = 25; stub(); const a = host(chan(), 'starter'); await startInteractiveRound(a.h, 'movie');
+    expect(await castVoteSkip(a.h.channelId, 'friend-1', a.h.client)).toEqual({ content: '🗳️ Skip vote recorded: **1/2**. Need **1** more person to skip — or the person who started the game can skip on their own.' });
+    expect(activeGames.has(a.h.channelId)).toBe(true);
+    expect(await castVoteSkip(a.h.channelId, 'starter', a.h.client)).toEqual({ content: '⏭️ Round skipped.' }); // the starter needs no one
+    expect(activeGames.has(a.h.channelId)).toBe(false); expect(a.edits[0]!.payload.content).toContain('Skipped');
+  });
+  test('two different people skip it, and a vote from the last round does not carry into the next', async () => {
+    hooks.nextDelayMs = 25; hooks.fetchEntry = async () => second; stub(); const a = host(chan(), 'starter'); await startInteractiveRound(a.h, 'movie');
+    hooks.fetchEntry = async () => second;
+    const b = host(a.h.channelId);
+    await castVoteSkip(a.h.channelId, 'friend-1', a.h.client, b.h);
+    expect((await castVoteSkip(a.h.channelId, 'friend-2', a.h.client, b.h)).content).toBe('⏭️ **2/2** skip votes — skipping this round!');
+    await Bun.sleep(120);
+    expect(activeGames.get(a.h.channelId)!.media.title).toBe('Ronin');
+    expect((await castVoteSkip(a.h.channelId, 'friend-1', a.h.client, b.h)).content).toContain('**1/2**'); // friend-1's earlier vote was for the last round
+  });
+  test('a server round and a DM round keep their own rules', async () => {
+    const dmState = { guildId: null, channelId: chan(), type: 'movie' as const, media, hintOrder: [0], hintsUsed: 0, lastHintAt: 0, voteskips: new Set<string>(), messageId: 'm', startedAt: Date.now(), answered: false };
+    activeGames.set(dmState.channelId, dmState);
+    const f = { client: { channels: { fetch: async () => ({ isSendable: () => true, send: async () => ({ id: 'x' }), messages: { fetch: async () => ({ delete: async () => {} }) } }) } } as any };
+    expect((await castVoteSkip(dmState.channelId, 'anyone', f.client)).content).toBe('⏭️ Round skipped.'); // a DM round: skipped on the spot
+    cancelPendingNext(dmState.channelId);
+    const guildState = { ...dmState, guildId: 'g1', channelId: chan(), answered: false, voteskips: new Set<string>(), startedAt: Date.now() };
+    activeGames.set(guildState.channelId, guildState);
+    expect((await castVoteSkip(guildState.channelId, 'anyone', f.client)).content).toContain('isn\'t available yet'); // a server round: vote, after the delay
+  });
+});
+
+describe('/voteskip follows the same rules', () => {
+  const voteskip = async () => (await import('../src/legacy/mediaguess/voteskip')).default;
+  const run = async (channelId: string, userId: string) => {
+    const out = { deferred: [] as any[], edits: [] as any[], followUps: [] as any[] };
+    const i: any = { channelId, user: { id: userId, username: 'u', globalName: 'U' }, client: {}, member: null, deferReply: async (p: any) => { out.deferred.push(p); }, editReply: async (p: any) => { out.edits.push(p); },
+      followUp: async (p: any) => { out.followUps.push(p); return { id: 'f1' }; }, webhook: { editMessage: async () => ({}) } };
+    await (await voteskip()).run!(i);
+    return out;
+  };
+  test('a friend\'s single vote is recorded; two friends skip; the starter skips alone — all publicly, and the game goes on', async () => {
+    hooks.nextDelayMs = 25; stub(); const a = host(chan(), 'starter'); await startInteractiveRound(a.h, 'movie');
+    const one = await run(a.h.channelId, 'friend-1'); expect(one.deferred[0]?.flags).toBeFalsy(); expect(one.edits[0].content).toContain('**1/2**');
+    hooks.fetchEntry = async () => second;
+    const two = await run(a.h.channelId, 'friend-2'); expect(two.edits[0].content).toContain('**2/2**');
+    await Bun.sleep(120); expect(two.followUps).toHaveLength(1); expect(activeGames.get(a.h.channelId)!.media.title).toBe('Ronin');
+    const owner = await run(a.h.channelId, 'starter'); expect(owner.edits[0].content).toBe('⏭️ Round skipped.');
+  });
+});
+
+describe('guesses are shown publicly, so they are made safe', () => {
+  test('a guess cannot carry a link, a mention or a ping', async () => {
+    const { guessLine } = await import('../src/features/mediaguess');
+    const line = guessLine('Sam', '[free nitro](https://evil.example) <@123456789> @everyone', 'wrong');
+    expect(line).not.toMatch(/(?<!\\)\[free nitro\]\(/); expect(line).not.toContain('<@'); expect(line).not.toContain('@everyone');
+    expect(guessLine('Sam', 'Heat', 'correct')).toBe('**Sam** guessed **Heat** — ✅ correct!');
+    expect(guessLine('Sam', 'x', 'no-round')).toContain('/community guess');
   });
 });

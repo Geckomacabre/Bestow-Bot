@@ -1117,7 +1117,7 @@ export async function buildRound(type: MediaType, media: MediaEntry, mode: Round
   const how = mode === 'interactive'
     ? `Press **Guess** — or use \`/guess\` — to answer; anyone here can play!\n` +
       `> 💡 **Hint** — Reveal the next clue\n` +
-      `> ⏭️ **Skip** — The person who started the game can give up on a round\n` +
+      `> ⏭️ **Skip** — The person who started the game can skip a round on their own; anyone else needs ${VOTES_NEEDED} people to vote\n` +
       `> ⏹️ **Stop game** — Rounds keep coming until someone stops the game\n` +
       `> ⌛ A round nobody answers ends by itself after ${INTERACTIVE_ROUND_MS / 60_000} minutes`
     : mode === 'dm'
@@ -1272,27 +1272,42 @@ export async function resolveGame(
 // identical logic (delay gate, duplicate-vote check, threshold resolve).
 export async function castVoteSkip(
   channelId: string, userId: string, client: Client, nextHost?: InteractiveHost,
-): Promise<{ content: string; ephemeral: boolean }> {
+): Promise<{ content: string }> {
   const state = activeGames.get(channelId);
   if (!state || state.answered) {
-    return { content: '❌ There is no active guessing game in this channel.', ephemeral: true };
+    return { content: '❌ There is no active guessing game in this channel.' };
   }
 
-  // Solo DM round (or a game run through interactions): no vote and no wait — skipping just reveals the answer, and the game goes on.
+  // A group-chat game (run through interactions): the person who started it can skip on their own. Anyone else needs company — it takes
+  // two people voting to skip. No wait: a round of friends should not have to sit through a timer.
+  if (state.interactive && userId !== state.interactive.ownerId) {
+    if (state.voteskips.has(userId)) return { content: '❌ You have already voted to skip this round.' };
+    state.voteskips.add(userId);
+    const votes = state.voteskips.size;
+    if (votes < VOTES_NEEDED) {
+      const more = VOTES_NEEDED - votes;
+      return { content: `🗳️ Skip vote recorded: **${votes}/${VOTES_NEEDED}**. Need **${more}** more ${more === 1 ? 'person' : 'people'} to skip — or the person who started the game can skip on their own.` };
+    }
+    state.answered = true; // lock before any await to prevent a race with a correct guess
+    await resolveGame(state, client, null, 'skip', nextHost);
+    return { content: `⏭️ **${votes}/${VOTES_NEEDED}** skip votes — skipping this round!` };
+  }
+
+  // A solo DM round, or the starter of a group-chat game: no vote and no wait — skipping just reveals the answer, and the game goes on.
   if (!state.guildId) {
     state.answered = true;
     await resolveGame(state, client, null, 'skip', nextHost);
-    return { content: '⏭️ Round skipped.', ephemeral: true };
+    return { content: '⏭️ Round skipped.' };
   }
 
   const remainingDelay = VOTESKIP_DELAY_MS - (Date.now() - state.startedAt);
   if (remainingDelay > 0) {
     const mins = Math.ceil(remainingDelay / 60_000);
-    return { content: `⏳ Vote skip isn't available yet — everyone gets a fair shot first. Try again in **${mins} minute${mins !== 1 ? 's' : ''}**.`, ephemeral: true };
+    return { content: `⏳ Vote skip isn't available yet — everyone gets a fair shot first. Try again in **${mins} minute${mins !== 1 ? 's' : ''}**.` };
   }
 
   if (state.voteskips.has(userId)) {
-    return { content: '❌ You have already voted to skip this round.', ephemeral: true };
+    return { content: '❌ You have already voted to skip this round.' };
   }
 
   state.voteskips.add(userId);
@@ -1301,10 +1316,10 @@ export async function castVoteSkip(
   if (votes >= VOTES_NEEDED) {
     state.answered = true; // lock before any await to prevent race with correct guess
     await resolveGame(state, client, null, 'skip');
-    return { content: `⏭️ **${votes}/${VOTES_NEEDED}** skip votes — skipping this round!`, ephemeral: false };
+    return { content: `⏭️ **${votes}/${VOTES_NEEDED}** skip votes — skipping this round!` };
   }
   const remaining = VOTES_NEEDED - votes;
-  return { content: `🗳️ Skip vote recorded: **${votes}/${VOTES_NEEDED}**. Need **${remaining}** more vote${remaining !== 1 ? 's' : ''} to skip.`, ephemeral: false };
+  return { content: `🗳️ Skip vote recorded: **${votes}/${VOTES_NEEDED}**. Need **${remaining}** more vote${remaining !== 1 ? 's' : ''} to skip.` };
 }
 
 // ─── Interactive rounds ───────────────────────────────────────────────────────
