@@ -6,7 +6,6 @@ import {
 import { cv2Err, cv2Box } from '../../utils/components.js';
 import { rand, randInt } from '../../utils/random.js';
 import { getCash, moveCash } from '../../eco/core.js';
-import { guardBonus, robBonus, pct } from '../../eco/effects.js';
 import { withLock } from '../../framework/mutex.js';
 
 const FAIL_COOLDOWN_MS = 30 * 60 * 1000;
@@ -58,12 +57,7 @@ export const rob: Sub = {
         await interaction.reply(cv2Err(`<@${target.id}> is carrying less than ${sym} ${MIN_TARGET_CASH} in cash — not worth it. (Money in the bank can't be robbed.)`)); return;
       }
 
-      const [bonus, guard] = await Promise.all([robBonus(userId), guardBonus(target.id)]);
-      const chance = Math.min(0.9, Math.max(0.1, BASE_CHANCE + bonus - guard));
-      const success = rand() < chance;
-      const oddsNote = bonus || guard
-        ? `\n*Odds: ${pct(chance)}${bonus ? ` (+${pct(bonus)} Rogue card)` : ''}${guard ? ` (−${pct(guard)} target's Guardian card)` : ''}*`
-        : '';
+      const success = rand() < BASE_CHANCE;
 
       if (success) {
         // Steal anywhere from 1 coin up to the victim's whole wallet — re-read so a spent wallet can't be overdrawn.
@@ -79,7 +73,7 @@ export const rob: Sub = {
           return;
         }
         await setEconomyCooldown(userId, 'rob_success');
-        await interaction.reply(box(Colors.Green, `🦹 **Successful Robbery!**\nYou stole **${sym} ${stolen.toLocaleString()}** from <@${target.id}>!\n*You'll need to lay low for 1 hour.*${oddsNote}`));
+        await interaction.reply(box(Colors.Green, `🦹 **Successful Robbery!**\nYou stole **${sym} ${stolen.toLocaleString()}** from <@${target.id}>!\n*You'll need to lay low for 1 hour.*`));
         void notifyVictim(interaction.client, target.id,
           `🦹 **${interaction.user.username}** robbed you for **${sym} ${stolen.toLocaleString()}** in **${interaction.guild?.name ?? 'a server'}**. ` +
           `Keep your money in the bank with \`/eco bank deposit\` to protect it. (Turn these DMs off with \`/eco toggle-notifications\`.)`);
@@ -94,7 +88,7 @@ export const rob: Sub = {
       if (!goons) await setEconomyCooldown(userId, 'rob_fail');
       await interaction.reply(box(Colors.Red,
         `🚨 **Caught!**\nYou were caught trying to rob <@${target.id}>!\n${fine > 0 ? `You paid **${sym} ${fine.toLocaleString()}** as a fine.` : 'You had nothing to pay as a fine.'}\n` +
-        `${goons ? '🥊 *Your Goon Squad covered the escape — no cooldown!*' : "*You're on a 30-minute cooldown.*"}${oddsNote}`));
+        `${goons ? '🥊 *Your Goon Squad covered the escape — no cooldown!*' : "*You're on a 30-minute cooldown.*"}`));
     });
   },
 };

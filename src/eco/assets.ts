@@ -4,7 +4,7 @@ import { rand, randInt } from '../utils/random.js';
 import {
   BUSINESSES, BUSINESS_SELL_REFUND, INVESTMENTS, LAB, MAX_ACCRUAL_HOURS, QUEST_TIERS, QUEST_TITLES,
 } from './catalog.js';
-import { careerMultiplier } from './effects.js';
+import { businessMultiplier, careerMultiplier, labMultiplier } from './effects.js';
 import { getCash } from './core.js';
 
 const HOUR = 3_600_000;
@@ -50,7 +50,7 @@ export async function collectBusiness(guildId: string, userId: string) {
     // Optimistic guard: only the call that moves last_collected forward gets paid.
     const moved = await db`UPDATE eco_business SET last_collected = ${now} WHERE user_id = ${userId} AND last_collected = ${biz.last_collected} RETURNING user_id`;
     if (!moved.length) return { ok: false as const, reason: 'empty' as const };
-    const amount = Math.floor(base * (await careerMultiplier(userId)));
+    const amount = Math.floor(base * (await businessMultiplier(userId)));
     const { newBalance } = await adjustBalance(guildId, userId, amount, `business:collect:${biz.kind}`);
     return { ok: true as const, amount, cash: newBalance, kind: biz.kind };
   });
@@ -129,7 +129,7 @@ export async function collectLab(guildId: string, userId: string) {
     const moved = await db`UPDATE eco_lab SET ampoules = ampoules - ${used}, last_collected = ${now}
       WHERE user_id = ${userId} AND last_collected = ${lab.last_collected} AND ampoules >= ${used} RETURNING user_id`;
     if (!moved.length) return { ok: false as const, reason: 'empty' as const };
-    const amount = Math.floor(amountBase * (await careerMultiplier(userId)));
+    const amount = Math.floor(amountBase * (await labMultiplier(userId)));
     const { newBalance } = await adjustBalance(guildId, userId, amount, 'lab:collect');
     return { ok: true as const, amount, used, cash: newBalance, ampoulesLeft: lab.ampoules - used };
   });

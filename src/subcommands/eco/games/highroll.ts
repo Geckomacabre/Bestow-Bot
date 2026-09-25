@@ -8,7 +8,6 @@ import { randInt } from '../../../utils/random.js';
 import { cv2Err } from '../../../utils/components.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import { renderHighRollGif, HIGHROLL_REVEAL_MS } from '../../../utils/highRollRender.js';
 import { postWithReveal } from '../../../utils/casinoReveal.js';
 
@@ -36,7 +35,7 @@ const HighRoll: Command = {
     const playerRoll = randInt(1, 100);
     const botRoll = randInt(1, 100);
     const win = playerRoll > botRoll, tie = playerRoll === botRoll;
-    const luckMult = win ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
+    const luckMult = win ? (await getGambleMultiplier(guildId, userId)) : 1;
     const round = await settleRound({
       guildId, userId, game: 'highroll', bet,
       returned: win ? bet + Math.floor(bet * luckMult) : tie ? bet : 0, won: win,

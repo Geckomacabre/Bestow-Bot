@@ -9,7 +9,6 @@ import { randInt } from '../../../utils/random.js';
 import { cv2Err, IS_CV2 } from '../../../utils/components.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import { renderSlotsGif, SLOTS_REVEAL_MS } from '../../../utils/slotsRender.js';
 import { postWithReveal, mediaPanel } from '../../../utils/casinoReveal.js';
 
@@ -73,7 +72,7 @@ async function playSpin(
   }
   const multiplier = isTriple ? TRIPLE_MULT[reels[0]!]! : pairSymbol ? PAIR_MULT[pairSymbol]! : 0;
 
-  const luckMult = multiplier > 0 ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
+  const luckMult = multiplier > 0 ? (await getGambleMultiplier(guildId, userId)) : 1;
   const winnings = Math.floor(bet * multiplier * luckMult);
   const profit = winnings > bet;
   // The stake was taken by the caller before the spin; this pays back whatever the reels returned.

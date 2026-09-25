@@ -1,6 +1,5 @@
 import type { Sub } from '../../framework/group.js';
 import { BANK_SELL_REFUND, BANK_SPACE_PRICE, BANK_START_CAP, bankDeposit, bankSell, bankUpgrade, bankWithdraw, getEco } from '../../eco/core.js';
-import { bankCapMultiplier } from '../../eco/effects.js';
 import { AMOUNT_HELP, Colors, cv2Box, cv2Err, ecoCtx, parseAmount } from './ui.js';
 
 const amountOpt = (desc: string) => (s: import('discord.js').SlashCommandSubcommandBuilder) =>
@@ -65,13 +64,11 @@ export const bankSubs: Sub[] = [
     async run(i) {
       const ctx = await ecoCtx(i);
       const eco = await getEco(ctx.guildId, ctx.userId);
-      const mult = await bankCapMultiplier(ctx.userId);
-      const cap = Math.floor(eco.bank_cap * mult);
+      const cap = eco.bank_cap;
       const filled = Math.min(20, Math.round((eco.bank / Math.max(1, cap)) * 20));
       await i.reply(cv2Box(
         `🏦 **Your bank**\n\`${'█'.repeat(filled)}${'░'.repeat(20 - filled)}\` ${eco.bank.toLocaleString()} / ${cap.toLocaleString()}\n` +
         `Cash on hand: **${ctx.fmt(eco.balance)}** *(robbable)*` +
-        (mult > 1 ? `\n🏦 *Banker card: +${Math.round((mult - 1) * 100)}% space*` : '') +
         `\n\n\`/eco bank deposit\` · \`withdraw\` · \`upgrade\` · \`sell\``, Colors.Blue));
     },
   },

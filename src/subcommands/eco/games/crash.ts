@@ -10,7 +10,6 @@ import { rand } from '../../../utils/random.js';
 import { cv2Err } from '../../../utils/components.js';
 import { stake, payout } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 
 // Stock-style multiplier: it drifts up and down each tick. You can cash out at the
 // current value (never below 1.00x) any time — the only way to lose is the "crash
@@ -97,7 +96,7 @@ const Crash: Command = {
       gameOver = true;
       clearInterval(tick);
 
-      const luckMult = (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId));
+      const luckMult = (await getGambleMultiplier(guildId, userId));
       const winAmount = Math.floor(bet * current * luckMult);
       // XP only when there was real profit — an instant 1.00x cash-out risks
       // nothing and shouldn't farm the daily game-XP cap.

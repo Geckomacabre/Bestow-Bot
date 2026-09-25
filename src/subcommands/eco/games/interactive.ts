@@ -7,7 +7,6 @@ import { cv2Err } from '../../../utils/components.js';
 import { randInt } from '../../../utils/random.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import {
   DICE_WIN_MULT, LADDER_CHANCES, MINES_COLS, MINES_MAX, MINES_MIN, MINES_ROWS, MINES_TILES, TOWER_MODES, TOWER_ROWS,
   chanceHigher, chanceLower, drawRank, hiloGuess, ladderClimb, ladderMultiplier, minesMultiplier, minesReveal, newMines, newTowers,
@@ -51,7 +50,7 @@ async function runInteractive<S>(i: ChatInputCommandInteraction, def: Def<S>): P
 
   await i.deferReply();
   const state = def.init(i);
-  const luck = (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId));
+  const luck = (await getGambleMultiplier(guildId, userId));
   const ctx = (extra: Partial<Ctx> = {}): Ctx => ({ bet, sym, mult: def.mult(state), ...extra });
   const render = (v: View, disable = false) => ({
     content: v.content,
@@ -246,7 +245,7 @@ async function playDice(i: ChatInputCommandInteraction) {
   const [p1, p2, h1, h2] = [randInt(1, 6), randInt(1, 6), randInt(1, 6), randInt(1, 6)];
   const player = p1 + p2, house = h1 + h2;
   const win = player > house, tie = player === house;
-  const luck = win ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
+  const luck = win ? (await getGambleMultiplier(guildId, userId)) : 1;
   const returned = win ? bet + Math.floor(bet * (DICE_WIN_MULT - 1) * luck) : tie ? bet : 0;
   const round = await settleRound({
     guildId, userId, game: 'dice', bet, returned, won: win, xp: win ? randInt(50, 100) : undefined,

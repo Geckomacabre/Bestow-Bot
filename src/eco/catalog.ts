@@ -89,35 +89,30 @@ export const QUEST_TITLES = [
 // ─── Trading cards ──────────────────────────────────────────────────────────
 
 export const CARD_CATEGORIES: Record<string, { name: string; emoji: string; effect: string; names: string[] }> = {
-  fortune: {
-    name: 'Fortune', emoji: '🍀', effect: '+1% gambling winnings per ★',
-    names: ['Four-Leaf Clover', 'Golden Horseshoe', 'Lucky Coin', 'Rabbit\'s Foot', 'Wishing Well', 'Shooting Star', 'Loaded Die', 'Jackpot Seven', 'Fortune Teller', 'Black Cat (Reformed)'],
+  business: {
+    name: 'Business', emoji: '💼', effect: '+3% business income per ★',
+    names: ['Corner Office', 'Board Seat', 'Franchise License', 'Golden Handshake', 'Company Card', 'Stock Options', 'Market Share', 'Merger Deal', 'Venture Fund', 'Brand Empire'],
   },
-  career: {
-    name: 'Career', emoji: '💼', effect: '+2% from work/daily/weekly/monthly per ★',
-    names: ['Corner Office', 'Overtime Badge', 'Golden Handshake', 'Coffee Machine', 'Promotion Letter', 'Standing Desk', 'Company Card', 'Mentor', 'Side Hustle', 'Ergonomic Chair'],
+  lab: {
+    name: 'Lab', emoji: '🧪', effect: '+3% lab output per ★',
+    names: ['Petri Dish', 'Centrifuge', 'Bunsen Burner', 'Microscope', 'Clean Room', 'Particle Beam', 'Gene Splicer', 'Lab Coat', 'Research Grant', 'Nobel Medal'],
   },
-  rogue: {
-    name: 'Rogue', emoji: '🗡️', effect: '+3% rob success per ★',
-    names: ['Lockpick Set', 'Smoke Bomb', 'Grappling Hook', 'Night Cloak', 'Forged Papers', 'Getaway Car', 'Silent Boots', 'Master Key', 'Shadow Partner', 'Decoy Wallet'],
-  },
-  guardian: {
-    name: 'Guardian', emoji: '🛡️', effect: '−3% chance of being robbed per ★',
-    names: ['Steel Vault', 'Guard Dog', 'Security Camera', 'Iron Padlock', 'Laser Grid', 'Neighborhood Watch', 'Panic Room', 'Bulletproof Wallet', 'Alarm System', 'Retired Sheriff'],
-  },
-  banker: {
-    name: 'Banker', emoji: '🏦', effect: '+10% bank space per ★',
-    names: ['Piggy Bank', 'Gold Ledger', 'Vault Door', 'Compound Interest', 'Silver Spoon', 'Accountant', 'Safe Deposit Box', 'Stock Ticker', 'Abacus', 'Money Tree'],
+  personal: {
+    name: 'Personal', emoji: '👤', effect: '+2% from work, claims and quests per ★',
+    names: ['Four-Leaf Clover', 'Coffee Machine', 'Promotion Letter', 'Lucky Coin', 'Mentor', 'Side Hustle', 'Piggy Bank', 'Rabbit\'s Foot', 'Ergonomic Chair', 'Money Tree'],
   },
 };
+/** Cards from before the Heist categories: kept in legacy_category, now Personal (see eco/schema.ts). */
+export const LEGACY_CARD_CATEGORIES = ['fortune', 'career', 'rogue', 'guardian', 'banker'] as const;
 
 export interface CaseDef { name: string; emoji: string; cost: number; /** odds for 1★..5★, sums to 1 */ odds: [number, number, number, number, number] }
 
 export const CASES: Record<string, CaseDef> = {
-  basic:     { name: 'Basic Case',     emoji: '📦', cost: 500,    odds: [0.70, 0.24, 0.05, 0.009, 0.001] },
-  premium:   { name: 'Premium Case',   emoji: '🎁', cost: 2_500,  odds: [0.40, 0.38, 0.16, 0.05, 0.01] },
-  legendary: { name: 'Legendary Case', emoji: '👑', cost: 10_000, odds: [0.10, 0.30, 0.35, 0.20, 0.05] },
+  standard: { name: 'Standard', emoji: '📦', cost: 2_500,  odds: [0.40, 0.38, 0.16, 0.05, 0.01] },
+  blackice: { name: 'Blackice', emoji: '🧊', cost: 10_000, odds: [0.10, 0.30, 0.35, 0.20, 0.05] },
 };
+/** Cases from before Heist's two: Basic and Premium became Standard, Legendary became Blackice. */
+export const LEGACY_CASES: Record<string, string> = { basic: 'standard', premium: 'standard', legendary: 'blackice' };
 /** Chance a pulled card is a holo (non-standard, can't be merged, double effect). */
 export const HOLO_CHANCE = 0.02;
 export const CARD_SHRED_VALUE = [0, 100, 400, 1_500, 6_000, 25_000] as const;

@@ -8,7 +8,6 @@ import { randInt } from '../../../utils/random.js';
 import { cv2Err } from '../../../utils/components.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import { renderRouletteGif, ROULETTE_REVEAL_MS } from '../../../utils/rouletteRender.js';
 import { postWithReveal } from '../../../utils/casinoReveal.js';
 
@@ -81,7 +80,7 @@ const Roulette: Command = {
     const win = wouldWin(result);
 
     const sym = cfg.currency_symbol;
-    const luckMult = win ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
+    const luckMult = win ? (await getGambleMultiplier(guildId, userId)) : 1;
     const winnings = win ? Math.floor(bet * (multiplier - 1) * luckMult) : 0;
     const round = await settleRound({
       guildId, userId, game: 'roulette', bet, returned: win ? bet + winnings : 0, won: win,

@@ -10,7 +10,6 @@ import { cv2Err } from '../../../utils/components.js';
 import { buildGamePanel } from '../../../utils/gamble.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import { renderScratchCard } from '../../../utils/scratchRender.js';
 import { mediaPanel } from '../../../utils/casinoReveal.js';
 import { AttachmentBuilder } from 'discord.js';
@@ -79,7 +78,7 @@ async function resolveGame(
   const win = checkWin(symbols);
   const sym = cfg.currency_symbol;
   // The card's price was taken up-front; a winning card pays back price × multiplier.
-  const luckMult = win ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
+  const luckMult = win ? (await getGambleMultiplier(guildId, userId)) : 1;
   const winAmount = win ? Math.floor(bet * win.mult * luckMult) : 0;
   const round = await settleRound({
     guildId, userId, game: 'scratch', bet, returned: winAmount, won: !!win,

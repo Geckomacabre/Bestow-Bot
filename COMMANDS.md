@@ -408,38 +408,38 @@ Options: `<question>`
 
 Economy: wallet, bank, games, businesses, cards and more
 
-- `/eco wallet [user]` — View your wallet card (or someone else's)
+- `/eco wallet [user]` — View your Bestow wallet
 - `/eco daily` — Claim your daily reward
 - `/eco monthly` — ✨ Claim your monthly premium cash reward
-- `/eco work` — Work a shift for coins (1-hour cooldown)
-- `/eco beg` — Beg a stranger for money (15-minute cooldown)
+- `/eco work` — Work a shift for money
+- `/eco beg` — Beg a stranger for money
 - `/eco hustle` — Take a risky side hustle: bigger pay, but it can flop (30-minute cooldown)
-- `/eco bonus` — Claim a random bonus reward (every 6 hours)
+- `/eco bonus` — Claim a random bonus reward
 - `/eco joinbonus` — Claim a one-time cash bonus for joining our server
-- `/eco rob <user>` — Try to steal cash from another user (banked money is safe)
-- `/eco transfer <user> <amount>` — Send banked money to another user (25% tax)
+- `/eco rob <user>` — Attempt to rob another user's cash
+- `/eco transfer <user> <amount>` — Transfer bank money to another user (25% tax)
 - `/eco cooldowns` — See what you can and can't claim right now
 - `/eco history [user]` — Show your recent economy transactions
 - `/eco graph [user]` — Show your balance graph for the last seven days
 - `/eco guide` — Learn how the economy works
 - `/eco toggle-notifications` — Toggle DMs when someone robs you
-- `/eco giveaway <amount> <winners> <duration>` — Start a giveaway paid from your cash (25% tax on payout)
-- `/eco bank deposit <amount>` — Move cash into your bank (safe from robbers)
-- `/eco bank withdraw <amount>` — Move money from your bank to your cash
-- `/eco bank upgrade <amount>` — Buy more bank space (1 per space)
-- `/eco bank sell <amount>` — Sell bank space back for 10% of its price
+- `/eco giveaway <amount> <winners> <duration>` — Start an economy-funded giveaway (25% tax on payout)
+- `/eco bank deposit <amount>` — Move cash into your bank
+- `/eco bank withdraw <amount>` — Move money from your bank to cash
+- `/eco bank upgrade <amount>` — Buy additional bank space ($1 per space)
+- `/eco bank sell <amount>` — Sell bank space back for 10% of its cost
 - `/eco bank info` — Show your bank balance and capacity
 - `/eco business list` — List available businesses
 - `/eco business buy <name>` — Buy a business
 - `/eco business collect` — Collect your business earnings
 - `/eco business info [user]` — View a business
-- `/eco business sell` — Sell your business for 50% of its price (plus pending income)
-- `/eco lab buy` — Buy a research laboratory (25,000)
-- `/eco lab ampoules <amount>` — Buy ampoules for your lab (20 each)
+- `/eco business sell` — Sell your business
+- `/eco lab buy` — Buy a laboratory
+- `/eco lab ampoules <amount>` — Buy ampoules for your lab
 - `/eco lab collect` — Collect your laboratory earnings
 - `/eco lab info [user]` — View a laboratory
 - `/eco lab upgrade` — Upgrade your laboratory
-- `/eco lab sell` — Sell your laboratory for 50% of everything invested
+- `/eco lab sell` — Sell your laboratory
 - `/eco investment list` — List all investments that exist
 - `/eco investment start <name>` — Start an investment
 - `/eco investment status` — View the status of your investment
@@ -447,21 +447,21 @@ Economy: wallet, bank, games, businesses, cards and more
 - `/eco quest start <difficulty>` — Start a quest
 - `/eco quest status` — View the status of your quest
 - `/eco quest complete` — Complete your quest
-- `/eco quest stop` — Abandon your quest (no reward)
-- `/eco quest leaderboard` — View the quest leaderboard (this server, or everyone outside a server)
+- `/eco quest stop` — Stop your quest
+- `/eco quest leaderboard` — View the quest leaderboard
 - `/eco card buy <case_type> [amount]` — Buy trading card cases
 - `/eco card cases` — View your unopened cases
-- `/eco card open <case_type> [category] [amount]` — Open trading card cases
-- `/eco card list [user] [category]` — List a user's trading cards
+- `/eco card open <case_type> <category> [amount]` — Open trading card cases
+- `/eco card list [user]` — List a user's trading cards
 - `/eco card equip <card_id>` — Equip one of your cards
 - `/eco card unequip <category>` — Unequip your active card for a category
 - `/eco card shred <card_id>` — Shred a card for cash
 - `/eco card upgrade <category> <stars>` — Merge 10 same-star standard cards into 1 higher-star card
 - `/eco card sell <card_id> <user> <price>` — Sell a card to another user
 - `/eco card trade <your_card_id> <their_card_id> <user>` — Trade a card 1-for-1 with another user
-- `/eco leaderboard cash` — Cash-only leaderboard for this server
-- `/eco leaderboard networth` — Net-worth leaderboard (cash + bank + lab + business)
-- `/eco leaderboard global` — Global net-worth leaderboard across every server
+- `/eco leaderboard cash` — Cash-only leaderboard
+- `/eco leaderboard networth` — Net-worth leaderboard (cash+bank+lab+business)
+- `/eco leaderboard global` — Global net-worth leaderboard
 - `/eco wallet-edit avatar <shape>` — ✨ Change the avatar shape
 - `/eco wallet-edit background [color] [gradient] [direction] [image] [remove_image]` — ✨ Change the card background
 - `/eco wallet-edit message <text>` — ✨ Set or clear the card message
@@ -470,20 +470,20 @@ Economy: wallet, bank, games, businesses, cards and more
 - `/eco wallet-edit text-color <color>` — ✨ Change the card text color
 - `/eco wallet-edit reset` — ✨ Reset every balance-card setting
 - `/eco wallet-edit studio` — ✨ Open the interactive balance-card studio
-- `/eco games slots <bet>` — Spin the slot machine — pairs pay, triples pay big!
-- `/eco games blackjack <bet>` — Play blackjack — Hit, Stand, or Double Down against the dealer
-- `/eco games roulette <bet> <type> [number]` — Spin the roulette wheel and bet on the outcome
-- `/eco games coinflip <bet>` — Bet on a coin flip (50/50 — win doubles your bet)
+- `/eco games slots <amount>` — Spin the slots
+- `/eco games blackjack <amount>` — Play blackjack
+- `/eco games roulette <amount> <bet>` — Bet on roulette
+- `/eco games coinflip <amount> [side]` — Bet on a coin flip
 - `/eco games highroll <bet>` — Roll 1–100 against the bot — higher roll wins
 - `/eco games crash <bet>` — Ride the multiplier as it swings up and down — cash out before it crashes to 0!
 - `/eco games poker <bet>` — Video Poker (Jacks or Better) — select cards to hold, then draw
 - `/eco games scratch <bet>` — Buy a scratch card — reveal all 9 symbols and match 3 to win!
 - `/eco games plinko <bet>` — Drop a ball down the Plinko board — the edges pay 120x!
 - `/eco games jackpot [sticky]` — See the current progressive jackpot pool
-- `/eco games mines <amount> [count]` — Reveal tiles, avoid the mines, cash out before you blow up
+- `/eco games mines <amount> [count]` — Play mines
 - `/eco games towers <amount> [difficulty]` — Climb five rows and cash out before losing
 - `/eco games ladder <amount>` — Climb the multiplier ladder
-- `/eco games higherlower <amount>` — Guess higher or lower and build a streak
+- `/eco games higherlower <amount>` — Guess higher or lower
 - `/eco games dice <amount>` — Bet on a dice roll vs the house
 - `/eco games odds <game>` — Explain a game's odds and payouts
 - `/eco games stats [user]` — Show lifetime gambling statistics
@@ -493,7 +493,7 @@ Economy: wallet, bank, games, businesses, cards and more
 
 Companies: shared vaults, projects and leaderboards
 
-- `/eco-company create <tag> <name>` — Create a company (50,000)
+- `/eco-company create <tag> <name>` — Create a company
 - `/eco-company info [name]` — View your company or another company
 - `/eco-company members` — List company members and ranks
 - `/eco-company userinfo [user]` — Show a company member's rank
@@ -502,17 +502,17 @@ Companies: shared vaults, projects and leaderboards
 - `/eco-company invite <user>` — Invite a user to your company
 - `/eco-company uninvite <user>` — Cancel a pending invite
 - `/eco-company kick <user>` — Kick a member from your company
-- `/eco-company uprank <user>` — Promote a member to officer
-- `/eco-company downrank <user>` — Demote an officer to member
+- `/eco-company uprank <user>` — Promote a member within the company
+- `/eco-company downrank <user>` — Demote a member within the company
 - `/eco-company transfer <user>` — Transfer company ownership to another member
-- `/eco-company delete` — Delete your company permanently (vault is split between members)
+- `/eco-company delete` — Delete your company permanently
 - `/eco-company description <description>` — Change your company's description
 - `/eco-company name <name>` — Rename your company
 - `/eco-company tag <tag>` — Change your company's tag
-- `/eco-company privacy <privacy>` — Change who can join your company
+- `/eco-company privacy <privacy>` — Change your company's privacy settings
 - `/eco-company icon <image>` — Set your company's icon
 - `/eco-company reset-icon` — Remove your company's icon
-- `/eco-company upgrade` — Upgrade your company (paid from the vault)
+- `/eco-company upgrade` — Upgrade your company
 - `/eco-company vault deposit <amount>` — Deposit cash into your company vault
 - `/eco-company vault withdraw <amount>` — Withdraw cash from your company vault (CEO only)
 - `/eco-company vault bonus <user> <amount>` — Send a vault bonus to a member (CEO only)
@@ -523,13 +523,13 @@ Companies: shared vaults, projects and leaderboards
 - `/eco-company requests accept <user>` — Accept a pending join request
 - `/eco-company requests deny <user>` — Deny a pending join request
 - `/eco-company project list` — List all projects that exist
-- `/eco-company project start <name>` — Start a project for your company (CEO only)
+- `/eco-company project start <name>` — Start a project for your company
 - `/eco-company project contribute <amount>` — Contribute to your company project
 - `/eco-company project status` — View the status of your company project
 - `/eco-company project complete` — Complete your company project
 - `/eco-company project collect [amount]` — Collect your company project earnings
 - `/eco-company project participants` — View project contributors
-- `/eco-company project cancel` — Cancel your company project while it's still funding (CEO only)
+- `/eco-company project cancel` — Cancel your company project
 - `/eco-company leaderboard networth` — Company leaderboard by member net worth
 - `/eco-company leaderboard vault` — Company leaderboard by vault
 

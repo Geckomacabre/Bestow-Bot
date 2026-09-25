@@ -1,8 +1,8 @@
 import { db } from '../utils/db.js';
 
 /**
- * Equipped trading cards give small passive bonuses (see CARD_CATEGORIES in catalog.ts).
- * One card per category may be equipped; a holo card counts double.
+ * Equipped trading cards give small passive bonuses in Heist's three categories — Business, Lab and Personal (see
+ * CARD_CATEGORIES in catalog.ts). One card per category may be equipped; a holo card counts double.
  */
 
 export type Equipped = Record<string, { stars: number; holo: boolean; weight: number }>;
@@ -19,29 +19,19 @@ export async function getEquipped(userId: string): Promise<Equipped> {
 
 const w = (e: Equipped, cat: string) => e[cat]?.weight ?? 0;
 
-/** Multiplier for work/daily/weekly/monthly/yearly: +2% per ★. */
+/** Personal card — work, claims and quest rewards: +2% per ★. */
 export async function careerMultiplier(userId: string): Promise<number> {
-  return 1 + 0.02 * w(await getEquipped(userId), 'career');
+  return 1 + 0.02 * w(await getEquipped(userId), 'personal');
 }
 
-/** Multiplier on gambling winnings: +1% per ★. */
-export async function fortuneMultiplier(userId: string): Promise<number> {
-  return 1 + 0.01 * w(await getEquipped(userId), 'fortune');
+/** Business card — business income: +3% per ★. */
+export async function businessMultiplier(userId: string): Promise<number> {
+  return 1 + 0.03 * w(await getEquipped(userId), 'business');
 }
 
-/** Extra rob success chance: +3% per ★ (absolute). */
-export async function robBonus(userId: string): Promise<number> {
-  return 0.03 * w(await getEquipped(userId), 'rogue');
-}
-
-/** Reduction of robbers' success chance against this user: −3% per ★ (absolute). */
-export async function guardBonus(userId: string): Promise<number> {
-  return 0.03 * w(await getEquipped(userId), 'guardian');
-}
-
-/** Bank capacity multiplier: +10% per ★. */
-export async function bankCapMultiplier(userId: string): Promise<number> {
-  return 1 + 0.1 * w(await getEquipped(userId), 'banker');
+/** Lab card — lab output: +3% per ★. */
+export async function labMultiplier(userId: string): Promise<number> {
+  return 1 + 0.03 * w(await getEquipped(userId), 'lab');
 }
 
 export function pct(x: number): string {

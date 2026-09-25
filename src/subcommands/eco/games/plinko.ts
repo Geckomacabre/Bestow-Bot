@@ -9,7 +9,6 @@ import { rand } from '../../../utils/random.js';
 import { cv2Err, IS_CV2 } from '../../../utils/components.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import { renderPlinkoGif, ROWS, PLINKO_REVEAL_MS } from '../../../utils/plinkoBoard.js';
 import { postWithReveal, mediaPanel } from '../../../utils/casinoReveal.js';
 
@@ -53,7 +52,7 @@ async function playDrop(
 
   const gif = await renderPlinkoGif(steps, MULTS, bucket);
 
-  const luckMult = (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId));
+  const luckMult = (await getGambleMultiplier(guildId, userId));
   const winnings = Math.floor(bet * multiplier * luckMult);
   const profit = winnings > bet;
   // Partial losses count — the worst bucket still returns 0.25x, so insurance
