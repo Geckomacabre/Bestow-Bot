@@ -8,7 +8,8 @@ import { MAX_BATTERY } from './juul.js';
  * The juul and battery icons in /juul replies, like Heist's: custom images sent as the bot's own application emojis (Discord only
  * shows images inline in text as emojis). The art lives at src/assets/images/juul/juul.png and battery.png (a full battery) —
  * juul.png is uploaded as-is and every battery level is cut from battery.png. Emojis re-sync on each start, so replaced art
- * takes over by itself. Until the art is there and synced (or if Discord refuses), plain emoji stand in.
+ * takes over by itself. juul.png alone is enough: without battery.png the battery keeps its coloured squares. Until the art is
+ * there and synced (or if Discord refuses), plain emoji stand in.
  */
 
 const DIR = path.resolve(import.meta.dir, '../assets/images/juul');
@@ -19,6 +20,8 @@ const FALLBACK = { juul: '🖊️', battery: ['🟥', '🟥', '🟨', '🟩', '�
 let synced: { juul: string; battery: string[] } | null = null;
 
 export const juulEmoji = () => synced?.juul ?? FALLBACK.juul;
+/** Forgets the synced emojis (tests). */
+export const resetJuulEmojis = () => { synced = null; };
 /** Bars shown for a battery level: 0 only when flat, otherwise at least one. */
 export const batterySteps = (level: number) => (level <= 0 ? 0 : Math.min(BATTERY_STEPS, Math.ceil((level / MAX_BATTERY) * BATTERY_STEPS)));
 export const batteryEmoji = (level: number) => (synced?.battery ?? FALLBACK.battery)[batterySteps(level)]!;
@@ -63,16 +66,17 @@ export async function batteryLevel(full: Buffer, steps: number): Promise<Buffer>
 }
 
 /**
- * The icon images to upload, named with a short content hash so replaced art gets new emojis — or null while the art isn't in
- * the repo yet (the plain emoji stay in use).
+ * The icon images to upload, named with a short content hash so replaced art gets new emojis — or null while juul.png isn't in
+ * the repo yet (the plain emoji stay in use). battery.png is optional: without it only the juul icon is returned.
  */
 export async function juulIcons(dir = DIR): Promise<{ name: string; data: Buffer<ArrayBufferLike> }[] | null> {
   const [jf, bf] = [Bun.file(path.join(dir, 'juul.png')), Bun.file(path.join(dir, 'battery.png'))];
-  if (!(await jf.exists()) || !(await bf.exists())) return null;
+  if (!(await jf.exists())) return null;
   const juul = Buffer.from(await jf.arrayBuffer());
-  const full = Buffer.from(await bf.arrayBuffer());
   const hash = (b: Buffer) => createHash('sha1').update(b).digest('hex').slice(0, 6);
   const out: { name: string; data: Buffer<ArrayBufferLike> }[] = [{ name: `juul_${hash(juul)}`, data: juul }];
+  if (!(await bf.exists())) return out;
+  const full = Buffer.from(await bf.arrayBuffer());
   for (let s = 0; s <= BATTERY_STEPS; s++) {
     const data = s === BATTERY_STEPS ? full : await batteryLevel(full, s);
     out.push({ name: `battery${s}_${hash(data)}`, data });
@@ -83,10 +87,10 @@ export async function juulIcons(dir = DIR): Promise<{ name: string; data: Buffer
 const OURS = /^(juul|battery[0-5])_[0-9a-f]{6}$/;
 
 /** Upload any missing icons as application emojis, remove stale ones, and start using them. */
-export async function syncJuulEmojis(client: Client): Promise<void> {
+export async function syncJuulEmojis(client: Client, dir = DIR): Promise<void> {
   const app = client.application;
   if (!app) return;
-  const want = await juulIcons();
+  const want = await juulIcons(dir);
   if (!want) return;
   const have = await app.emojis.fetch();
   const ids = new Map<string, string>();
@@ -101,5 +105,5 @@ export async function syncJuulEmojis(client: Client): Promise<void> {
     ids.set(w.name, e.id);
   }
   const tag = (name: string) => `<:${name}:${ids.get(name)}>`;
-  synced = { juul: tag(want[0]!.name), battery: want.slice(1).map(w => tag(w.name)) };
+  synced = { juul: tag(want[0]!.name), battery: want.length > 1 ? want.slice(1).map(w => tag(w.name)) : FALLBACK.battery };
 }

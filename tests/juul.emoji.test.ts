@@ -49,3 +49,48 @@ describe('juul battery icons', () => {
     expect(icons[6]!.data.equals(battery())).toBe(true); // and so is the full battery
   });
 });
+
+import { afterEach } from 'bun:test';
+import { resetJuulEmojis, syncJuulEmojis } from '../src/fun/juulEmoji';
+
+/** Just enough of a Client for the emoji sync: the application's emoji list, and creating one. */
+function fakeClient(existing: { id: string; name: string }[] = []) {
+  const created: { name: string }[] = [], deleted: string[] = [];
+  const have = new Map(existing.map(e => [e.id, { ...e, delete: async () => { deleted.push(e.id); } }]));
+  const client = { application: { emojis: { fetch: async () => have, create: async (o: { name: string }) => { created.push(o); return { id: String(1000 + created.length - 1), name: o.name }; } } } };
+  return { client: client as never, created, deleted };
+}
+afterEach(() => resetJuulEmojis());
+
+describe('juul.png on its own', () => {
+  test('is enough: only the juul icon is uploaded, the battery keeps its squares', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'juul-only-'));
+    await writeFile(path.join(dir, 'juul.png'), createCanvas(40, 36).toBuffer('image/png'));
+    const icons = (await juulIcons(dir))!;
+    expect(icons).toHaveLength(1); expect(icons[0]!.name).toMatch(/^juul_[0-9a-f]{6}$/);
+    const { client, created } = fakeClient();
+    await syncJuulEmojis(client, dir);
+    expect(created).toHaveLength(1);
+    expect(juulEmoji()).toBe(`<:${created[0]!.name}:1000>`);
+    expect([batteryEmoji(50), batteryEmoji(15), batteryEmoji(5)]).toEqual(['🟩', '🟨', '🟥']);
+  });
+  test('an emoji that is already uploaded is reused, and one from replaced art is removed', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'juul-reuse-'));
+    await writeFile(path.join(dir, 'juul.png'), createCanvas(40, 36).toBuffer('image/png'));
+    const name = (await juulIcons(dir))![0]!.name;
+    const { client, created, deleted } = fakeClient([{ id: '55', name }, { id: '56', name: 'juul_aaaaaa' }, { id: '57', name: 'someone_elses' }]);
+    await syncJuulEmojis(client, dir);
+    expect(created).toHaveLength(0); expect(deleted).toEqual(['56']); expect(juulEmoji()).toBe(`<:${name}:55>`);
+  });
+  test('nothing changes without any art', async () => {
+    const { client, created } = fakeClient();
+    await syncJuulEmojis(client, await mkdtemp(path.join(os.tmpdir(), 'juul-none-')));
+    expect(created).toHaveLength(0); expect(juulEmoji()).toBe('🖊️');
+  });
+  test('the juul.png shipped in the repo is a real image the sync will pick up', async () => {
+    const icons = (await juulIcons())!;
+    expect(icons[0]!.name).toMatch(/^juul_[0-9a-f]{6}$/);
+    const img = await loadImage(icons[0]!.data);
+    expect(img.width).toBeGreaterThan(8); expect(img.height).toBeGreaterThan(8);
+  });
+});
