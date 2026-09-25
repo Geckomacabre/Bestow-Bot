@@ -1,73 +1,41 @@
-import {
-  ApplicationIntegrationType, ChatInputCommandInteraction, EmbedBuilder,
-  InteractionContextType, SlashCommandBuilder, Colors, MessageFlags,
-} from 'discord.js';
-import { Command } from '../../interfaces/command';
+import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
+import { hleaf } from '../../framework/heist.js';
+import { card, trunc } from '../../lookups/card.js';
+import { lookup, LookupError } from '../../lookups/handler.js';
+import { gtranslate } from '../../lookups/textfun.js';
+import { languageName, resolveLanguage, searchLanguages } from '../../lookups/languages.js';
 
-const LANGS = [
-  { name: 'English', value: 'en' }, { name: 'Spanish', value: 'es' },
-  { name: 'French', value: 'fr' }, { name: 'German', value: 'de' },
-  { name: 'Italian', value: 'it' }, { name: 'Portuguese', value: 'pt' },
-  { name: 'Russian', value: 'ru' }, { name: 'Japanese', value: 'ja' },
-  { name: 'Korean', value: 'ko' }, { name: 'Chinese (Simplified)', value: 'zh' },
-  { name: 'Arabic', value: 'ar' }, { name: 'Dutch', value: 'nl' },
-  { name: 'Polish', value: 'pl' }, { name: 'Turkish', value: 'tr' },
-  { name: 'Swedish', value: 'sv' }, { name: 'Hindi', value: 'hi' },
-];
+const MAX = 1500;
 
-const Translate: Command = {
-  data: new SlashCommandBuilder()
-    .setName('translate')
-    .setDescription('Translate text between languages')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
-    .addStringOption(o => o.setName('text').setDescription('Text to translate').setRequired(true))
-    .addStringOption(o =>
-      o.setName('to').setDescription('Target language (default: English)')
-        .addChoices(...LANGS.map(l => ({ name: l.name, value: l.value }))))
-    .addStringOption(o =>
-      o.setName('from').setDescription('Source language (default: auto-detect)')
-        .addChoices(...LANGS.map(l => ({ name: l.name, value: l.value })))) as any,
+/** No `text` given: translate the latest message with text in this channel (if the bot can read it). */
+async function latestText(i: ChatInputCommandInteraction): Promise<string | null> {
+  const ch = i.channel;
+  if (!ch || !('messages' in ch)) return null;
+  try {
+    const msgs = await ch.messages.fetch({ limit: 15 });
+    return msgs.find(m => !!m.content.trim() && m.id !== i.id)?.content ?? null;
+  } catch { return null; }
+}
 
-  async run(interaction: ChatInputCommandInteraction) {
-    const text = interaction.options.getString('text', true);
-    const to = interaction.options.getString('to') ?? 'en';
-    const from = interaction.options.getString('from') ?? 'auto';
+async function langAutocomplete(i: AutocompleteInteraction) {
+  await i.respond(searchLanguages(String(i.options.getFocused())).slice(0, 25));
+}
 
-    if (text.length > 500) {
-      return interaction.reply({ content: 'Text must be 500 characters or fewer.', flags: MessageFlags.Ephemeral });
-    }
-
-    await interaction.deferReply();
-
-    const langpair = `${from}|${to}`;
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`;
-
-    const res = await fetch(url);
-    if (!res.ok) { await interaction.editReply('Translation service unavailable. Try again later.'); return; }
-
-    const data: any = await res.json();
-    if (data.responseStatus !== 200) {
-      await interaction.editReply(`Translation failed: ${data.responseDetails ?? 'Unknown error'}`); return;
-    }
-
-    const translated: string = data.responseData.translatedText;
-    const detectedLang: string = data.responseData.detectedLanguage ?? from;
-
-    const fromLabel = LANGS.find(l => l.value === detectedLang)?.name ?? detectedLang.toUpperCase();
-    const toLabel = LANGS.find(l => l.value === to)?.name ?? to.toUpperCase();
-
-    const embed = new EmbedBuilder()
-      .setColor(Colors.Blue)
-      .setTitle('🌐 Translation')
-      .addFields(
-        { name: `Original (${fromLabel})`, value: text },
-        { name: `Translated (${toLabel})`, value: translated },
-      )
-      .setFooter({ text: 'Powered by MyMemory' });
-
-    await interaction.editReply({ embeds: [embed] });
-  },
-};
-
-export default Translate;
+export default hleaf('translate', lookup(async i => {
+  const toIn = i.options.getString('to') ?? 'en', fromIn = i.options.getString('from_lang') ?? 'auto';
+  const to = resolveLanguage(toIn), from = resolveLanguage(fromIn);
+  if (!to || to === 'auto') throw new LookupError(`I don't know the language **${trunc(toIn, 40)}**. Try a name like "French" or a code like "fr".`);
+  if (!from) throw new LookupError(`I don't know the language **${trunc(fromIn, 40)}**.`);
+  const text = i.options.getString('text') ?? await latestText(i);
+  if (!text) throw new LookupError('Give me some `text` to translate (I couldn\'t read a recent message here).');
+  const r = await gtranslate(text.slice(0, MAX), to, from);
+  const fromName = languageName(from === 'auto' ? r.detected : from);
+  await i.editReply(card({
+    title: '🌐 Translation', color: 0x4285f4,
+    fields: [[`${fromName}${from === 'auto' ? ' (detected)' : ''}`, trunc(text, 1000)], [languageName(to), trunc(r.text, 1800)]],
+    footer: 'Google Translate',
+  }));
+}), {
+  tweaks: { to: { autocomplete: true, maxLength: 40 }, from_lang: { autocomplete: true, maxLength: 40 }, text: { maxLength: MAX } },
+  autocomplete: langAutocomplete,
+});

@@ -1,4 +1,5 @@
+import { hfrom } from '../../framework/heist.js';
 import { defineLeaf, pickSub } from '../../framework/group.js';
 import { botSubs } from '../../subcommands/info/bot.js';
 
-export default defineLeaf(pickSub(botSubs, 'about'));
+export default defineLeaf(hfrom('about', pickSub(botSubs, 'about')));

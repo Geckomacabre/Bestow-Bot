@@ -1,5 +1,5 @@
-import { defineGroup, pickSub } from '../../framework/group.js';
-import { funSubs } from '../../subcommands/fun/fun.js';
+import { hfrom, hgroup } from '../../framework/heist.js';
 import { hotcalcSub } from '../../subcommands/fun/heist.js';
 
-export default defineGroup({ name: 'rating', description: 'Rate someone or something', subs: [hotcalcSub, pickSub(funSubs, 'rate')] });
+// Heist's howgay / howautistic / ppsize are declined (see docs/heist-parity.json); /rate covers rating anything else.
+export default hgroup({ name: 'rating', subs: [hfrom('rating hotcalc', hotcalcSub)] });

@@ -11,13 +11,18 @@ export const MAX_BATTERY = 50;
 /** 6 s per battery point → empty to full in 5 minutes. */
 export const CHARGE_MS_PER_POINT = 6_000;
 
-export const FLAVORS = ['Mango', 'Cool Mint', 'Menthol', 'Cool Cucumber', 'Creme Brulee', 'Fruit Medley', 'Virginia Tobacco', 'Classic Tobacco', 'Blueberry', 'Watermelon', 'Strawberry', 'Bubblegum', 'Peach', 'Lemon Cake'] as const;
+/** Heist's pods, in Heist's order. */
+export const FLAVORS = ['Classic Menthol', 'Cool Cucumber', 'Classic Tobacco', 'Mango', 'Virginia Tobacco', 'Cool Mint', 'Fruit Medley', 'Creme Brulee', 'THC', 'Lychee', 'Apple'] as const;
+/** Heist's skins and the accent each one gives the juul's cards. */
+export const SKINS: Record<string, number> = { Default: 0x99aab5, Chrome: 0xc0c0c0, 'Matte Black': 0x23272a, 'Rose Gold': 0xb76e79, 'Icy White': 0xe8f4f8, Stealth: 0x2c2f33 };
+export const NAME_MAX = 32;
+/** Kept so juuls customised before skins existed still read back; no longer offered. */
 export const COLORS: Record<string, { label: string; hex: number }> = {
   silver: { label: 'Silver', hex: 0xc0c0c0 }, black: { label: 'Black', hex: 0x23272a }, blurple: { label: 'Blurple', hex: 0x5865f2 }, pink: { label: 'Pink', hex: 0xff69b4 },
   teal: { label: 'Teal', hex: 0x1abc9c }, gold: { label: 'Gold', hex: 0xf1c40f }, red: { label: 'Red', hex: 0xed4245 }, green: { label: 'Green', hex: 0x57f287 }, purple: { label: 'Purple', hex: 0x9b59b6 },
 };
 
-export interface Juul { user_id: string; battery: number; puffs: number; flavor: string; color: string; charging_since: number | null; last_hit: number | null }
+export interface Juul { user_id: string; battery: number; puffs: number; flavor: string; color: string; name: string | null; skin: string; charging_since: number | null; last_hit: number | null }
 
 /** Battery right now, counting charge accrued since it was plugged in. */
 export function effectiveBattery(j: Pick<Juul, 'battery' | 'charging_since'>, now: number): number {
@@ -87,6 +92,25 @@ export async function setColor(userId: string, color: string): Promise<void> {
   await row(userId);
   await db`UPDATE juul_state SET color = ${color} WHERE user_id = ${userId}`;
 }
+
+/** Nickname (trimmed, no mentions/markdown that could ping or break the card; empty clears it) and/or skin. */
+export async function customize(userId: string, o: { name?: string | null; skin?: string | null }): Promise<Juul> {
+  await row(userId);
+  if (o.skin != null) {
+    if (!Object.hasOwn(SKINS, o.skin)) throw new Error('unknown skin');
+    await db`UPDATE juul_state SET skin = ${o.skin} WHERE user_id = ${userId}`;
+  }
+  if (o.name != null) {
+    const clean = o.name.replace(/[@#*_~`|<>\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
+    await db`UPDATE juul_state SET name = ${clean || null} WHERE user_id = ${userId}`;
+  }
+  return row(userId);
+}
+
+export const skinColor = (j: Pick<Juul, 'skin'>) => SKINS[j.skin] ?? SKINS.Default!;
+
+/** Green / yellow / red square for the battery line. */
+export const batteryDot = (level: number) => (level > MAX_BATTERY * 0.5 ? '🟩' : level > MAX_BATTERY * 0.2 ? '🟨' : '🟥');
 
 export async function topPuffers(limit = 10): Promise<{ user_id: string; puffs: number }[]> {
   return (await db`SELECT user_id, puffs FROM juul_state WHERE puffs > 0 ORDER BY puffs DESC, user_id LIMIT ${limit}`) as { user_id: string; puffs: number }[];

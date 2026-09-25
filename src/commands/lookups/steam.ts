@@ -1,4 +1,5 @@
-import { defineGroup } from '../../framework/group.js';
+import { hfrom } from '../../framework/heist.js';
+import { defineLeaf, pickSub } from '../../framework/group.js';
 import { steamSubs } from '../../subcommands/lookups/games.js';
 
-export default defineGroup({ name: 'steam', description: 'Look up games on Steam', subs: steamSubs });
+export default defineLeaf(hfrom('steam', pickSub(steamSubs, 'game')));

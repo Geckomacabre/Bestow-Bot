@@ -77,14 +77,22 @@ export function explainFailure(stderr: string): string {
 
 export interface Downloaded { file: string; name: string; bytes: number; height?: number; mode: Mode }
 
+export const HEIGHTS = [1080, 720, 480, 360, 240, 144] as const;
+
+/** The resolutions to try, best first: the requested one (default 720p) and then each smaller one, so an oversized file can shrink. */
+export function heightLadder(max = 720): number[] {
+  const start = HEIGHTS.find(h => h <= max) ?? 144;
+  return HEIGHTS.filter(h => h <= start).slice(0, 3);
+}
+
 /**
  * Downloads to a temp dir and hands the file to `use` before the directory is cleaned up.
- * Video tries 720p, then 480p, then 360p until the result fits `maxBytes`.
+ * Video tries the requested height (default 720p), then smaller ones, until the result fits `maxBytes`.
  */
-export async function downloadMedia<T>(input: string, o: { mode: Mode; maxBytes: number; run?: Runner }, use: (d: Downloaded) => Promise<T>): Promise<T> {
+export async function downloadMedia<T>(input: string, o: { mode: Mode; maxBytes: number; maxHeight?: number; run?: Runner }, use: (d: Downloaded) => Promise<T>): Promise<T> {
   const url = parseDownloadUrl(input).toString();
   const run = o.run ?? defaultRun;
-  const heights = o.mode === 'audio' ? [undefined] : [720, 480, 360];
+  const heights = o.mode === 'audio' ? [undefined] : heightLadder(o.maxHeight);
   return withWorkdir(async dir => {
     let lastErr = '';
     for (const h of heights) {

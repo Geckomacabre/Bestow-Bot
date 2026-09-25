@@ -36,6 +36,8 @@ export const REGISTRY: PrivacyEntry[] = [
   del('birthdays', 'Birthday'), del('timezones', 'Timezone'), del('timezone_user', 'Per-server timezone'), del('reminders', 'Reminders'), del('scheduled_tasks', 'Scheduled tasks'), del('rsvp_responses', 'Event RSVPs'),
   // Fun
   del('juul_state', 'Juul'),
+  // Your own tags (/tags) and any unused export codes for them
+  del('user_tags', 'Your tags'), del('tag_exports', 'Tag export codes you made'),
   // AI — all opt-in, entered by the person
   del('ai_persona', 'Your AI persona'), del('ai_prefs', 'AI memory preference'), del('ai_memory', 'AI memory notes you saved'),
   // Premium — a local mirror of your subscription/grant, plus gift codes you bought or redeemed

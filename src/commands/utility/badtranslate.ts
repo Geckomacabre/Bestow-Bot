@@ -1,4 +1,5 @@
+import { hfrom } from '../../framework/heist.js';
 import { defineLeaf, pickSub } from '../../framework/group.js';
-import { toolsSubs, funTextSubs } from '../../subcommands/lookups/tools.js';
+import { funTextSubs } from '../../subcommands/lookups/tools.js';
 
-export default defineLeaf(pickSub(funTextSubs, 'badtranslate'));
+export default defineLeaf(hfrom('badtranslate', pickSub(funTextSubs, 'badtranslate'), { tweaks: { text: { maxLength: 300 }, count: { min: 2, max: 8 } } }));

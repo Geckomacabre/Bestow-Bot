@@ -43,7 +43,7 @@ for (const [name, cmd] of commands) {
   byCategory.set(cmd.category ?? '?', (byCategory.get(cmd.category ?? '?') ?? 0) + 1);
 
   if (json.name !== name) errors.push(`/${name}: registered under a different name (${json.name})`);
-  if (json.type === 2) { user++; if (!cmd.runMessage && !cmd.run) errors.push(`${name}: user menu without handler`); continue; }
+  if (json.type === 2) { user++; if (!cmd.runUser) errors.push(`${name}: user menu without runUser()`); continue; }
   if (json.type === 3) { message++; if (!cmd.runMessage) errors.push(`${name}: message menu without runMessage()`); continue; }
   slash++;
   if (typeof cmd.run !== 'function') errors.push(`/${name}: missing run()`);

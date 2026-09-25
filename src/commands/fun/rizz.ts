@@ -1,4 +1,5 @@
+import { hfrom } from '../../framework/heist.js';
 import { defineLeaf, pickSub } from '../../framework/group.js';
-import { funSubs, funGroups } from '../../subcommands/fun/fun.js';
+import { funSubs } from '../../subcommands/fun/fun.js';
 
-export default defineLeaf(pickSub(funSubs, 'rizz'));
+export default defineLeaf(hfrom('rizz', pickSub(funSubs, 'rizz')));

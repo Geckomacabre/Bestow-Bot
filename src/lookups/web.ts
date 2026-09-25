@@ -59,10 +59,21 @@ export function paginate(text: string, max = 1800): string[] {
 // ─── paste.rs ────────────────────────────────────────────────────────────────
 
 export const PASTE_MAX = 100_000;
-export async function paste(text: string): Promise<string> {
+
+/** Pastebin (unlisted) when PASTEBIN_API_KEY is set; otherwise paste.rs, which has no titles, so the title becomes the first line. */
+export async function paste(text: string, title?: string): Promise<string> {
   if (!text.trim()) throw new LookupError('There\'s nothing to paste.');
   if (Buffer.byteLength(text) > PASTE_MAX) throw new LookupError(`That's too long to paste (limit ${PASTE_MAX / 1000} KB).`);
-  const url = (await (await fetch('https://paste.rs/', { method: 'POST', body: text, headers: { 'User-Agent': 'BestowBot/1.0', 'Content-Type': 'text/plain; charset=utf-8' }, signal: AbortSignal.timeout(15_000) })).text()).trim();
+  const key = Bun.env.PASTEBIN_API_KEY;
+  if (key) {
+    const body = new URLSearchParams({ api_dev_key: key, api_option: 'paste', api_paste_code: text, api_paste_private: '1', api_paste_expire_date: 'N', ...(title ? { api_paste_name: title.slice(0, 100) } : {}) });
+    const res = await fetch('https://pastebin.com/api/api_post.php', { method: 'POST', body, headers: { 'User-Agent': 'BestowBot/1.0' }, signal: AbortSignal.timeout(15_000) });
+    const out = (await res.text()).trim();
+    if (!/^https:\/\/pastebin\.com\/[A-Za-z0-9]+$/.test(out)) throw new LookupError('Pastebin didn\'t accept that.');
+    return out;
+  }
+  const withTitle = title ? `${title}\n${'='.repeat(Math.min(title.length, 80))}\n\n${text}` : text;
+  const url = (await (await fetch('https://paste.rs/', { method: 'POST', body: withTitle, headers: { 'User-Agent': 'BestowBot/1.0', 'Content-Type': 'text/plain; charset=utf-8' }, signal: AbortSignal.timeout(15_000) })).text()).trim();
   if (!/^https:\/\/paste\.rs\/[A-Za-z0-9]+/.test(url)) throw new LookupError('The paste service didn\'t accept that.');
   return url.split(/\s/)[0]!;
 }
@@ -110,6 +121,8 @@ export const ACTIONS: Record<string, { text: string; solo: string }> = {
   highfive: { text: '{a} high-fives {b}', solo: '{a} high-fives the air' }, handhold: { text: '{a} holds hands with {b}', solo: '{a} reaches out a hand' }, facepalm: { text: '{a} facepalms at {b}', solo: '{a} facepalms' },
   wink: { text: '{a} winks at {b}', solo: '{a} winks' }, yeet: { text: '{a} yeets {b}', solo: '{a} yeets themselves' }, bonk: { text: '{a} bonks {b}', solo: '{a} bonks themselves' },
   tickle: { text: '{a} tickles {b}', solo: '{a} giggles' }, feed: { text: '{a} feeds {b}', solo: '{a} eats' }, stare: { text: '{a} stares at {b}', solo: '{a} stares into the void' },
+  baka: { text: '{a} calls {b} a baka', solo: '{a} shouts BAKA' }, handshake: { text: '{a} shakes hands with {b}', solo: '{a} offers a handshake' },
+  peck: { text: '{a} gives {b} a peck', solo: '{a} blows a little kiss' }, shoot: { text: '{a} shoots {b}', solo: '{a} fires into the air' },
 };
 
 export function actionText(kind: string, a: string, b?: string): string {

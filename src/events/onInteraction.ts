@@ -6,6 +6,8 @@ import { handleReplyButton, handleReplyModal } from '../ai/conversation';
 import { handleEnterButton } from '../giveaway/service';
 import { handleStudioComponent, handleStudioModal } from '../subcommands/eco/studio';
 import { useAccent } from '../customize/accent';
+import { routeFor } from '../framework/router';
+import { staffCommand, staffGuildId } from '../staff/index';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -18,6 +20,21 @@ export const onInteraction = async (interaction: Interaction) => {
       }
     }
     return;
+  }
+
+  // Components registered by feature modules (framework/router.ts).
+  if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
+    const route = routeFor(interaction.customId);
+    if (route) {
+      try {
+        await useAccent(interaction);
+        await route(interaction);
+      } catch (err) {
+        logger.error(`Component error for ${interaction.customId}: ${err}`);
+        if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: 'There was an error.', flags: MessageFlags.Ephemeral }).catch(() => {});
+      }
+      return;
+    }
   }
 
   if (interaction.isButton() && interaction.customId.startsWith('gw:enter:')) {
@@ -78,7 +95,7 @@ export const onInteraction = async (interaction: Interaction) => {
 
   if (!interaction.isChatInputCommand()) return;
 
-  const command = commands.get(interaction.commandName);
+  const command = commands.get(interaction.commandName) ?? (interaction.commandName === 'staff' && interaction.guildId === staffGuildId() ? staffCommand : undefined);
   if (!command) return;
 
 

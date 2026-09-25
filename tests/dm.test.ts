@@ -80,12 +80,12 @@ for (const cmdName of ['eco', 'eco-company']) {
 describe('other commands with no guild', () => {
   test('lookups/tools/fun that need no network', async () => {
     const cases: [string, string | null, string | null, Record<string, string | number>][] = [
-      ['math', null, null, { expression: '2+2' }], ['color', null, 'inspect', { color: 'coral' }], ['qr', null, 'generate', { text: 'hi' }], ['asciify', null, null, { text: 'hi' }],
-      ['ship', null, null, {}], ['juul', null, 'hit', {}], ['juul', null, 'stats', {}], ['rating', null, 'rate', { thing: 'pizza' }], ['say', null, null, { text: 'hello' }],
+      ['math', null, null, { expression: '2+2' }], ['color', null, 'inspect', { query: 'coral' }], ['qr', null, 'generate', { text: 'hi' }], ['asciify', null, null, { text: 'hi' }],
+      ['ship', null, null, {}], ['juul', null, 'hit', {}], ['juul', null, 'stats', {}], ['rate', null, null, { thing: 'pizza' }], ['say', null, null, { message: 'hello' }],
       ['about', null, null, {}], ['help', null, null, {}],
     ];
     for (const [name, group, sub, options] of cases) {
-      const users = name === 'ship' ? { user: { id: 'a1', username: 'A' }, other: { id: 'b1', username: 'B' } } : undefined;
+      const users = name === 'ship' ? { user1: { id: 'a1', username: 'A' }, user2: { id: 'b1', username: 'B' } } : undefined;
       const cmd = commands.get(name)!;
       const fi = fakeInteraction({ guildId: null, options, users, group, sub: sub ?? undefined });
       (fi.interaction as any).client = { user: { id: '1', username: 'Bestow', displayAvatarURL: () => 'https://x/y.png' }, guilds: { cache: { size: 0 } }, ws: { ping: 1 } };

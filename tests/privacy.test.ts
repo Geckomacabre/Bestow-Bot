@@ -61,7 +61,9 @@ describe('registry coverage (fails when someone adds a table with a user column 
     // Columns that legitimately hold text a person or server wrote on purpose. Anything new must be reviewed and added here.
     const allowed = new Set(['custom_commands.name', 'eco_bank_ledger.reason', 'eco_ledger.reason', 'eco_company.description', 'eco_company_request.text', 'eco_wallet_style.message',
       'reminders.message', 'rsvp_events.description', 'scheduled_tasks.data', 'sticky_messages.content', 'streaming_config.message', 'tags.content', 'topics.text', 'twitch_feeds.message',
-      'xp_config.level_up_message', 'youtube_feeds.message', 'economy_config.currency_name']);
+      'xp_config.level_up_message', 'youtube_feeds.message', 'economy_config.currency_name',
+      // Text people deliberately save as their own tags (and one-use export codes of them).
+      'user_tags.content']);
     const tables = (await db`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`) as { name: string }[];
     const suspicious: string[] = [];
     for (const t of tables) for (const c of (await db.unsafe(`PRAGMA table_info(${t.name})`)) as { name: string }[]) {

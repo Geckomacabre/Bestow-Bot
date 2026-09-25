@@ -1,4 +1,11 @@
-import { defineGroup, pickSub } from '../../framework/group.js';
-import { toolsSubs, funTextSubs } from '../../subcommands/lookups/tools.js';
+import { hfrom, hgroup } from '../../framework/heist.js';
+import { pickSub } from '../../framework/group.js';
+import { toolsSubs } from '../../subcommands/lookups/tools.js';
 
-export default defineGroup({ name: 'qr', description: 'QR code tools', scope: 'anywhere', subs: [pickSub(toolsSubs, 'qr', 'generate'), pickSub(toolsSubs, 'qr-scan', 'scan')] });
+export default hgroup({
+  name: 'qr',
+  subs: [
+    hfrom('qr generate', pickSub(toolsSubs, 'qr'), { tweaks: { text: { maxLength: 1000 } } }),
+    hfrom('qr scan', pickSub(toolsSubs, 'qr-scan')),
+  ],
+});

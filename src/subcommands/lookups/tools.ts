@@ -119,8 +119,9 @@ export const toolsSubs: Sub[] = [
   {
     name: 'paste', description: 'Upload text to a public paste link (paste.rs)', options: str('text', 'The text to upload (public — anyone with the link can read it)', 4000),
     run: lookup(async i => {
-      const url = await w.paste(i.options.getString('text', true));
-      await i.editReply(card({ title: 'Pasted', url, color: 0x57f287, description: url, footer: 'Public link on paste.rs. Don\'t paste secrets.', links: [{ label: 'Open paste', url }] }));
+      const title = i.options.getString('title') ?? undefined;
+      const url = await w.paste(i.options.getString('text', true), title);
+      await i.editReply(card({ title: title ? `Pasted: ${trunc(title, 80)}` : 'Pasted', url, color: 0x57f287, description: url, footer: `Anyone with the link can read it (${new URL(url).hostname}). Don't paste secrets.`, links: [{ label: 'Open paste', url }] }));
     }),
   },
   {
@@ -163,9 +164,11 @@ export const funTextSubs: Sub[] = [
   {
     name: 'badtranslate', description: 'Run text through a chain of translations until it\'s ruined', options: s => str('text', 'What to mangle', 300)(s).addIntegerOption(o => o.setName('passes').setDescription('How many languages (2–8, default 5)').setMinValue(2).setMaxValue(8)),
     run: lookup(async i => {
-      const chain = t.pickChain(i.options.getInteger('passes') ?? 5);
+      const chain = t.pickChain(i.options.getInteger('count') ?? i.options.getInteger('passes') ?? 5);
       const r = await t.badTranslate(i.options.getString('text', true), chain);
-      await i.editReply(card({ title: 'Bad translation', color: 0xeb459e, description: `> ${trunc(i.options.getString('text', true), 300)}\n\n**${trunc(r.final, 1000)}**`, footer: `Path: English → ${chain.map(c => t.LANGS[c] ?? c).join(' → ')} → English` }));
+      const showChain = i.options.getBoolean('chain');
+      const steps = showChain ? `\n\n${r.steps.map(s => `**${t.LANGS[s.lang] ?? (s.lang === 'en' ? 'English' : s.lang)}:** ${trunc(s.text, 120)}`).join('\n')}` : '';
+      await i.editReply(card({ title: 'Bad translation', color: 0xeb459e, description: `> ${trunc(i.options.getString('text', true), 300)}\n\n**${trunc(r.final, 1000)}**${steps}`, footer: `Path: English → ${chain.map(c => t.LANGS[c] ?? c).join(' → ')} → English` }));
     }),
   },
   {

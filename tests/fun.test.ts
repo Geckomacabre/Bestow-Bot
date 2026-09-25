@@ -2,13 +2,13 @@ import { beforeAll, describe, expect, test } from 'bun:test';
 import { initDb } from '../src/utils/db';
 import * as j from '../src/fun/juul';
 import * as s from '../src/fun/social';
-import { funGroups, funSubs } from '../src/subcommands/fun/fun';
+import { funGroups, funSubs, JUUL_TIMING } from '../src/subcommands/fun/fun';
 import { toolsSubs } from '../src/subcommands/lookups/tools';
 import { netSubs, cryptoSubs } from '../src/subcommands/lookups/net';
 import type { Sub } from '../src/framework/group';
 import { fakeInteraction, textOf } from './fakeInteraction';
 
-beforeAll(async () => { await initDb(); });
+beforeAll(async () => { await initDb(); JUUL_TIMING.hitDelayMs = 0; });
 
 let n = 0;
 const uid = () => `juul-user-${++n}`;
@@ -17,11 +17,12 @@ const juulSub = (name: string) => find(funGroups[0]!.subs, name);
 const T0 = 1_800_000_000_000;
 
 describe('juul logic', () => {
-  test('a first hit matches the Heist text: "1 puffs total. Battery: 49/50"', async () => {
+  test(`a hit shows "hitting the juul..." then Heist's "1 puffs total." with the battery line`, async () => {
     const u = uid();
     const fi = fakeInteraction({ userId: u, displayName: 'Geckö' });
     await juulSub('hit').run(fi.interaction);
-    expect(textOf(fi.last())).toContain('1 puffs total.** Battery: 49/50');
+    expect(textOf(fi.sent[0])).toContain('hitting the juul...');
+    expect(textOf(fi.last())).toContain('**1** puffs total.\n-# Battery: 49/50 🟩');
     expect(await j.hit(u, T0)).toMatchObject({ ok: true, puffs: 2, battery: 48 });
   });
   test('charging a full juul says so; a fresh user starts full', async () => {
@@ -29,7 +30,7 @@ describe('juul logic', () => {
     expect(await j.charge(u, T0)).toEqual({ kind: 'full', battery: 50 });
     const fi = fakeInteraction({ userId: u, displayName: 'Geckö' });
     await juulSub('charge').run(fi.interaction);
-    expect(textOf(fi.last())).toContain("Geckö's juul is already fully charged.");
+    expect(textOf(fi.last())).toContain('Your juul is already fully charged.');
   });
   test('drains to dead after 50 hits, then refuses', async () => {
     const u = uid();
@@ -39,7 +40,7 @@ describe('juul logic', () => {
     expect((await j.getJuul(u)).puffs).toBe(50);
     const fi = fakeInteraction({ userId: u });
     await juulSub('hit').run(fi.interaction);
-    expect(textOf(fi.last())).toContain('out of battery');
+    expect(textOf(fi.last())).toContain('Your juul is dead');
   });
   test('concurrent hits never overspend the battery or lose puffs', async () => {
     const u = uid();
@@ -96,6 +97,13 @@ describe('juul logic', () => {
     expect(await j.getJuul(u)).toMatchObject({ flavor: 'Cool Mint', color: 'pink' });
     expect(j.FLAVORS.length).toBeLessThanOrEqual(25); expect(Object.keys(j.COLORS).length).toBeLessThanOrEqual(25);
   });
+  test('customize: skins must be real, names are cleaned and can be cleared', async () => {
+    const u = uid();
+    expect(await j.customize(u, { name: '  <@123> **Cloud**   Chaser  ', skin: 'Rose Gold' })).toMatchObject({ name: '123 Cloud Chaser', skin: 'Rose Gold' });
+    await expect(j.customize(u, { skin: 'constructor' })).rejects.toThrow();
+    expect(await j.customize(u, { name: '' })).toMatchObject({ name: null, skin: 'Rose Gold' });
+    expect(j.batteryDot(50)).toBe('🟩'); expect(j.batteryDot(20)).toBe('🟨'); expect(j.batteryDot(3)).toBe('🟥');
+  });
   test('leaderboard orders by puffs; delete removes the row', async () => {
     const a = uid(), b = uid(), c = uid();
     for (let i = 0; i < 3; i++) await j.hit(a, T0);
@@ -111,14 +119,18 @@ describe('juul logic', () => {
 });
 
 describe('juul commands', () => {
-  test('flavor, customize, stats and top render', async () => {
+  test(`Heist's five juul commands: flavor, customize, stats (hit/charge above)`, async () => {
+    expect(funGroups[0]!.subs.map(x => x.name)).toEqual(['hit', 'charge', 'flavor', 'customize', 'stats']);
     const u = uid();
-    let fi = fakeInteraction({ userId: u, options: { flavor: 'Mango' } }); await juulSub('flavor').run(fi.interaction); expect(textOf(fi.last())).toContain('Mango');
-    fi = fakeInteraction({ userId: u, options: { color: 'blurple' } }); await juulSub('customize').run(fi.interaction); expect(textOf(fi.last())).toContain('Blurple');
+    let fi = fakeInteraction({ userId: u, options: { flavor: 'THC' } }); await juulSub('flavor').run(fi.interaction); expect(textOf(fi.last())).toContain('THC');
+    fi = fakeInteraction({ userId: u, options: { skin: 'Chrome' } }); await juulSub('customize').run(fi.interaction); expect(textOf(fi.last())).toContain('Chrome');
+    fi = fakeInteraction({ userId: u }); await juulSub('customize').run(fi.interaction); expect(textOf(fi.last())).toContain('name');
     await j.hit(u, Date.now());
     fi = fakeInteraction({ userId: u, displayName: 'Geckö' }); await juulSub('stats').run(fi.interaction);
-    const t = textOf(fi.last()); expect(t).toContain("Geckö's juul"); expect(t).toContain('49/50'); expect(t).toContain('Total puffs:** 1');
-    fi = fakeInteraction({ userId: u }); await juulSub('top').run(fi.interaction); expect(textOf(fi.last())).toContain(`<@${u}>`);
+    let t = textOf(fi.last()); expect(t).toContain("Geckö's juul"); expect(t).toContain('49/50'); expect(t).toContain('**Puffs:** 1'); expect(t).toContain('**Skin:** Chrome');
+    fi = fakeInteraction({ userId: u, options: { name: 'Big Cloud' } }); await juulSub('customize').run(fi.interaction);
+    fi = fakeInteraction({ userId: u }); await juulSub('stats').run(fi.interaction);
+    t = textOf(fi.last()); expect(t).toContain('**Big Cloud**');
   });
   test('stats for another user', async () => {
     const other = uid(); await j.hit(other, Date.now());

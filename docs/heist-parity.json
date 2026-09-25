@@ -20,6 +20,11 @@
   "rating ppsize": "Sexual content aimed at a specific person; declined. (Bestow offers non-identity ratings instead.)",
   "eco slut": "Sexual-work variant of /eco work. Bestow ships /eco hustle in that slot: the same idea (a bigger payout that can flop) with a neutral theme."
  },
+ "declinedChoices": {
+  "action do": {
+   "Fuck (NSFW)": "A sexual act aimed at another person; declined like /rating ppsize."
+  }
+ },
  "notYet": [
   "AI Tools",
   "Identify Song",
