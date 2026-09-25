@@ -48,16 +48,18 @@ export const SING_VOICES: VoiceDef[] = [
   SG('sunshine', 'Sunshine soon', 'Male', 'quick · sunny and skipping'), SG('breeze', 'Warmy breeze', 'Female', 'quick · gentle and floaty'),
   SG('glorious', 'Glorious', 'Female', 'quick · big, heroic, echoing'), SG('goesup', 'It goes up', 'Male', 'quick · every word climbs higher'),
   SG('dramatic', 'Dramatic', 'Female', 'quick · slow, huge pitch jumps'),
+  SG('alto', 'Alto', 'Female', 'quick · smooth, warm and mellow'),
 ];
 
 /**
- * Character-style voices: a Kokoro voice run through an audio-effect chain (radio helmet, creepy mask…).
- * These are original effect styles, not copies of any actor's voice.
+ * Character-style voices: a Kokoro voice run through an audio-effect chain (radio helmet, creepy phone call…).
+ * They are named for the kind of character they evoke, but they are generated locally as effect styles — not recordings
+ * or imitations of any actor's voice.
  */
 export const CHAR_STYLES: Record<string, { label: string; base: string; gender: 'Female' | 'Male'; blurb: string; fx: string }> = {
-  trooper: { label: 'Helmet trooper', base: 'am_adam', gender: 'Male', blurb: 'crackly radio helmet', fx: 'highpass=f=320,lowpass=f=3100,acrusher=bits=9:mode=lin:mix=0.35,aecho=0.6:0.5:9:0.3,volume=1.5' },
-  masked: { label: 'Masked caller', base: 'am_bestow', gender: 'Male', blurb: 'low, raspy and creepy', fx: 'asetrate=20100,aresample=24000,atempo=0.9,lowpass=f=4200,tremolo=f=6:d=0.25,aecho=0.7:0.6:38:0.32' },
-  rascal: { label: 'Raspy rascal', base: 'am_puck', gender: 'Male', blurb: 'scrappy, fast and gravelly', fx: 'asetrate=27600,aresample=24000,atempo=0.95,acrusher=bits=10:mode=log:mix=0.35,highpass=f=150' },
+  trooper: { label: 'Stormtrooper', base: 'am_adam', gender: 'Male', blurb: 'crackly radio helmet', fx: 'highpass=f=320,lowpass=f=3100,acrusher=bits=9:mode=lin:mix=0.35,aecho=0.6:0.5:9:0.3,volume=1.5' },
+  masked: { label: 'Ghostface', base: 'am_bestow', gender: 'Male', blurb: 'low, raspy and creepy', fx: 'asetrate=20100,aresample=24000,atempo=0.9,lowpass=f=4200,tremolo=f=6:d=0.25,aecho=0.7:0.6:38:0.32' },
+  rascal: { label: 'Rocket', base: 'am_puck', gender: 'Male', blurb: 'scrappy, fast and gravelly', fx: 'asetrate=27600,aresample=24000,atempo=0.95,acrusher=bits=10:mode=log:mix=0.35,highpass=f=150' },
   robot: { label: 'Robot', base: 'af_alloy', gender: 'Female', blurb: 'metallic and monotone', fx: 'tremolo=f=95:d=0.85,aecho=0.8:0.9:7:0.5,highpass=f=200' },
 };
 export const CHAR_VOICES: VoiceDef[] = Object.entries(CHAR_STYLES).map(([id, v]) => ({

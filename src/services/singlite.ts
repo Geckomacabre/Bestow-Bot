@@ -38,6 +38,7 @@ export const MELODIES: Melody[] = [
   { id: 'rock', label: 'Rock belt', blurb: 'Loud, punchy and a bit crunchy', voice: 'am_adam', bpm: 138, pattern: [0, 0, 3, 5, 7, 5, 3, 0], vibrato: { f: 5.8, d: 0.12 }, echo: '0.7:0.4:30:0.15', extra: 'acrusher=bits=11:mode=lin:mix=0.25' },
   { id: 'chipmunk', label: 'Chipmunk choir', blurb: 'Tiny and very excited', voice: 'af_nova', bpm: 150, pattern: [12, 14, 16, 14, 12, 9, 12, 14], vibrato: { f: 7, d: 0.15 }, echo: null },
   { id: 'tenor', label: 'Tenor', blurb: 'Warm, rising phrases', voice: 'am_michael', bpm: 92, pattern: [0, 2, 4, 5, 7, 5, 4, 2], vibrato: { f: 5.2, d: 0.3 }, echo: '0.85:0.6:70:0.25' },
+  { id: 'alto', label: 'Alto', blurb: 'Smooth, warm and mellow', voice: 'af_jessica', bpm: 84, pattern: [0, 2, 3, 5, 3, 2, 0, -2], vibrato: { f: 5, d: 0.28 }, echo: '0.85:0.55:75:0.26' },
   { id: 'sunshine', label: 'Sunshine soon', blurb: 'Sunny, skipping and cheerful', voice: 'am_eric', bpm: 126, pattern: [0, 4, 7, 4, 9, 7, 4, 0], vibrato: { f: 6, d: 0.14 }, echo: '0.8:0.45:35:0.16' },
   { id: 'breeze', label: 'Warmy breeze', blurb: 'Gentle and floaty', voice: 'af_river', bpm: 72, pattern: [0, 3, 5, 3, 7, 5, 3, 0], vibrato: { f: 4.8, d: 0.24 }, echo: '0.8:0.55:85:0.3' },
   { id: 'glorious', label: 'Glorious', blurb: 'Big, heroic and echoing', voice: 'af_alloy', bpm: 88, pattern: [0, 4, 7, 9, 12, 9, 7, 12], vibrato: { f: 5.6, d: 0.4 }, echo: '0.85:0.75:140:0.4' },
