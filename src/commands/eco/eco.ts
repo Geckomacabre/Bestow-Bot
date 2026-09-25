@@ -20,13 +20,12 @@ import poker from '../../subcommands/eco/games/poker.js';
 import roulette from '../../subcommands/eco/games/roulette.js';
 import scratch from '../../subcommands/eco/games/scratch.js';
 import slots from '../../subcommands/eco/games/slots.js';
+import { conform, DRIFTING } from '../../subcommands/eco/heist.js';
 
 // Discord caps a command at 25 direct subcommands/groups: 16 subcommands + 9 groups = 25 (the same tree as Heist's /eco).
 // The economy extras that don't fit (weekly, yearly, protection, shop) live under /community.
-export default defineGroup({
-  name: 'eco',
-  description: 'Economy: wallet, bank, games, businesses, cards and more',
-  scope: 'anywhere',
+// Paths whose Heist description/options differ are re-mounted on Heist's spec (subcommands/eco/heist.ts).
+const tree = conform('eco', DRIFTING, {
   subs: [
     walletView, ...claimSubs, hustle, bonus, joinbonus, rob, transfer, cooldowns, history, graph, guide, notifications, ecoGiveawaySub,
   ],
@@ -49,4 +48,11 @@ export default defineGroup({
       ],
     },
   ],
+});
+
+export default defineGroup({
+  name: 'eco',
+  description: 'Economy: wallet, bank, games, businesses, cards and more',
+  scope: 'anywhere',
+  ...tree,
 });

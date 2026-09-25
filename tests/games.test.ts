@@ -162,13 +162,14 @@ describe('registration limits', () => {
 });
 
 describe('everything works as a user install', () => {
-  test('every command except /config can be used from an account, in DMs and in group DMs', () => {
+  test('every command except the server-only ones can be used from an account, in DMs and in group DMs', () => {
     const notEverywhere: string[] = [];
     for (const [name, cmd] of commands) {
       const j = cmd.data.toJSON() as any;
       const installs: number[] = j.integration_types ?? [0], contexts: number[] = j.contexts ?? [0, 1, 2];
       if (!installs.includes(1) || ![0, 1, 2].every(x => contexts.includes(x))) notEverywhere.push(name);
     }
-    expect(notEverywhere).toEqual(['config']); // /config is server settings, so it stays server-only on purpose
+    // Server-only on purpose: /config is server settings, /pingonjoin reacts to members joining, /serverprofile edits the bot's profile in a server.
+    expect(notEverywhere.sort()).toEqual(['config', 'pingonjoin', 'serverprofile']);
   });
 });

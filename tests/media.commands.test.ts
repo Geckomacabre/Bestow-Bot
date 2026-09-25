@@ -3,7 +3,7 @@ import { mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { probe } from '../src/framework/media';
-import { imageSubs, videoSubs, audioSubs, mediaDirectSubs } from '../src/subcommands/media/media';
+import { imageSubs, videoSubs, audioSubs, mediaDirectSubs, makesweetSubs } from '../src/subcommands/media/media';
 import { fakeInteraction, textOf } from './fakeInteraction';
 import { makeSamples } from './fixtures';
 
@@ -63,10 +63,33 @@ describe('image commands end-to-end (fake Discord interaction, real download + f
     expect(r.name).toBe('result.png');
   }, 60_000);
 
-  it('meme with top and bottom text', async () => {
-    const r = await runSub(find(imageSubs, 'meme'), { attachments: { image: att('sample.png', 'image/png') }, options: { top: 'top', bottom: 'bottom' } });
+  it('meme with top|bottom text in one option, like Heist', async () => {
+    const r = await runSub(find(imageSubs, 'meme'), { attachments: { image: att('sample.png', 'image/png') }, options: { text: 'top|bottom' } });
     expect(r.data).not.toBeNull();
+    const none = await runSub(find(imageSubs, 'meme'), { attachments: { image: att('sample.png', 'image/png') } });
+    expect(textOf(none.payload)).toContain('Give me some text');
   }, 60_000);
+
+  it('caption takes a second caption for the bottom, and togif turns a still into a GIF', async () => {
+    const one = await runSub(find(imageSubs, 'caption'), { attachments: { image: att('sample.png', 'image/png') }, options: { caption: 'top' } });
+    const two = await runSub(find(imageSubs, 'caption'), { attachments: { image: att('sample.png', 'image/png') }, options: { caption: 'top', caption_bottom: 'bottom' } });
+    const [h1, h2] = [(await probeBuffer(one.data!, 'png')).height, (await probeBuffer(two.data!, 'png')).height];
+    expect(h1).toBeGreaterThan(400); expect(h2).toBeGreaterThan(h1);
+    const gif = await runSub(find(imageSubs, 'grayscale'), { attachments: { image: att('sample.png', 'image/png') }, options: { togif: true } });
+    expect(gif.name).toBe('result.gif');
+  }, 60_000);
+
+  it('pixelate sizes, flip and rotate choices, watermark fonts/colours with the default text', async () => {
+    for (const size of ['Small', 'Large']) expect((await runSub(find(imageSubs, 'pixelate'), { attachments: { image: att('sample.png', 'image/png') }, options: { size } })).data, size).not.toBeNull();
+    const up = await runSub(find(imageSubs, 'flip'), { attachments: { image: att('sample.png', 'image/png') }, options: { direction: 'Vertical (upside down)' } });
+    expect(up.data).not.toBeNull();
+    const turned = await runSub(find(imageSubs, 'rotate'), { attachments: { image: att('sample.png', 'image/png') }, options: { degrees: 90 } });
+    expect(await probeBuffer(turned.data!, 'png')).toMatchObject({ width: 400, height: 640 });
+    for (const font of ['Impact', 'Futura Black', 'Quicksand Bold', 'Ubuntu Bold', 'Liberation Sans Bold']) {
+      const r = await runSub(find(imageSubs, 'watermark'), { attachments: { image: att('sample.png', 'image/png') }, options: { font, color: 'Red', position: 'Top Left', opacity: 0.5, size: 40 } });
+      expect(r.data, font).not.toBeNull();
+    }
+  }, 120_000);
 
   it('a GIF in → a GIF out', async () => {
     const r = await runSub(find(imageSubs, 'grayscale'), { attachments: { image: att('sample.gif', 'image/gif') } });
@@ -75,38 +98,76 @@ describe('image commands end-to-end (fake Discord interaction, real download + f
   }, 60_000);
 
   it('overlay needs two images and composes them', async () => {
-    const r = await runSub(find(imageSubs, 'overlay'), { attachments: { base: att('sample.png', 'image/png'), overlay: att('sample.png', 'image/png') }, options: { scale: 30, opacity: 80 } });
+    const r = await runSub(find(imageSubs, 'overlay'), { attachments: { base: att('sample.png', 'image/png'), overlay: att('sample.png', 'image/png') }, options: { scale: 0.3, opacity: 0.8, x: 20, y: 10 } });
     expect(r.name).toBe('overlay.png');
     const bad = await runSub(find(imageSubs, 'overlay'), { attachments: { base: att('sample.mp4', 'video/mp4'), overlay: att('sample.png', 'image/png') } });
     expect(textOf(bad.payload)).toContain('Both attachments must be images');
   }, 60_000);
 
-  it('spin, pingpong, zoomblur, fisheye, deepfry all upload something', async () => {
-    for (const [name, file, ct] of [['spin', 'sample.png', 'image/png'], ['pingpong', 'sample.gif', 'image/gif'], ['zoomblur', 'sample.png', 'image/png'], ['fisheye', 'sample.png', 'image/png'], ['deepfry', 'sample.png', 'image/png']] as const) {
+  it('spin, pingpong, zoomblur, fisheye, deepfry, swirl, globe, magik, motivate, speechbubble all upload something', async () => {
+    for (const [name, file, ct] of [['spin', 'sample.png', 'image/png'], ['pingpong', 'sample.gif', 'image/gif'], ['zoomblur', 'sample.png', 'image/png'], ['fisheye', 'sample.png', 'image/png'], ['deepfry', 'sample.png', 'image/png'],
+      ['swirl', 'sample.png', 'image/png'], ['globe', 'sample.png', 'image/png'], ['magik', 'sample.gif', 'image/gif'], ['speechbubble', 'sample.png', 'image/png']] as const) {
       const r = await runSub(find(imageSubs, name), { attachments: { image: att(file, ct) } });
       expect(r.data, name).not.toBeNull();
     }
+    const m = await runSub(find(imageSubs, 'motivate'), { attachments: { image: att('sample.png', 'image/png') }, options: { text: 'Teamwork|it makes the dream work' } });
+    expect(m.name).toBe('motivate.png');
+  }, 180_000);
+
+  it('addaudio (now under /media image) loops, trims and applies an effect', async () => {
+    const r = await runSub(find(imageSubs, 'addaudio'), { attachments: { image: att('sample.png', 'image/png'), audio: att('sample.wav', 'audio/wav') }, options: { volume: 0.8, loop: 2, effect: 'Fade In' } });
+    const p = await probeBuffer(r.data!, 'mp4');
+    expect(p).toMatchObject({ hasAudio: true, hasVideo: true });
+  }, 60_000);
+});
+
+describe('/media makesweet', () => {
+  it('renders a scene as a GIF by default and an MP4 on request', async () => {
+    const gif = await runSub(find(makesweetSubs, 'flag'), { attachments: { image: att('sample.png', 'image/png') } });
+    expect(gif.name).toBe('flag.gif');
+    expect((await probeBuffer(gif.data!, 'gif')).animated).toBe(true);
+    const mp4 = await runSub(find(makesweetSubs, 'rubiks'), { attachments: { image: att('sample.png', 'image/png') }, options: { output: 'MP4' } });
+    expect((await probeBuffer(mp4.data!, 'mp4')).videoCodec).toBe('h264');
+  }, 120_000);
+  it('the heart locket takes a second image or text, not both', async () => {
+    const both = await runSub(find(makesweetSubs, 'heartlocket'), { attachments: { image: att('sample.png', 'image/png'), image2: att('sample.png', 'image/png') }, options: { text: 'hi' } });
+    expect(textOf(both.payload)).toContain('not both');
+    const two = await runSub(find(makesweetSubs, 'heartlocket'), { attachments: { image: att('sample.png', 'image/png'), image2: att('sample.gif', 'image/gif') } });
+    expect(two.name).toBe('heartlocket.gif');
   }, 120_000);
 });
 
 describe('video and audio commands end-to-end', () => {
   it('video speed uploads an mp4 of about half the length', async () => {
-    const r = await runSub(find(videoSubs, 'speed'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { multiplier: 2 } });
+    const r = await runSub(find(videoSubs, 'speed'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { multiplier: '2x (fast)' } });
     const p = await probeBuffer(r.data!, 'mp4');
     expect(p.duration).toBeLessThan(1.4);
   }, 60_000);
 
-  it('video crop with a bad ratio reports a friendly error, not a crash', async () => {
-    const r = await runSub(find(videoSubs, 'crop'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { ratio: 'nonsense' } });
-    expect(r.data).toBeNull();
-    expect(textOf(r.payload)).toContain('ratio');
+  it('video crop uses Heist\'s ratio and anchor choices', async () => {
+    const r = await runSub(find(videoSubs, 'crop'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { ratio: '1:1 (square)', anchor: 'Left' } });
+    expect(await probeBuffer(r.data!, 'mp4')).toMatchObject({ width: 240, height: 240 });
   }, 60_000);
+
+  it('output: GIF and audio: false work across the video tools', async () => {
+    const gif = await runSub(find(videoSubs, 'reverse'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { output: 'GIF' } });
+    expect(gif.name).toBe('reversed.gif');
+    expect((await probeBuffer(gif.data!, 'gif')).animated).toBe(true);
+    const mute = await runSub(find(videoSubs, 'resize'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { scale: 2, audio: false } });
+    expect(await probeBuffer(mute.data!, 'mp4')).toMatchObject({ width: 640, height: 480, hasAudio: false });
+    const bubble = await runSub(find(videoSubs, 'speechbubble'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { style: 'Flux' } });
+    expect((await probeBuffer(bubble.data!, 'mp4')).hasAudio).toBe(true);
+    const wm = await runSub(find(videoSubs, 'watermark'), { attachments: { video: att('sample.mp4', 'video/mp4') }, options: { text: 'wm', color: 'Yellow' } });
+    expect(wm.name).toBe('result.mp4');
+  }, 180_000);
 
   it('audio effects accept audio files and video files', async () => {
     const a = await runSub(find(audioSubs, 'nightcore'), { attachments: { file: att('sample.wav', 'audio/wav') } });
     expect(a.name).toBe('nightcore.mp3');
     const v = await runSub(find(audioSubs, '8d'), { attachments: { file: att('sample.mp4', 'video/mp4') } });
     expect(v.data).not.toBeNull();
+    const loud = await runSub(find(audioSubs, 'earrape'), { attachments: { file: att('sample.wav', 'audio/wav') }, options: { level: 3 } });
+    expect(loud.name).toBe('earrape.mp3');
   }, 90_000);
 
   it('audio on a silent video says so', async () => {
@@ -140,10 +201,22 @@ describe('direct media commands', () => {
     expect(textOf(a.payload)).toContain('no video frames');
   }, 60_000);
 
-  it('addaudio builds a video from an image and a sound', async () => {
-    const r = await runSub(find(mediaDirectSubs, 'addaudio'), { attachments: { image: att('sample.png', 'image/png'), audio: att('sample.wav', 'audio/wav') }, options: { volume: 80 } });
-    const p = await probeBuffer(r.data!, 'mp4');
-    expect(p).toMatchObject({ hasAudio: true, hasVideo: true });
+  it('ahshit keys CJ over an image or a video, with the line and its audio', async () => {
+    for (const o of [{ attachments: { image: att('sample.png', 'image/png') } }, { options: { url: `${base}/sample.mp4` } }]) {
+      const r = await runSub(find(mediaDirectSubs, 'ahshit'), o);
+      expect(r.name).toBe('ahshit.mp4');
+      const p = await probeBuffer(r.data!, 'mp4');
+      expect(p).toMatchObject({ width: 1280, height: 720, hasAudio: true });
+      expect(p.duration).toBeGreaterThan(2.95); expect(p.duration).toBeLessThan(3.3); // the template's full 3.04 s
+    }
+  }, 90_000);
+
+  it('plain ahshit sends the clip itself, untouched; a bad link is still an error', async () => {
+    const r = await runSub(find(mediaDirectSubs, 'ahshit'), {});
+    const { AHSHIT_CLIP } = await import('../src/media/fx2');
+    expect(r.data!.equals(Buffer.from(await Bun.file(AHSHIT_CLIP).arrayBuffer()))).toBe(true);
+    const bad = await runSub(find(mediaDirectSubs, 'ahshit'), { options: { url: `${base}/does-not-exist.png` } });
+    expect(bad.data).toBeNull();
   }, 60_000);
 });
 

@@ -1,18 +1,9 @@
-import { ApplicationIntegrationType, ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder } from 'discord.js';
-import { Command } from '../../interfaces/command';
+import { hleaf } from '../../framework/heist.js';
+import { cv2Text } from '../../utils/components.js';
 
-const Ping: Command = {
-  data: new SlashCommandBuilder()
-    .setName('ping')
-    .setDescription('Check bot latency')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]) as any,
-
-  async run(interaction: ChatInputCommandInteraction) {
-    const sent = await interaction.reply({ content: 'Pinging...', fetchReply: true });
-    const latency = sent.createdTimestamp - interaction.createdTimestamp;
-    await interaction.editReply(`🏓 Pong! Latency: **${latency}ms** | API: **${interaction.client.ws.ping}ms**`);
-  },
-};
-
-export default Ping;
+export default hleaf('ping', async i => {
+  const started = Date.now();
+  await i.deferReply();
+  const roundTrip = Date.now() - started;
+  await i.editReply(cv2Text(`🏓 **Pong!**\n**Gateway:** ${Math.max(0, Math.round(i.client.ws.ping))} ms · **Round trip:** ${roundTrip} ms`, 0x5865f2));
+});

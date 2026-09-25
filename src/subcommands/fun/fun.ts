@@ -6,7 +6,10 @@ import * as w from '../../lookups/web.js';
 import { heartBar, pick, shipName } from '../../lookups/textfun.js';
 import { funTextSubs } from '../lookups/tools.js';
 import * as j from '../../fun/juul.js';
+import { batteryEmoji, juulEmoji } from '../../fun/juulEmoji.js';
 import * as s from '../../fun/social.js';
+import { hsub } from '../../framework/heist.js';
+import { cv2Err, cv2Text } from '../../utils/components.js';
 
 const name = (u: User) => u.displayName ?? u.username;
 const userOpt = (req = false, d = 'Who?') => (o: import('discord.js').SlashCommandUserOption) => o.setName('user').setDescription(d).setRequired(req);
@@ -69,71 +72,57 @@ const socialSubs: Sub[] = [
   },
 ];
 
-// ─── /fun juul ───────────────────────────────────────────────────────────────
+// ─── /juul ───────────────────────────────────────────────────────────────────
+
+/** The pause between "hitting the juul…" and the result, like Heist. Tests set it to 0. */
+export const JUUL_TIMING = { hitDelayMs: 1200 };
+const juulName = (x: j.Juul, u: User) => x.name ? `**${x.name}**` : `${name(u)}'s juul`;
 
 const juulSubs: Sub[] = [
-  {
-    name: 'hit', description: 'Take a hit',
-    run: lookup(async i => {
-      const r = await j.hit(i.user.id);
-      if (!r.ok) {
-        await i.editReply(card({ title: '🪫 Dead battery', color: 0xed4245, description: `${name(i.user)}'s juul is out of battery. Use \`/fun juul charge\`.${r.charging && r.fullAt ? `\nIt's plugged in — full ${when(r.fullAt, 'R')}.` : ''}` }));
-        return;
-      }
-      await i.editReply(card({
-        title: `💨 ${name(i.user)} takes a hit`, color: j.COLORS[r.color]?.hex ?? 0xc0c0c0,
-        description: `${r.cloud}\n**${r.puffs.toLocaleString('en-US')} puffs total.** Battery: ${r.battery}/${j.MAX_BATTERY}${r.milestone ? `\n${r.milestone}` : ''}`,
-        footer: `${r.flavor}${r.unplugged ? ' · unplugged mid-charge' : ''} · a fictional vape — nothing real happens`,
-      }));
-    }),
-  },
-  {
-    name: 'charge', description: 'Plug your juul in to charge',
-    run: lookup(async i => {
-      const r = await j.charge(i.user.id);
-      const me = name(i.user);
-      const text = r.kind === 'full' ? `**${me}'s juul is already fully charged.**`
-        : r.kind === 'started' ? `🔌 **${me}'s juul is charging.** Battery ${r.battery}/${j.MAX_BATTERY} — full ${when(r.fullAt, 'R')}.`
-          : `🔌 **${me}'s juul is already plugged in.** Battery ${r.battery}/${j.MAX_BATTERY} — full ${when(r.fullAt, 'R')}.`;
-      await i.editReply(card({ title: '🔋 Charge', color: 0x57f287, description: text }));
-    }),
-  },
-  {
-    name: 'flavor', description: 'Change your juul flavour', options: sub => sub.addStringOption(o => o.setName('flavor').setDescription('Pick a pod').setRequired(true).addChoices(...j.FLAVORS.map(f => ({ name: f, value: f })))),
-    run: lookup(async i => {
-      const f = i.options.getString('flavor', true);
-      await j.setFlavor(i.user.id, f);
-      await i.editReply(card({ title: '🍃 New pod', color: 0x57f287, description: `${name(i.user)} loaded a **${f}** pod.` }));
-    }),
-  },
-  {
-    name: 'customize', description: 'Change your juul colour', options: sub => sub.addStringOption(o => o.setName('color').setDescription('Body colour').setRequired(true).addChoices(...Object.entries(j.COLORS).map(([k, v]) => ({ name: v.label, value: k })))),
-    run: lookup(async i => {
-      const c = i.options.getString('color', true);
-      await j.setColor(i.user.id, c);
-      await i.editReply(card({ title: '🎨 Customised', color: j.COLORS[c]!.hex, description: `${name(i.user)}'s juul is now **${j.COLORS[c]!.label}**.` }));
-    }),
-  },
-  {
-    name: 'stats', description: 'See your (or someone else\'s) juul stats', options: sub => sub.addUserOption(userOpt(false, 'Whose juul')),
-    run: lookup(async i => {
-      const u = i.options.getUser('user') ?? i.user;
-      const x = await j.getJuul(u.id);
-      const b = j.effectiveBattery(x, Date.now());
-      await i.editReply(card({
-        title: `${name(u)}'s juul`, color: j.COLORS[x.color]?.hex ?? 0xc0c0c0,
-        fields: [['Battery', `${j.batteryBar(b)} ${b}/${j.MAX_BATTERY}${x.charging_since != null && b < j.MAX_BATTERY ? ` 🔌 full ${when(j.fullAt(x, Date.now()), 'R')}` : ''}`], ['Total puffs', x.puffs.toLocaleString('en-US')],
-          ['Flavour', x.flavor], ['Colour', j.COLORS[x.color]?.label ?? x.color], ['Last hit', x.last_hit ? when(x.last_hit, 'R') : 'never']],
-      }));
-    }),
-  },
-  {
-    name: 'top', description: 'Who has taken the most puffs',
-    run: lookup(async i => {
-      const top = await j.topPuffers(10);
-      await i.editReply(card({ title: '🏆 Top puffers', color: 0xfee75c, description: top.length ? top.map((t, n) => `**${n + 1}.** <@${t.user_id}> — ${t.puffs.toLocaleString('en-US')} puffs`).join('\n') : '*Nobody has taken a hit yet.*' }));
-    }),
-  },
+  hsub('juul hit', async i => {
+    const r = await j.hit(i.user.id);
+    if (!r.ok) {
+      await i.reply(cv2Text(`🪫 Your juul is dead. Plug it in with \`/juul charge\`.${r.charging && r.fullAt ? `\n-# Charging — full ${when(r.fullAt, 'R')}` : ''}`));
+      return;
+    }
+    await i.reply(cv2Text(`${juulEmoji()} hitting the juul...`));
+    if (JUUL_TIMING.hitDelayMs) await Bun.sleep(JUUL_TIMING.hitDelayMs);
+    await i.editReply(cv2Text(`${juulEmoji()} **${r.puffs.toLocaleString('en-US')}** puffs total.\n-# Battery: ${r.battery}/${j.MAX_BATTERY} ${batteryEmoji(r.battery)}`));
+  }),
+  hsub('juul charge', async i => {
+    const r = await j.charge(i.user.id);
+    const text = r.kind === 'full' ? `🔋 Your juul is already fully charged.\n-# Battery: ${j.MAX_BATTERY}/${j.MAX_BATTERY} ${batteryEmoji(j.MAX_BATTERY)}`
+      : `🔌 ${r.kind === 'started' ? 'Plugged in' : 'Already charging'} — full ${when(r.fullAt, 'R')}.\n-# Battery: ${r.battery}/${j.MAX_BATTERY} ${batteryEmoji(r.battery)}`;
+    await i.reply(cv2Text(text));
+  }),
+  hsub('juul flavor', async i => {
+    const f = i.options.getString('flavor', true);
+    await j.setFlavor(i.user.id, f);
+    await i.reply(cv2Text(`${juulEmoji()} Loaded a **${f}** pod.`));
+  }),
+  hsub('juul customize', async i => {
+    const nameIn = i.options.getString('name'), skin = i.options.getString('skin');
+    if (nameIn == null && skin == null) { await i.reply({ ...cv2Err('❌ Give your juul a `name`, pick a `skin`, or both.') }); return; }
+    const x = await j.customize(i.user.id, { name: nameIn, skin });
+    await i.reply(cv2Text(`${juulEmoji()} ${[nameIn != null ? (x.name ? `Renamed your juul to **${x.name}**.` : 'Cleared your juul\'s name.') : null, skin ? `Applied the **${x.skin}** skin.` : null].filter(Boolean).join(' ')}`, j.skinColor(x)));
+  }, { tweaks: { name: { maxLength: j.NAME_MAX } } }),
+  hsub('juul stats', async i => {
+    const u = i.options.getUser('user') ?? i.user;
+    const x = await j.getJuul(u.id);
+    const b = j.effectiveBattery(x, Date.now());
+    const charging = x.charging_since != null && b < j.MAX_BATTERY;
+    await i.reply({
+      ...cv2Text([
+        `### ${juulEmoji()} ${juulName(x, u)}`,
+        `**Puffs:** ${x.puffs.toLocaleString('en-US')}`,
+        `**Battery:** ${b}/${j.MAX_BATTERY} ${batteryEmoji(b)}${charging ? ` · 🔌 full ${when(j.fullAt(x, Date.now()), 'R')}` : ''}`,
+        `**Flavor:** ${x.flavor}`,
+        `**Skin:** ${x.skin}`,
+        `**Last hit:** ${x.last_hit ? when(x.last_hit, 'R') : 'never'}`,
+      ].join('\n'), j.skinColor(x)),
+      allowedMentions: { parse: [] },
+    });
+  }),
 ];
 
 export const funSubs: Sub[] = [...socialSubs, ...funTextSubs];

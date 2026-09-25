@@ -18,8 +18,10 @@ import { startLottery } from './lottery';
 import stickyModule, { startStickyRefresh } from './sticky';
 import aiModule from './ai';
 import premiumModule from './premium';
+import pingOnJoinModule from './pingonjoin';
 import { startPremiumSync } from '../premium/sync.js';
 import { startGiveawayScheduler } from '../giveaway/service.js';
+import { startCryptoTrackers } from '../crypto/tracker.js';
 
 const features = [
   countingModule,
@@ -34,6 +36,7 @@ const features = [
   stickyModule,
   aiModule,
   premiumModule,
+  pingOnJoinModule,
 ];
 
 export function registerFeatures(bot: Client) {
@@ -58,6 +61,7 @@ export function registerFeatures(bot: Client) {
     startMediaGames(bot);
     startLottery(bot);
     startStickyRefresh(bot);
+    startCryptoTrackers(bot);
     startPremiumSync(bot);
     startGiveawayScheduler(bot);
   });

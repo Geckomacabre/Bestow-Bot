@@ -22,4 +22,12 @@ export async function initAiSchema(): Promise<void> {
     created_at INTEGER NOT NULL
   )`;
   await db`CREATE INDEX IF NOT EXISTS idx_ai_memory_user ON ai_memory (user_id)`;
+  // /ai custom: the person's own AI — a name, the instructions they wrote, and the model they picked.
+  await db`CREATE TABLE IF NOT EXISTS ai_custom (
+    user_id      TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    instructions TEXT NOT NULL,
+    model        TEXT,
+    updated_at   INTEGER NOT NULL
+  )`;
 }

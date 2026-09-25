@@ -8,7 +8,6 @@ import { rand, randInt } from '../../../utils/random.js';
 import { cv2Err } from '../../../utils/components.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import { renderCoinFlipGif, FLIP_REVEAL_MS } from '../../../utils/coinFlip.js';
 import { postWithReveal } from '../../../utils/casinoReveal.js';
 
@@ -34,19 +33,22 @@ const Flip: Command = {
     await interaction.deferReply();
     const sym = cfg.currency_symbol;
     const win = rand() < 0.5; // true 50/50 — no house edge
-    const luckMult = win ? (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId)) : 1;
+    // Heist's `side`: you call it; a win lands on your call. Default heads.
+    const call = (interaction.options.getString('side') ?? 'Heads').toLowerCase() === 'tails' ? 'tails' : 'heads';
+    const landed = win ? call : call === 'heads' ? 'tails' : 'heads';
+    const luckMult = win ? (await getGambleMultiplier(guildId, userId)) : 1;
     const round = await settleRound({
       guildId, userId, game: 'flip', bet, returned: win ? bet + Math.floor(bet * luckMult) : 0, won: win,
       xp: win ? randInt(50, 100) : undefined,
       client: interaction.client, channelId: interaction.channelId, currencySymbol: sym,
     });
-    const gif = await renderCoinFlipGif(win ? 'heads' : 'tails');
+    const gif = await renderCoinFlipGif(landed);
     await postWithReveal({
       edit: (payload) => interaction.editReply(payload),
       gif, name: GIF_NAME, revealMs: FLIP_REVEAL_MS,
       suspense: { content: `**🪙 Coin Flip** — Bet: ${sym} ${bet.toLocaleString()}\nFlipping…`, color: Colors.Blurple },
       result: {
-        content: `**${win ? '🪙 Heads!' : '🌑 Tails!'}**\n${win ? `You won **${sym} ${Math.floor(bet * luckMult).toLocaleString()}**!${luckMult > 1 ? ' *(🍀 Lucky Charm!)*' : ''}` : `You lost **${sym} ${bet.toLocaleString()}**.`}${round.insuranceText}\n**Balance:** ${sym} **${round.balance.toLocaleString()}**${round.xpText}${round.jackpotText}`,
+        content: `**${landed === 'heads' ? '🪙 Heads!' : '🌑 Tails!'}** *(you called ${call})*\n${win ? `You won **${sym} ${Math.floor(bet * luckMult).toLocaleString()}**!${luckMult > 1 ? ' *(🍀 Lucky Charm!)*' : ''}` : `You lost **${sym} ${bet.toLocaleString()}**.`}${round.insuranceText}\n**Balance:** ${sym} **${round.balance.toLocaleString()}**${round.xpText}${round.jackpotText}`,
         color: win ? Colors.Green : Colors.Red,
       },
     });

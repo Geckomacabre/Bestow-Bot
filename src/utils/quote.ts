@@ -1,4 +1,5 @@
 import { createCanvas, GlobalFonts, loadImage, type SKRSContext2D } from '@napi-rs/canvas';
+import { FAMILY, fonts as displayFonts, type DisplayFont } from '../generate/discord.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -37,9 +38,14 @@ function parseInline(text: string): Seg[] {
   return segs.filter(s => s.text.length > 0);
 }
 
+/** A quote preset's look (see src/quotes/presets.ts). The default is the classic black card. */
+export interface QuoteStyle { theme: 'Dark' | 'Light'; font: 'M PLUS' | DisplayFont; grayscale: boolean; showHandle: boolean }
+export const DEFAULT_QUOTE_STYLE: QuoteStyle = { theme: 'Dark', font: 'M PLUS', grayscale: true, showHandle: true };
+
+let face = { reg: REG, bold: BLD };
 function segFont(bold: boolean, italic: boolean, size: number): string {
-  const fam = bold ? BLD : REG;
-  return `${italic ? 'italic ' : ''}${size}px ${fam}, Twemoji`;
+  const fam = bold ? face.bold : face.reg;
+  return `${italic ? 'italic ' : ''}${bold && face.bold === face.reg ? 'bold ' : ''}${size}px ${fam}, Twemoji`;
 }
 
 function stripMarkers(text: string): string {
@@ -48,7 +54,7 @@ function stripMarkers(text: string): string {
 
 function wrapText(ctx: SKRSContext2D, text: string, maxWidth: number, fontSize: number, maxLines = 7): string[] {
   const lines: string[] = [];
-  ctx.font = `${fontSize}px ${REG}`;
+  ctx.font = `${fontSize}px ${face.reg}`;
   for (const para of text.split('\n')) {
     if (!para.trim()) continue;
     const words = para.split(' ');
@@ -95,13 +101,18 @@ export async function generateQuote(opts: {
   authorName: string;
   authorHandle: string;
   authorAvatarUrl: string | null;
+  style?: QuoteStyle;
 }): Promise<Buffer> {
   ensureFonts();
   const { text, authorName, authorHandle, authorAvatarUrl } = opts;
+  const style = opts.style ?? DEFAULT_QUOTE_STYLE, light = style.theme === 'Light';
+  if (style.font !== 'M PLUS') displayFonts();
+  const myFace = style.font === 'M PLUS' ? { reg: REG, bold: BLD } : { reg: FAMILY[style.font], bold: FAMILY[style.font] };
+  const shade = (a: number) => (light ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`);
 
   const W = 1200;
   const H = 628;
-  const BG = '#000000';
+  const BG = light ? '#ffffff' : '#000000';
   // Avatar is clipped to AVATAR_W and the fade reaches PURE black exactly at AVATAR_W,
   // so the clip edge is hidden under solid black — no visible vertical seam.
   const AVATAR_W = 620;
@@ -134,35 +145,39 @@ export async function generateQuote(opts: {
       ctx.drawImage(img, sx, sy, sw, sh);
 
       // In-place grayscale on the avatar region (slightly brightened so the logo reads bright/white)
-      const imageData = ctx.getImageData(0, 0, AVATAR_W, H);
-      const d = imageData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        gray = Math.min(255, Math.round(gray * 1.12 + 6));
-        d[i] = d[i + 1] = d[i + 2] = gray;
+      if (style.grayscale) {
+        const imageData = ctx.getImageData(0, 0, AVATAR_W, H);
+        const d = imageData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          gray = Math.min(255, Math.round(gray * 1.12 + 6));
+          d[i] = d[i + 1] = d[i + 2] = gray;
+        }
+        ctx.putImageData(imageData, 0, 0);
       }
-      ctx.putImageData(imageData, 0, 0);
 
       // Diagonal fade that "comes from the top-right": the axis is tilted up toward the
       // right, so the full-black boundary sits further left at the top than the bottom.
       // Black lands well before the text column at every height, hiding the clip edge.
       const fade = ctx.createLinearGradient(0, 95, AVATAR_W, -55);
-      fade.addColorStop(0.0,  'rgba(0,0,0,0.20)'); // subtle left vignette
-      fade.addColorStop(0.10, 'rgba(0,0,0,0.05)');
-      fade.addColorStop(0.22, 'rgba(0,0,0,0)');    // brightest (logo)
-      fade.addColorStop(0.36, 'rgba(0,0,0,0)');
-      fade.addColorStop(0.50, 'rgba(0,0,0,0.45)');
-      fade.addColorStop(0.64, 'rgba(0,0,0,0.9)');
-      fade.addColorStop(0.72, 'rgba(0,0,0,1)');
-      fade.addColorStop(1.0,  'rgba(0,0,0,1)');
+      fade.addColorStop(0.0,  shade(0.20)); // subtle left vignette
+      fade.addColorStop(0.10, shade(0.05));
+      fade.addColorStop(0.22, shade(0));    // brightest (logo)
+      fade.addColorStop(0.36, shade(0));
+      fade.addColorStop(0.50, shade(0.45));
+      fade.addColorStop(0.64, shade(0.9));
+      fade.addColorStop(0.72, shade(1));
+      fade.addColorStop(1.0,  shade(1));
       ctx.fillStyle = fade;
       ctx.fillRect(0, 0, AVATAR_W, H);
       ctx.restore();
     } catch { /* avatar unavailable */ }
   }
 
-  // Quote text — supports **bold** and *italic*, centered vertically around the middle
-  ctx.fillStyle = '#ffffff';
+  // Quote text — supports **bold** and *italic*, centered vertically around the middle.
+  // The face is set here, after the only await, so a quote rendering in parallel can't swap it mid-draw.
+  face = myFace;
+  ctx.fillStyle = light ? '#111111' : '#ffffff';
   const truncated = text.length > 300 ? text.slice(0, 297) + '…' : text;
   const lines = wrapText(ctx, truncated, TEXT_MAX_W, FONT_SIZE);
   const quoteBlockH = lines.length * LINE_H;
@@ -175,19 +190,21 @@ export async function generateQuote(opts: {
   // Author name (italic), tucked close under the last quote line
   const authorY = y - LINE_H + 56;
   ctx.textAlign = 'center';
-  ctx.font = `italic 32px ${REG}, Twemoji`;
-  ctx.fillStyle = '#e0e0e0';
+  ctx.font = `italic 32px ${face.reg}, Twemoji`;
+  ctx.fillStyle = light ? '#333333' : '#e0e0e0';
   ctx.fillText(`- ${authorName}`, TEXT_CX, authorY);
 
   // Handle (@username for pomelo accounts, username#discriminator for legacy)
-  ctx.font = `24px ${REG}, Twemoji`;
-  ctx.fillStyle = '#8a8a8a';
-  ctx.fillText(authorHandle, TEXT_CX, authorY + 38);
+  if (style.showHandle) {
+    ctx.font = `24px ${REG}, Twemoji`;
+    ctx.fillStyle = light ? '#707070' : '#8a8a8a';
+    ctx.fillText(authorHandle, TEXT_CX, authorY + 38);
+  }
 
   // Watermark
   ctx.textAlign = 'right';
   ctx.font = `16px ${REG}`;
-  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.fillStyle = light ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.22)';
   ctx.fillText('Make it a Quote', W - 18, H - 18);
 
   return Buffer.from(canvas.toBuffer('image/png'));

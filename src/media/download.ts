@@ -3,7 +3,7 @@ import { readdir, stat } from 'node:fs/promises';
 import { MediaError, withWorkdir } from '../framework/media.js';
 
 /**
- * /media download — fetch a video or audio track from a supported site with yt-dlp.
+ * /download — fetch a video or audio track from a supported site with yt-dlp.
  *
  * Safety: yt-dlp will happily fetch arbitrary URLs through its generic extractor, so only an allow-list of well-known sites is accepted
  * (https only, no credentials). Playlists, live streams and long videos are refused; file size is capped to the server's upload limit.
@@ -77,14 +77,93 @@ export function explainFailure(stderr: string): string {
 
 export interface Downloaded { file: string; name: string; bytes: number; height?: number; mode: Mode }
 
+/** yt-dlp's metadata for a post — the fields reposts use. */
+export interface PostInfo {
+  title?: string; description?: string; uploader?: string; uploader_id?: string; uploader_url?: string; channel?: string; channel_url?: string;
+  like_count?: number; comment_count?: number; view_count?: number; repost_count?: number; timestamp?: number; thumbnail?: string; webpage_url?: string; ext?: string;
+}
+
+/** Parses the JSON line yt-dlp prints with --dump-json (ignores any other output). */
+export function parseInfoJson(stdout: string): PostInfo | null {
+  for (const line of stdout.split('\n')) {
+    const t = line.trim();
+    if (!t.startsWith('{')) continue;
+    try { return JSON.parse(t) as PostInfo; } catch { /* next line */ }
+  }
+  return null;
+}
+
 /**
- * Downloads to a temp dir and hands the file to `use` before the directory is cleaned up.
- * Video tries 720p, then 480p, then 360p until the result fits `maxBytes`.
+ * Downloads a post (video, or audio with mode 'audio') and returns its metadata too — used by the repost commands for
+ * Instagram and Medal, whose pages need yt-dlp's extractors. Tries 720p, 480p, 360p until it fits.
  */
-export async function downloadMedia<T>(input: string, o: { mode: Mode; maxBytes: number; run?: Runner }, use: (d: Downloaded) => Promise<T>): Promise<T> {
+export async function downloadPost(input: string, o: { maxBytes: number; mode?: Mode; run?: Runner }): Promise<{ info: PostInfo; data: Buffer; ext: string }> {
   const url = parseDownloadUrl(input).toString();
   const run = o.run ?? defaultRun;
-  const heights = o.mode === 'audio' ? [undefined] : [720, 480, 360];
+  const mode = o.mode ?? 'video';
+  return withWorkdir(async dir => {
+    let lastErr = '';
+    for (const h of mode === 'audio' ? [undefined] : [720, 480, 360]) {
+      const args = buildArgs(url, { mode, maxBytes: o.maxBytes, dir, height: h, cookies: Bun.env.YTDLP_COOKIES });
+      args.splice(args.indexOf('--'), 0, '--dump-json', '--no-simulate');
+      const r = await run(YTDLP, args, { cwd: dir, timeoutMs: TIMEOUT_MS });
+      const files = (await readdir(dir)).filter(f => f.startsWith('out.') && !/\.(part|ytdl|json|jpg|webp|png)$/.test(f));
+      const info = parseInfoJson(r.stdout);
+      if (r.code === 0 && files.length && info) {
+        const file = path.join(dir, files[0]!);
+        if ((await stat(file)).size <= o.maxBytes) return { info, data: Buffer.from(await Bun.file(file).arrayBuffer()), ext: files[0]!.split('.').pop()! };
+        lastErr = 'larger than max-filesize';
+        continue;
+      }
+      lastErr = r.stderr;
+      if (!/larger than max-filesize|file is larger/i.test(r.stderr)) break;
+    }
+    throw new MediaError(explainFailure(lastErr));
+  });
+}
+
+/**
+ * /soundcloud: a track URL, or a search (yt-dlp's `scsearch1:` prefix — a search, never a URL, so no allow-list is needed for it).
+ * Audio comes back as MP3 with the track's metadata.
+ */
+export async function soundcloud(query: string, o: { maxBytes: number; run?: Runner }): Promise<{ info: PostInfo; data: Buffer }> {
+  const q = query.trim();
+  if (/^https?:\/\//i.test(q)) {
+    const u = parseDownloadUrl(q);
+    if (!/(^|\.)soundcloud\.com$/i.test(u.hostname)) throw new MediaError('That isn\'t a SoundCloud link.');
+    const r = await downloadPost(u.toString(), { maxBytes: o.maxBytes, mode: 'audio', run: o.run });
+    return { info: r.info, data: r.data };
+  }
+  if (!q || q.length > 200) throw new MediaError('Give me a song to search for.');
+  const run = o.run ?? defaultRun;
+  return withWorkdir(async dir => {
+    const args = buildArgs('x', { mode: 'audio', maxBytes: o.maxBytes, dir, cookies: Bun.env.YTDLP_COOKIES });
+    args.splice(args.indexOf('--'), 2, '--dump-json', '--no-simulate', '--', `scsearch1:${q}`);
+    const r = await run(YTDLP, args, { cwd: dir, timeoutMs: TIMEOUT_MS });
+    const files = (await readdir(dir)).filter(f => f.startsWith('out.') && !/\.(part|ytdl|json|jpg|webp|png)$/.test(f));
+    const info = parseInfoJson(r.stdout);
+    if (r.code !== 0) throw new MediaError(explainFailure(r.stderr));
+    if (!files.length || !info) throw new MediaError(`No SoundCloud tracks found for **${q.slice(0, 80)}**.`);
+    return { info, data: Buffer.from(await Bun.file(path.join(dir, files[0]!)).arrayBuffer()) };
+  });
+}
+
+export const HEIGHTS = [1080, 720, 480, 360, 240, 144] as const;
+
+/** The resolutions to try, best first: the requested one (default 720p) and then each smaller one, so an oversized file can shrink. */
+export function heightLadder(max = 720): number[] {
+  const start = HEIGHTS.find(h => h <= max) ?? 144;
+  return HEIGHTS.filter(h => h <= start).slice(0, 3);
+}
+
+/**
+ * Downloads to a temp dir and hands the file to `use` before the directory is cleaned up.
+ * Video tries the requested height (default 720p), then smaller ones, until the result fits `maxBytes`.
+ */
+export async function downloadMedia<T>(input: string, o: { mode: Mode; maxBytes: number; maxHeight?: number; run?: Runner }, use: (d: Downloaded) => Promise<T>): Promise<T> {
+  const url = parseDownloadUrl(input).toString();
+  const run = o.run ?? defaultRun;
+  const heights = o.mode === 'audio' ? [undefined] : heightLadder(o.maxHeight);
   return withWorkdir(async dir => {
     let lastErr = '';
     for (const h of heights) {

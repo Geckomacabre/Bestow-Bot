@@ -24,6 +24,8 @@ async function loadCommands(directory: string, isRoot = true): Promise<number> {
       const mod = await import(commandPath);
       const command: Command = mod.default;
       command.category = categoryName;
+      // Two files registering the same name would silently shadow one another.
+      if (commands.has(command.data.name)) throw new Error(`Duplicate command "${command.data.name}" (${categoryName}/${file} and ${commands.get(command.data.name)!.category})`);
       commands.set(command.data.name, command);
       logger.debug(`Loading command: ${command.data.name} (${categoryName})`);
       commandCount++;

@@ -15,7 +15,10 @@ export const minecraftSubs: Sub[] = [
     options: s => s.addStringOption(o => o.setName('address').setDescription('Server address, e.g. play.example.com').setRequired(true).setMaxLength(100))
       .addStringOption(o => o.setName('edition').setDescription('Java (default) or Bedrock').addChoices({ name: 'Java', value: 'java' }, { name: 'Bedrock', value: 'bedrock' })),
     run: lookup(async i => {
-      const s = await g.mcServer(i.options.getString('address', true), (i.options.getString('edition') ?? 'java') as 'java' | 'bedrock');
+      const edition = i.options.getString('edition') as 'java' | 'bedrock' | null;
+      let s = await g.mcServer(i.options.getString('address', true), edition ?? 'java');
+      // No edition given (Heist has no such option): a server that doesn't answer as Java may be a Bedrock one.
+      if (!edition && !s.online) { const b = await g.mcServer(i.options.getString('address', true), 'bedrock').catch(() => null); if (b?.online) s = b; }
       const files: AttachmentBuilder[] = [];
       let thumb: string | undefined;
       if (s.iconDataUri?.startsWith('data:image/png;base64,')) {

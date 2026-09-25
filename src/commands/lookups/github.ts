@@ -1,4 +1,6 @@
-import { defineGroup } from '../../framework/group.js';
+import { hfrom, hgroup } from '../../framework/heist.js';
 import { githubSubs } from '../../subcommands/lookups/games.js';
 
-export default defineGroup({ name: 'github', description: 'Look up GitHub repositories and users', subs: githubSubs });
+const old = (n: string) => githubSubs.find(s => s.name === n)!;
+// /github 2email is declined (harvests email addresses; see docs/heist-parity.json).
+export default hgroup({ name: 'github', subs: [hfrom('github user', old('user'), { tweaks: { username: { maxLength: 39 } } }), hfrom('github repo', old('repo'), { tweaks: { repo: { maxLength: 200 } } })] });

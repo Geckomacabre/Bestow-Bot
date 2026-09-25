@@ -1,7 +1,6 @@
 import { db, adjustBalance, getOrCreateEconomy } from '../utils/db.js';
 import { withLock, withLocks } from '../framework/mutex.js';
 import { BUSINESSES, networthSql } from './catalog.js';
-import { bankCapMultiplier } from './effects.js';
 
 /**
  * Money primitives for the whole economy. Rules:
@@ -106,19 +105,18 @@ export type BankResult = { ok: true; cash: number; bank: number; bankCap: number
 export async function bankDeposit(guildId: string, userId: string, amount: number): Promise<BankResult> {
   const eco = await getEco(guildId, userId);
   if (!Number.isSafeInteger(amount) || amount <= 0) return { ok: false, reason: 'invalid', cash: eco.balance, bank: eco.bank, bankCap: eco.bank_cap };
-  const mult = await bankCapMultiplier(userId);
   const rows = await db`
     UPDATE economy SET balance = balance - ${amount}, bank = bank + ${amount}
-    WHERE user_id = ${userId} AND balance >= ${amount} AND bank + ${amount} <= CAST(bank_cap * ${mult} AS INTEGER)
+    WHERE user_id = ${userId} AND balance >= ${amount} AND bank + ${amount} <= bank_cap
     RETURNING balance, bank, bank_cap`;
   if (!rows.length) {
     const cur = await getEco(guildId, userId);
-    return { ok: false, reason: cur.balance < amount ? 'funds' : 'space', cash: cur.balance, bank: cur.bank, bankCap: Math.floor(cur.bank_cap * mult) };
+    return { ok: false, reason: cur.balance < amount ? 'funds' : 'space', cash: cur.balance, bank: cur.bank, bankCap: cur.bank_cap };
   }
   const r = rows[0];
   await db`INSERT INTO eco_ledger (user_id, delta, balance_after, reason, ref, ts) VALUES (${userId}, ${-amount}, ${r.balance}, 'bank:deposit', NULL, ${Date.now()})`;
   await bankLedger(userId, amount, r.bank, 'deposit');
-  return { ok: true, cash: r.balance, bank: r.bank, bankCap: Math.floor(r.bank_cap * mult) };
+  return { ok: true, cash: r.balance, bank: r.bank, bankCap: r.bank_cap };
 }
 
 export async function bankWithdraw(guildId: string, userId: string, amount: number): Promise<BankResult> {
@@ -247,7 +245,7 @@ export async function getWallet(guildId: string, userId: string): Promise<Wallet
   return {
     cash: eco.balance,
     bank: eco.bank,
-    bankCap: Math.floor(eco.bank_cap * (await bankCapMultiplier(userId))),
+    bankCap: eco.bank_cap,
     business,
     labSpent,
     networth: eco.balance + eco.bank + (business?.cost ?? 0) + labSpent,

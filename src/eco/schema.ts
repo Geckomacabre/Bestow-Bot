@@ -99,6 +99,7 @@ export async function initEcoSchema(): Promise<void> {
     qty       INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, case_type)
   )`;
+  await migrateToHeistCards();
 
   // ── Companies ─────────────────────────────────────────────────────────────
   await db`CREATE TABLE IF NOT EXISTS eco_company (
@@ -187,4 +188,26 @@ export async function initEcoSchema(): Promise<void> {
     at      INTEGER NOT NULL,
     PRIMARY KEY (user_id, kind)
   )`;
+}
+
+/**
+ * Heist's cards: three categories (Business, Lab, Personal) and two cases (Standard, Blackice). Earlier cards (Fortune, Career,
+ * Rogue, Guardian, Banker) become Personal — their old category is kept in legacy_category so this can be undone — and a player
+ * left with several equipped Personal cards keeps their strongest one equipped. Basic and Premium cases become Standard, Legendary
+ * becomes Blackice. Safe to run on every start: it only touches rows that haven't been moved yet.
+ */
+export async function migrateToHeistCards(): Promise<void> {
+  try { await db`ALTER TABLE eco_card ADD COLUMN legacy_category TEXT`; } catch { /* already there */ }
+  await db`UPDATE eco_card SET legacy_category = category, category = 'personal' WHERE category IN ('fortune', 'career', 'rogue', 'guardian', 'banker')`;
+  await db`UPDATE eco_card SET equipped = 0 WHERE category = 'personal' AND equipped = 1 AND id NOT IN (
+    SELECT id FROM (
+      SELECT id, ROW_NUMBER() OVER (PARTITION BY owner_id ORDER BY stars * (CASE WHEN standard = 0 THEN 2 ELSE 1 END) DESC, id) AS rn
+      FROM eco_card WHERE category = 'personal' AND equipped = 1
+    ) WHERE rn = 1
+  )`;
+  for (const [from, to] of [['basic', 'standard'], ['premium', 'standard'], ['legendary', 'blackice']] as const) {
+    await db`INSERT INTO eco_case (user_id, case_type, qty) SELECT user_id, ${to}, qty FROM eco_case WHERE case_type = ${from} AND qty > 0
+      ON CONFLICT(user_id, case_type) DO UPDATE SET qty = eco_case.qty + excluded.qty`;
+    await db`DELETE FROM eco_case WHERE case_type = ${from}`;
+  }
 }

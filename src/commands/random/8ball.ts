@@ -1,8 +1,5 @@
-import {
-  ApplicationIntegrationType, ChatInputCommandInteraction, Colors,
-  InteractionContextType, SlashCommandBuilder,
-} from 'discord.js';
-import { Command } from '../../interfaces/command';
+import { Colors } from 'discord.js';
+import { hleaf } from '../../framework/heist.js';
 import { cv2Text } from '../../utils/components.js';
 
 const RESPONSES = [
@@ -15,19 +12,8 @@ const RESPONSES = [
   '🔴 Outlook not so good.', '🔴 Very doubtful.',
 ];
 
-const EightBall: Command = {
-  data: new SlashCommandBuilder()
-    .setName('8ball')
-    .setDescription('Ask the magic 8-ball a question')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
-    .addStringOption(o => o.setName('question').setDescription('Your question').setRequired(true)),
-
-  async run(interaction: ChatInputCommandInteraction) {
-    const question = interaction.options.getString('question', true);
-    const response = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
-    await interaction.reply(cv2Text(`**🎱 Magic 8-Ball**\n**Question:** ${question}\n**Answer:** ${response}`, Colors.DarkPurple));
-  },
-};
-
-export default EightBall;
+export default hleaf('8ball', async i => {
+  const question = i.options.getString('question', true);
+  const response = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+  await i.reply({ ...cv2Text(`**🎱 Magic 8-Ball**\n**Question:** ${question}\n**Answer:** ${response}`, Colors.DarkPurple), allowedMentions: { parse: [] } });
+}, { tweaks: { question: { maxLength: 300 } } });

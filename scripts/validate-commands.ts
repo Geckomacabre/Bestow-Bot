@@ -43,7 +43,7 @@ for (const [name, cmd] of commands) {
   byCategory.set(cmd.category ?? '?', (byCategory.get(cmd.category ?? '?') ?? 0) + 1);
 
   if (json.name !== name) errors.push(`/${name}: registered under a different name (${json.name})`);
-  if (json.type === 2) { user++; if (!cmd.runMessage && !cmd.run) errors.push(`${name}: user menu without handler`); continue; }
+  if (json.type === 2) { user++; if (!cmd.runUser) errors.push(`${name}: user menu without runUser()`); continue; }
   if (json.type === 3) { message++; if (!cmd.runMessage) errors.push(`${name}: message menu without runMessage()`); continue; }
   slash++;
   if (typeof cmd.run !== 'function') errors.push(`/${name}: missing run()`);
@@ -95,11 +95,12 @@ for (const [name, cmd] of commands) {
   if (hasSubs && json.options!.some(o => o.type !== 1 && o.type !== 2)) errors.push(`/${name}: mixes subcommands with plain options`);
 }
 
-if (commands.size > LIMITS.topLevel) errors.push(`${commands.size} top-level commands (Discord limit ${LIMITS.topLevel})`);
+// Discord's 100 is for slash commands; message and user menus have their own limits (checked below).
+if (slash > LIMITS.topLevel) errors.push(`${slash} top-level slash commands (Discord limit ${LIMITS.topLevel})`);
 if (message > LIMITS.message) errors.push(`${message} message context menus (limit ${LIMITS.message})`);
 if (user > LIMITS.user) errors.push(`${user} user context menus (limit ${LIMITS.user})`);
 
-console.log(`\nTop-level: ${commands.size}/${LIMITS.topLevel}  (slash ${slash}, message menus ${message}/${LIMITS.message}, user menus ${user}/${LIMITS.user})`);
+console.log(`\nTop-level: slash ${slash}/${LIMITS.topLevel}, message menus ${message}/${LIMITS.message}, user menus ${user}/${LIMITS.user}`);
 console.log(`Invocable paths: ${paths.length}  (of which subcommands: ${subs})`);
 console.log('By category:', [...byCategory.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join('  '));
 if (Bun.argv.includes('--list')) console.log('\n' + paths.sort().join('\n'));

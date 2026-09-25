@@ -28,8 +28,8 @@ const stills: [string, () => Promise<fx.Out>][] = [
   ['zoomblur', async () => fx.zoomBlur(await job('sample.png'), 6)],
   ['deepfry', async () => fx.deepfry(await job('sample.png'))],
   ['caption', async () => fx.caption(await job('sample.png'), 'when the bot finally works and you did not have to fix anything')],
-  ['caption-bottom', async () => fx.caption(await job('sample.png'), 'bottom caption', true)],
+  ['caption-bottom', async () => fx.caption(await job('sample.png'), 'bottom caption', { bottom: true })],
   ['meme', async () => fx.meme(await job('sample.png'), 'one does not simply', 'ship a discord bot')],
-  ['watermark', async () => fx.watermark(await job('sample.png'), '@bestow', { position: 'bottom-right', opacity: 70, size: 6, color: '#ffffff' })],
+  ['watermark', async () => fx.watermark(await job('sample.png'), '@bestow', { position: 'bottom-right', opacity: 0.7, size: 28, color: '#ffffff' })],
 ];
 for (const [n, f] of stills) { try { save(n, await f()); } catch (e) { console.log('✘', n, (e as Error).message); } }

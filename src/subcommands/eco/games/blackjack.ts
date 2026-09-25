@@ -10,7 +10,6 @@ import { cv2Err, IS_CV2 } from '../../../utils/components.js';
 import { newDeck, shuffleDeck, handStr, bjHandValue, type Card } from '../../../utils/cards.js';
 import { stake } from '../../../eco/core.js';
 import { settleRound } from '../../../eco/round.js';
-import { fortuneMultiplier } from '../../../eco/effects.js';
 import { renderTable } from '../../../utils/cardRender.js';
 
 type Outcome = 'win' | 'blackjack' | 'push' | 'lose';
@@ -90,7 +89,7 @@ const Blackjack: Command = {
       await interaction.reply(cv2Err(`❌ Not enough ${cfg.currency_name}. Balance: **${cfg.currency_symbol} ${staked.newBalance.toLocaleString()}**.`)); return;
     }
 
-    const luckMult = (await getGambleMultiplier(guildId, userId)) * (await fortuneMultiplier(userId));
+    const luckMult = (await getGambleMultiplier(guildId, userId));
 
     await interaction.deferReply();
 

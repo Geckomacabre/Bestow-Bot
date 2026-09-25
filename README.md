@@ -4,7 +4,7 @@ A multipurpose Discord bot you install **on your own account** and use anywhere 
 
 Built with TypeScript, [Bun](https://bun.sh) and [discord.js](https://discord.js.org). Derived from TMCBot (GPL-3.0-or-later). Every command is listed in [COMMANDS.md](COMMANDS.md), which is generated from the code so it is always accurate.
 
-> **Status: work in progress.** The goal is to cover the full command list of [Heist](https://heist.lol/commands). Most of the economy, fun, media, utility and lookup commands are in; a good part of the social lookups, Last.fm/Spotify and a few generators are still to come. [`docs/heist-commands.json`](docs/heist-commands.json) is the target list and `bun scripts/parity.ts` prints exactly what is still missing. Anything deliberately not built (harassment, doxxing or account-enumeration tools) is listed with its reason in [`docs/heist-parity.json`](docs/heist-parity.json).
+> **Heist parity.** Bestow has every command on [Heist](https://heist.lol/commands)'s list, with Heist's own descriptions, options and choices ([`docs/heist-spec.json`](docs/heist-spec.json)); `tests/parity.test.ts` fails if anything goes missing or drifts, and `bun scripts/parity.ts` prints the details. The few commands deliberately not built (harassment, doxxing or account-enumeration tools) are listed with their reasons in [`docs/heist-parity.json`](docs/heist-parity.json). Commands Heist doesn't have (levels, reminders, guessing games…) are Bestow extras.
 
 ## How it is installed
 
@@ -24,15 +24,15 @@ A server:      https://discord.com/oauth2/authorize?client_id=<CLIENT_ID>&scope=
 
 | Area | Highlights |
 |---|---|
-| 💰 **Economy** (`/eco`, `/eco-company`) | Wallet card you can restyle (with a live **studio**), bank, daily/monthly/work/hustle/beg/bonus, robbing, businesses, labs, investments, quests, trading cards, **companies** with shared vaults and projects, casino games (blackjack, roulette, crash, slots, plinko, mines, towers…), leaderboards, economy-funded giveaways. Balances change through guarded single-statement updates, so races can't duplicate or lose money. |
+| 💰 **Economy** (`/eco`, `/eco-company`) | Wallet card you can restyle (with a live **studio**), bank, daily/monthly/work/hustle/beg/bonus, robbing, businesses, labs, investments, quests, trading cards (Business, Lab and Personal; Standard and Blackice cases), amounts like `all`, `half` or `10k`, **companies** with shared vaults and projects, casino games (blackjack, roulette, crash, slots, plinko, mines, towers…), leaderboards, economy-funded giveaways. Balances change through guarded single-statement updates, so races can't duplicate or lose money. |
 | 🎁 **Giveaways** (`/giveaway`, `/eco giveaway`) | Button-entry giveaways that survive restarts, rerolls that never repeat a winner, and coin-funded pots held in escrow (25% tax on payout, refunded if cancelled). |
 | 🎮 **Games** (`/games`) | Tic-tac-toe, rock-paper-scissors, head-to-head blackjack, snake and a cookie race — all played with buttons, against a friend or the first person to press Join. |
-| 🎬 **Media** (`/media`, `/audio`) | Dozens of image, GIF and video effects, audio effects, frame extraction, and `/media download` (YouTube, TikTok, X, Reddit, SoundCloud… via yt-dlp). |
+| 🎬 **Media** (`/media`, `/audio`) | Dozens of image, GIF and video effects, animated makesweet scenes (billboard, flag, Rubik's cube, heart locket…), audio effects, frame extraction, and `/download` (YouTube, TikTok, X, Reddit, SoundCloud… via yt-dlp). |
 | 🗣️ **Voice** (`/tts`) | Free local voices (Kokoro with an Edge fallback), character voices, singing voices, optional AI singers through an ACE-Step server you run. Output as a file or a Discord **voice message**. |
-| 🤖 **AI** (`/ai`, @mention, DMs) | ChatGPT-style answers with **Reply n/3** conversations, an alternative model (`/ai llama`), image reading, transcripts, fact-checks, geolocation (region level), personas and opt-in memory. Works with any OpenAI-compatible provider, including local ones. Free accounts get **20 requests per hour**; Premium removes the limit. |
+| 🤖 **AI** (`/ai`, @mention, DMs) | ChatGPT-style answers with **Reply n/3** conversations, an alternative model (`/ai llama`), image generation and editing (`/ai imagine`, `edit-imagine`), Perplexity web search, OpenAI voices, your own **custom AI**, image reading, transcripts, fact-checks, geolocation (never addresses or homes), personas and opt-in memory; right-click **AI Tools**, **Transcribe Audio** and **Translate Message**. Works with any OpenAI-compatible provider, including local ones. Free accounts get **20 requests per hour**; Premium removes the limit. |
 | 🔎 **Lookups** | `/roblox`, `/minecraft`, `/github`, `/steam`, `/valorant`, `/fortnite`, `/youtube`, `/crypto`, `/dns`, `/ip`, `/website`, `/x`. |
-| 🧰 **Utility** | Translate, lyrics, dictionary, QR codes, colours, converters, calculator, base64, search, paste, weather, quote-image maker. |
-| 🎉 **Fun** | Anime action GIFs, ship, ratings, rizz, roast, pet-pet GIFs, emoji mixer, fake-message/reply/conversation images (watermarked as fake), a fictional `/juul`, buttons, and right-click menus (Pet User, Rizz User, Roast User, Quote Message). |
+| 🧰 **Utility** | Translate, lyrics, dictionary, QR codes, colours, converters, calculator, base64, search, paste, weather, quote images with your own presets (`/quotemessage`). |
+| 🎉 **Fun** | Anime action GIFs, ship, ratings, rizz, roast, pet-pet GIFs, emoji mixer, `/generate` (fake Discord messages, replies, conversations, reports, applications, friend requests and voice channels in Discord's themes and display-name fonts — each marked as not real — plus Among Us cards, Spotify lyrics, AI watermarks and a tier-list builder), a fictional `/juul`, buttons, and right-click menus (Pet User, Rizz User, Roast User, Quote Message). |
 | 🫂 **Community** (`/community`, `/config`, `/server`) | Levels and reputation, birthdays, reminders, roles, free-game tracker, weekly/yearly rewards and the item shop, plus server settings such as counting, starboard, topic rotation and server stats. |
 | ✨ **Premium** (`/premium`, `/plus`) | Unlimited AI, plus the commands marked ✨ (wallet-card styling, the monthly reward, and more as they ship). Sold through Discord itself; gift codes and owner grants are supported. |
 | 🔒 **Privacy** (`/settings`, `/privacy`) | Policy, "what do you have on me?", a full JSON export, and erase-everything. |
@@ -84,13 +84,13 @@ The image includes ffmpeg and yt-dlp, runs as an unprivileged user in production
 
 | Feature | What to set up |
 |---|---|
-| **AI** | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` (OpenAI, xAI, Groq, OpenRouter, or local Ollama/LM Studio). `LLM_LABEL` sets the name shown in reply footers. `LLAMA_*` configures `/ai llama`. `VISION_*` is for image understanding and `WHISPER_*` for transcripts. Limit spend with `AI_USER_LIMIT` (default 20 an hour), `AI_DAILY_LIMIT` and `AI_DISABLED`. |
+| **AI** | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` (OpenAI, xAI, Groq, OpenRouter, or local Ollama/LM Studio). `LLM_LABEL` sets the name shown in reply footers. `LLAMA_*` configures `/ai llama`. `VISION_*` is for image understanding and `WHISPER_*` for transcripts. `IMAGE_*` sets up `/ai imagine` and `edit-imagine`, `PERPLEXITY_API_KEY` `/ai perplexity`, `OPENAI_API_KEY` `/ai tts openai`, and `CUSTOM_AI_MODELS` the models a custom AI can use. Limit spend with `AI_USER_LIMIT` (default 20 an hour), `AI_DAILY_LIMIT` and `AI_DISABLED`. |
 | **Premium** | `PREMIUM_SKU_ID`, `PREMIUM_GIFT_SKU_ID`, `PREMIUM_GIFT_DAYS`, `OWNER_IDS`. |
 | **Support server** | `SUPPORT_GUILD_ID` and `SUPPORT_INVITE` power `/eco joinbonus`; with `PREMIUM_ROLE_ID` they also enable `/premium syncrole`. |
 | **TTS** | Nothing. The free voices download on first use (about 90 MB, cached in `data/models`). |
 | **AI singers** | Run an [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) API server and set `ACESTEP_URL`. Needs a capable GPU; the bundled singing voices work without it. |
 | **Web search** | Set `SEARXNG_URL` to your own SearXNG instance; otherwise `/search` falls back to Wikipedia. |
-| **/media download** | Needs `yt-dlp` on `PATH` (included in Docker). Some sites demand a login or bot check from datacenter IPs; set `YTDLP_COOKIES` to a cookies file if so. |
+| **/download**, **/soundcloud** | Needs `yt-dlp` on `PATH` (included in Docker). Some sites demand a login or bot check from datacenter IPs; set `YTDLP_COOKIES` to a cookies file if so. |
 | **Lookups** | API keys are optional; see `.env.example`. |
 | **Web dashboard** | `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_SECRET`. Use https in production. |
 
@@ -100,7 +100,7 @@ The image includes ffmpeg and yt-dlp, runs as an unprivileged user in production
 bun run check          # typecheck + command validation + all tests
 bun run docs           # regenerate COMMANDS.md (a test fails if it's stale)
 bun test               # offline tests
-bun scripts/parity.ts  # which Heist commands are still missing
+bun scripts/parity.ts  # Heist parity: anything missing or different
 RUN_NET_TEST=1 bun test        # also hit the real third-party APIs and yt-dlp
 RUN_TTS_TEST=1 bun test        # also synthesise with the real voice model
 ```

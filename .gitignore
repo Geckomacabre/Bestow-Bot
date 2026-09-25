@@ -40,3 +40,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.sqlite-*
 # runtime data (databases, wallet backgrounds, cached voice models)
 /data/
+
+# cmake-js output from the native addon build
+/build

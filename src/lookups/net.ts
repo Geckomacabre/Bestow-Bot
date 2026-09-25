@@ -16,6 +16,7 @@ export function cleanHost(input: string): string {
 }
 
 export function assertPublicHost(host: string): void {
+  if (Bun.env.NODE_ENV === 'test' && Bun.env.ALLOW_PRIVATE_URLS === '1') return; // same test-only escape hatch as assertPublicUrl
   if (isIP(host) && isPrivateIp(host)) throw new LookupError('That\'s a private or reserved address — I only look up public hosts.');
   if (!isIP(host) && /(^|\.)(localhost|local|internal|lan|home|corp|intranet)$/.test(host)) throw new LookupError('That\'s a private hostname — I only look up public hosts.');
 }
@@ -51,12 +52,26 @@ export const reverseName = (ip: string): string => {
   throw new LookupError('That isn\'t an IP address.');
 };
 
-export async function dnsLookup(input: string, type: DnsType = 'A'): Promise<DnsResult> {
+export type Resolver = 'cloudflare' | 'google';
+const DOH: Record<Resolver, string> = { cloudflare: 'https://cloudflare-dns.com/dns-query', google: 'https://dns.google/resolve' };
+export const resolverLabel = (r: Resolver) => (r === 'google' ? 'Google DNS' : 'Cloudflare DNS');
+
+export async function dnsLookup(input: string, type: DnsType = 'A', resolver: Resolver = 'cloudflare'): Promise<DnsResult> {
   let name = type === 'PTR' ? input.trim() : cleanHost(input);
   if (type === 'PTR') { name = isIP(name) ? reverseName(name) : cleanHost(name); }
   if (type !== 'PTR' && isIP(name)) throw new LookupError('DNS records are looked up by domain name. Use type `PTR` to reverse-lookup an IP.');
-  const raw = await getJson<DohRaw>(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`, { headers: { Accept: 'application/dns-json' }, cacheMs: 60_000 });
+  const raw = await getJson<DohRaw>(`${DOH[resolver]}?name=${encodeURIComponent(name)}&type=${type}`, { headers: { Accept: 'application/dns-json' }, cacheMs: 60_000 });
   return parseDoh(name, type, raw);
+}
+
+/** Heist-style lookup: the common record types in one go (an IP gets its reverse PTR name instead). */
+export const OVERVIEW_TYPES: DnsType[] = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'CAA'];
+export async function dnsOverview(input: string, resolver: Resolver = 'cloudflare'): Promise<{ name: string; status: string; dnssec: boolean; records: DnsRecord[] }> {
+  if (isIP(input.trim())) { const r = await dnsLookup(input, 'PTR', resolver); return { name: r.name, status: r.status, dnssec: r.dnssec, records: r.records }; }
+  const results = await Promise.all(OVERVIEW_TYPES.map(t => dnsLookup(input, t, resolver)));
+  const seen = new Set<string>();
+  const records = results.flatMap(r => r.records).filter(r => { const k = `${r.type}|${r.data}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  return { name: results[0]!.name, status: results.find(r => r.status !== 'NOERROR')?.status ?? 'NOERROR', dnssec: results.every(r => r.dnssec), records };
 }
 
 // ─── IP geolocation ──────────────────────────────────────────────────────────

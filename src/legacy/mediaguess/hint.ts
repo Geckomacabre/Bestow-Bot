@@ -8,9 +8,9 @@ import { requestHint } from '../../utils/mediagame';
 const Hint: Command = {
   data: new SlashCommandBuilder()
     .setName('hint')
-    .setDescription('Reveal the next clue for the guessing game — shared with everyone in the channel')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild]),
+    .setDescription('Reveal the next clue for the guessing game round in this channel')
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM]),
 
   async run(interaction: ChatInputCommandInteraction) {
     // Deferred and public — hints are shared with the whole channel. The

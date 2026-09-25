@@ -163,7 +163,7 @@ export const hotcalcSub: Sub = {
   name: 'hotcalc', description: 'Check how hot someone is',
   options: (s: SlashCommandSubcommandBuilder) => s.addUserOption(o => o.setName('user').setDescription('The user you want to check').setRequired(true)),
   run: lookup(async i => {
-    const t = i.options.getUser('user', true);
+    const t = i.options.getUser('user') ?? i.user;
     const pct = social.rate(`hot:${t.id}`);
     await i.editReply(card({ title: '🔥 Hot-o-meter', color: 0xf26522, description: `<@${t.id}> is **${pct}%** hot today.\n${HOT.find(([max]) => pct <= max)![1]}`, footer: 'Just for fun — the answer changes daily.' }));
   }),

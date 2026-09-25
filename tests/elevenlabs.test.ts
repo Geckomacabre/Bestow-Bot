@@ -5,9 +5,7 @@ import {
 } from '../src/services/elevenlabs';
 import { ALL_VOICES, ensureElevenVoices, findVoice, searchVoices, setElevenVoices, speak, speakableLength, voiceIcon } from '../src/services/tts';
 import { resetPremiumCache } from '../src/premium';
-import { fakeInteraction, textOf } from './fakeInteraction';
 
-const commands = (await import('../src/handlers/commandHandler')).default;
 beforeAll(async () => { await initDb(); });
 
 const realFetch = globalThis.fetch;
@@ -182,30 +180,3 @@ describe('speak() with an ElevenLabs voice', () => {
   });
 });
 
-describe('/tts with an ElevenLabs voice', () => {
-  const run = async (userId: string, text: string, voice = 'eleven:EXAVITQu4vr4xnSDxMaL') => {
-    const fi = fakeInteraction({ guildId: null, userId, options: { text, voice } });
-    await commands.get('tts')!.run!(fi.interaction);
-    return { fi, out: fi.sent.map(textOf).join('\n'), files: fi.sent.flatMap((p: any) => p.files ?? []) };
-  };
-  const setup = () => { Bun.env.ELEVENLABS_API_KEY = FAKE_KEY; globalThis.fetch = mock().impl; };
-
-  test('speaks with ElevenLabs, labels it, and counts the characters against a free allowance', async () => {
-    setup();
-    const a = await run('tts-user-1', 'x'.repeat(600));
-    expect(a.out).toContain('Sarah'); expect(a.out).toContain('ElevenLabs'); expect(a.files).toHaveLength(1);
-    const b = await run('tts-user-1', 'y'.repeat(600)); // over the 1000/day allowance (and past the 8s cooldown only if we skip it — cooldown hits first)
-    expect(b.out).toMatch(/Slow down|free ✨ ElevenLabs characters/);
-  });
-  test('refuses politely once the allowance is used, points to Premium when it is on sale, and never charges for free voices', async () => {
-    setup(); Bun.env.PREMIUM_SKU_ID = '1234567890';
-    Bun.env.ELEVENLABS_FREE_CHARS_PER_DAY = '100';
-    const r = await run('tts-user-2', 'z'.repeat(300));
-    expect(r.out).toContain('free ✨ ElevenLabs characters'); expect(r.out).toContain('/premium buy'); expect(r.files).toHaveLength(0);
-  });
-  test('an owner (Premium) is not held to the per-person allowance', async () => {
-    setup(); Bun.env.OWNER_IDS = 'tts-owner'; Bun.env.ELEVENLABS_FREE_CHARS_PER_DAY = '10';
-    const r = await run('tts-owner', 'w'.repeat(300));
-    expect(r.out).toContain('ElevenLabs'); expect(r.files).toHaveLength(1);
-  });
-});

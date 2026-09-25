@@ -5,6 +5,7 @@ import { hasPremium } from '../premium/index.js';
 import { buildSystem } from './prompts.js';
 import { getGuildAi, getPersona, notesForPrompt } from './store.js';
 import { imageUrlToDataUri } from './vision.js';
+import { activeGames } from '../utils/mediagame.js';
 
 /** Chat on mention / reply / DM. The only context used is the reply chain the person is already in — no channel history, no hidden buffer. */
 
@@ -48,7 +49,8 @@ async function referenceChain(message: Message, botId: string): Promise<{ author
 export async function shouldRespond(message: Message): Promise<boolean> {
   const me = message.client.user;
   if (!me || message.author.bot || message.system) return false;
-  if (!message.guildId) return true; // DMs: always
+  // DMs: always — except while a guessing round is live there, when plain messages are guesses (an @mention still reaches me).
+  if (!message.guildId) return !activeGames.has(message.channelId) || message.mentions.users.has(me.id);
   if (message.mentions.users.has(me.id) && !message.mentions.everyone) return true;
   if (message.reference?.messageId) {
     try { return (await message.fetchReference()).author.id === me.id; } catch { return false; }

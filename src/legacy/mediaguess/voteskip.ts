@@ -8,9 +8,9 @@ import { castVoteSkip } from '../../utils/mediagame';
 const VoteSkip: Command = {
   data: new SlashCommandBuilder()
     .setName('voteskip')
-    .setDescription('Vote to skip the current guessing game (2 votes needed, available 5 min into the round)')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild]),
+    .setDescription('Vote to skip the guessing game round (2 votes, after 5 min; instant in DMs)')
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM]),
 
   async run(interaction: ChatInputCommandInteraction) {
     const { content, ephemeral } = await castVoteSkip(interaction.channelId, interaction.user.id, interaction.client);

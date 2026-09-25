@@ -4,6 +4,7 @@ import { mkdtemp, rm, stat, copyFile } from 'node:fs/promises';
 import os from 'node:os';
 import { probe, fitEven, withWorkdir } from '../src/framework/media';
 import * as fx from '../src/media/effects';
+import { imageWithAudio2 } from '../src/media/fx2';
 import { makeSamples } from './fixtures';
 
 const haveFfmpeg = !!Bun.which('ffmpeg') && !!Bun.which('ffprobe');
@@ -107,13 +108,13 @@ describe('image effects (still)', () => {
     const nasty = `it's: 100% \\o/ %{pts} '; drawtext=`;
     const out = await fx.caption(await job('sample.png'), nasty);
     expect((await info(out)).height).toBeGreaterThan(400);
-    const wm = await fx.watermark(await job('sample.png'), nasty, { position: 'bottom-right', opacity: 60, size: 5, color: '#ffffff' });
+    const wm = await fx.watermark(await job('sample.png'), nasty, { position: 'bottom-right', opacity: 0.6, size: 20, color: '#ffffff' });
     expect((await info(wm)).width).toBe(640);
   });
 
   it('watermark supports every position', async () => {
     for (const position of fx.POSITIONS) {
-      const out = await fx.watermark(await job('sample.png'), 'bestow', { position, opacity: 70, size: 6, color: '#ffcc00' });
+      const out = await fx.watermark(await job('sample.png'), 'bestow', { position, opacity: 0.7, size: 24, color: '#ffcc00' });
       expect((await info(out)).width).toBe(640);
     }
   }, 120_000);
@@ -171,10 +172,10 @@ describe('video', () => {
   }, 60_000);
 
   it('video caption + watermark keep it a video', async () => {
-    const c = await info(await fx.caption(await job('sample.mp4'), 'hello world', false, true));
+    const c = await info(await fx.caption(await job('sample.mp4'), 'hello world', { video: true }));
     expect(c.videoCodec).toBe('h264');
     expect(c.height).toBeGreaterThan(240);
-    const w = await info(await fx.watermark(await job('sample.mp4'), 'wm', { position: 'top-left', opacity: 80, size: 8, color: '#ffffff' }, true));
+    const w = await info(await fx.watermark(await job('sample.mp4'), 'wm', { position: 'top-left', opacity: 0.8, size: 24, color: '#ffffff' }, true));
     expect(w.videoCodec).toBe('h264');
   }, 90_000);
 
@@ -197,13 +198,15 @@ describe('video', () => {
 });
 
 describe('image + audio → video', () => {
-  it('builds a video of the audio\'s length', async () => {
-    const out = await fx.imageWithAudio(dir, 'sample.png', 'sample.wav', { loop: false, volume: 100, start: 0, end: 0 });
-    const p = await info(out);
-    expect(p.hasAudio).toBe(true);
-    expect(p.videoCodec).toBe('h264');
-    expect(p.duration).toBeGreaterThan(2.5);
-    expect(p.duration).toBeLessThan(3.8);
+  it('builds a video of the audio\'s length, times the loops, trimmed to start/end', async () => {
+    const once = await info(await imageWithAudio2(dir, 'sample.png', 'sample.wav', { loop: 1, volume: 1, start: 0, end: 0, effect: null }));
+    expect(once.hasAudio).toBe(true);
+    expect(once.videoCodec).toBe('h264');
+    expect(once.duration).toBeGreaterThan(2.5);
+    expect(once.duration).toBeLessThan(3.8);
+    const twice = await info(await imageWithAudio2(dir, 'sample.png', 'sample.wav', { loop: 2, volume: 0.5, start: 1, end: 2.5, effect: 'Clear to Pixelized' }));
+    expect(twice.duration).toBeGreaterThan(2.6);
+    expect(twice.duration).toBeLessThan(3.6);
   }, 60_000);
 });
 

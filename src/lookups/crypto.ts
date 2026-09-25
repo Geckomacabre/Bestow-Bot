@@ -14,6 +14,18 @@ export const usd = (n: number | null | undefined): string => {
 };
 export const pct = (n: number | null | undefined) => (n == null ? '—' : `${n >= 0 ? '▲' : '▼'} ${Math.abs(n).toFixed(2)}%`);
 
+/** Heist's currency choices. Fiat is shown with its symbol; BTC/ETH as amounts of that coin. */
+export type Vs = 'usd' | 'eur' | 'gbp' | 'jpy' | 'btc' | 'eth';
+export const vsOf = (choice: string | null | undefined): Vs => ((choice ?? 'USD').toLowerCase() as Vs);
+export function money(n: number | null | undefined, vs: Vs = 'usd'): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  if (vs === 'usd') return usd(n);
+  if (vs === 'btc' || vs === 'eth') return `${n.toLocaleString('en-US', { maximumSignificantDigits: 6 })} ${vs.toUpperCase()}`;
+  const a = Math.abs(n);
+  if (a > 0 && a < 1) return `${n.toPrecision(3)} ${vs.toUpperCase()}`;
+  return n.toLocaleString('en-US', { style: 'currency', currency: vs.toUpperCase(), maximumFractionDigits: vs === 'jpy' || a >= 1000 ? 0 : 2 });
+}
+
 // ─── Prices ──────────────────────────────────────────────────────────────────
 
 export interface Coin {
@@ -50,9 +62,9 @@ export async function resolveCoinId(query: string): Promise<string> {
   return id;
 }
 
-export async function coinPrice(query: string): Promise<Coin> {
+export async function coinPrice(query: string, vs: Vs = 'usd'): Promise<Coin> {
   const id = await resolveCoinId(query);
-  const r = await getJson<CoinRaw[]>(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(id)}&price_change_percentage=24h,7d`, { cacheMs: MIN });
+  const r = await getJson<CoinRaw[]>(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=${vs}&ids=${encodeURIComponent(id)}&price_change_percentage=24h,7d`, { cacheMs: MIN });
   if (!r[0]) throw new LookupError(`I couldn't find price data for **${query}**.`);
   return parseCoin(r[0]);
 }
@@ -64,9 +76,16 @@ export async function convertCoins(amount: number, from: string, to: string): Pr
   return { from: a, to: b, result: (amount * a.price) / b.price };
 }
 
-export async function topCoins(n = 10): Promise<Coin[]> {
-  const r = await getJson<CoinRaw[]>(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${Math.min(25, n)}&page=1&price_change_percentage=24h`, { cacheMs: 2 * MIN });
+export async function topCoins(n = 10, vs: Vs = 'usd'): Promise<Coin[]> {
+  const r = await getJson<CoinRaw[]>(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=${vs}&order=market_cap_desc&per_page=${Math.max(1, Math.min(50, n))}&page=1&price_change_percentage=24h`, { cacheMs: 2 * MIN });
   return r.map(parseCoin);
+}
+
+/** Price history for a chart: [ms, price] pairs. */
+export async function coinChart(query: string, vs: Vs = 'usd', days = 30): Promise<{ coin: Coin; points: { x: number; y: number }[] }> {
+  const coin = await coinPrice(query, vs);
+  const r = await getJson<{ prices?: [number, number][] }>(`https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coin.id)}/market_chart?vs_currency=${vs}&days=${days}`, { cacheMs: 10 * MIN });
+  return { coin, points: (r.prices ?? []).map(([x, y]) => ({ x, y })) };
 }
 
 // ─── Wallets ─────────────────────────────────────────────────────────────────

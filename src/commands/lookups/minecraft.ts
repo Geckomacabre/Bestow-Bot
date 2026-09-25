@@ -1,4 +1,9 @@
-import { defineGroup } from '../../framework/group.js';
+import { hfrom, hgroup } from '../../framework/heist.js';
 import { minecraftSubs } from '../../subcommands/lookups/games.js';
+import { minecraftRandomSub } from '../../subcommands/lookups/social.js';
 
-export default defineGroup({ name: 'minecraft', description: 'Minecraft lookups: servers, skins and players', subs: minecraftSubs });
+const old = (n: string) => minecraftSubs.find(s => s.name === n)!;
+export default hgroup({
+  name: 'minecraft',
+  subs: [hfrom('minecraft user', old('user'), { tweaks: { username: { maxLength: 16 } } }), hfrom('minecraft skin', old('skin'), { tweaks: { username: { maxLength: 16 } } }), hfrom('minecraft server', old('server'), { tweaks: { address: { maxLength: 100 } } }), minecraftRandomSub],
+});

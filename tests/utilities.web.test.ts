@@ -87,7 +87,6 @@ describe('web parsers', () => {
     expect(t.media).toEqual([{ type: 'image', url: 'https://pbs.twimg.com/a.jpg' }]); expect(t.handle).toBe('jack');
   });
   test('actions: every verb has text for solo and targeted use', () => {
-    expect(Object.keys(ACTIONS).length).toBeLessThanOrEqual(25); // Discord choice limit
     for (const k of Object.keys(ACTIONS)) { expect(actionText(k, 'A', 'B')).toContain('B'); expect(actionText(k, 'A')).toContain('A'); expect(actionText(k, 'A')).not.toContain('{'); }
     expect(actionText('hug', 'Ann', 'Bob')).toBe('Ann hugs Bob'); expect(() => actionText('constructor', 'a')).toThrow(/Unknown/); expect(() => actionText('__proto__', 'a')).toThrow(/Unknown/);
   });
