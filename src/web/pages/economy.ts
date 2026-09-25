@@ -4,7 +4,7 @@ import type { APIGuild } from '../discord';
 import * as db from '../../utils/db';
 
 export async function economyPage(user: SessionUser, guild: APIGuild, flash?: string, flashType?: 'success' | 'error'): Promise<string> {
-  const cfg = await db.getEconomyConfig(guild.id);
+  const cfg = await db.getEconomyConfig(guild.id, true);
 
   const content = /* html */`
     <form method="POST" action="/servers/${guild.id}/economy">

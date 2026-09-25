@@ -83,6 +83,27 @@ export async function releaseCooldown(userId: string, type: string): Promise<voi
   await db`DELETE FROM economy_cooldowns WHERE user_id = ${userId} AND type = ${type}`;
 }
 
+// ─── Claim streaks ───────────────────────────────────────────────────────────
+
+/** Claiming again within this long of the last claim keeps the streak going (the daily cooldown is 20 hours, so a day of slack). */
+export const STREAK_GRACE_MS = 48 * 3_600_000;
+export const STREAK_BONUS_PER_DAY = 0.02;
+export const STREAK_BONUS_MAX = 0.5;
+/** The extra a streak pays: nothing on day 1, +2% for each day after it, up to +50%. */
+export const streakBonus = (day: number) => Math.min(STREAK_BONUS_MAX, Math.max(0, day - 1) * STREAK_BONUS_PER_DAY);
+
+/** The day a claim made now would be: one past the current streak, or day 1 when there is none or it has lapsed. */
+export async function nextStreak(userId: string, type: string, now = Date.now()): Promise<number> {
+  const [row] = await db`SELECT streak, last_claim FROM eco_streaks WHERE user_id = ${userId} AND type = ${type}`;
+  return row && now - (row.last_claim as number) <= STREAK_GRACE_MS ? (row.streak as number) + 1 : 1;
+}
+
+export async function saveStreak(userId: string, type: string, streak: number, now = Date.now()): Promise<void> {
+  await db`
+    INSERT INTO eco_streaks (user_id, type, streak, last_claim) VALUES (${userId}, ${type}, ${streak}, ${now})
+    ON CONFLICT(user_id, type) DO UPDATE SET streak = excluded.streak, last_claim = excluded.last_claim`;
+}
+
 export function fmtDuration(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
   const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;

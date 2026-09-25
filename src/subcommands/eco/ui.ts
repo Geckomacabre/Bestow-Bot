@@ -1,6 +1,7 @@
 import { Colors, type ChatInputCommandInteraction } from 'discord.js';
 import { getEconomyConfig, type IEconomyConfig } from '../../utils/db.js';
 import { cv2Box, cv2Err } from '../../utils/components.js';
+import { money } from '../../eco/cashEmoji.js';
 
 export { Colors, cv2Box, cv2Err };
 
@@ -10,7 +11,7 @@ export interface EcoCtx {
   cfg: IEconomyConfig;
   sym: string;
   name: string;
-  /** "🪙 1,234" */
+  /** "💸 $1,234" (the cash icon and a dollar sign; a server's own currency symbol reads "🍪 1,234"). */
   fmt: (n: number) => string;
 }
 
@@ -18,7 +19,7 @@ export async function ecoCtx(i: ChatInputCommandInteraction): Promise<EcoCtx> {
   const guildId = (i.guildId ?? 'global');
   const cfg = await getEconomyConfig(guildId);
   const sym = cfg.currency_symbol;
-  return { guildId, userId: i.user.id, cfg, sym, name: cfg.currency_name, fmt: n => `${sym} ${n.toLocaleString()}` };
+  return { guildId, userId: i.user.id, cfg, sym, name: cfg.currency_name, fmt: n => money(sym, n) };
 }
 
 /**

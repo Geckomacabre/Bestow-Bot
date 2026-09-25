@@ -1,6 +1,7 @@
 import { SQL } from 'bun';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { displaySymbol } from '../eco/cashEmoji';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1421,7 +1422,16 @@ export function calcLevelFromXp(totalXp: number): { level: number; currentXp: nu
 
 // ─── Economy ──────────────────────────────────────────────────────────────────
 
-export async function getEconomyConfig(guild_id: string): Promise<IEconomyConfig> {
+/**
+ * A server's economy settings. In Discord replies the default currency symbol shows as the cash icon (see eco/cashEmoji.ts);
+ * `raw` keeps what is stored, for the web dashboard, which can neither show that emoji nor save it back.
+ */
+export async function getEconomyConfig(guild_id: string, raw = false): Promise<IEconomyConfig> {
+  const cfg = await storedEconomyConfig(guild_id);
+  return raw ? cfg : { ...cfg, currency_symbol: displaySymbol(cfg.currency_symbol) };
+}
+
+async function storedEconomyConfig(guild_id: string): Promise<IEconomyConfig> {
   const [row] = await db`SELECT * FROM economy_config WHERE guild_id = ${guild_id}`;
   return (row as IEconomyConfig) || {
     guild_id, currency_name: 'coins', currency_symbol: '🪙',

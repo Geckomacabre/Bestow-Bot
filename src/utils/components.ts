@@ -1,6 +1,15 @@
-import { AttachmentBuilder, ContainerBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags, TextDisplayBuilder } from 'discord.js';
+import { AttachmentBuilder, ContainerBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags, SeparatorBuilder, TextDisplayBuilder } from 'discord.js';
 
 export const IS_CV2 = MessageFlags.IsComponentsV2;
+
+/** Heist's plain card: a title line, a divider, then the text — no coloured bar. */
+export function cv2Panel(header: string, body: string): { flags: MessageFlags.IsComponentsV2; components: ContainerBuilder[] } {
+  const c = new ContainerBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(header))
+    .addSeparatorComponents(new SeparatorBuilder())
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(body));
+  return { flags: MessageFlags.IsComponentsV2 as const, components: [c] };
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cv2Text(content: string, accentColor?: number): any {

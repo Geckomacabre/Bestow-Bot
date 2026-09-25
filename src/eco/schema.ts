@@ -188,6 +188,15 @@ export async function initEcoSchema(): Promise<void> {
     at      INTEGER NOT NULL,
     PRIMARY KEY (user_id, kind)
   )`;
+
+  // ── Claim streaks (/eco daily: "Day 3 streak") ─────────────────────────────
+  await db`CREATE TABLE IF NOT EXISTS eco_streaks (
+    user_id    TEXT    NOT NULL,
+    type       TEXT    NOT NULL,
+    streak     INTEGER NOT NULL DEFAULT 1,
+    last_claim INTEGER NOT NULL,
+    PRIMARY KEY (user_id, type)
+  )`;
 }
 
 /**

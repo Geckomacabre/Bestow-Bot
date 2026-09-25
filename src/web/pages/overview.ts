@@ -5,7 +5,7 @@ import * as db from '../../utils/db';
 
 export async function overviewPage(user: SessionUser, guild: APIGuild, flash?: string): Promise<string> {
   const [econCfg, xpCfg] = await Promise.all([
-    db.getEconomyConfig(guild.id),
+    db.getEconomyConfig(guild.id, true),
     db.getXpConfig(guild.id),
   ]);
 

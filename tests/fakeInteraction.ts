@@ -22,6 +22,8 @@ export interface FakeOpts {
   /** Subcommand / group names, for dispatching through a real registered command (`commands.get('eco').run(...)`). */
   sub?: string;
   group?: string | null;
+  /** Which button of a Confirm / Cancel question gets pressed (default Confirm; 'none' = the time runs out). */
+  click?: 'confirm' | 'cancel' | 'none';
 }
 
 /** Just enough of a ChatInputCommandInteraction for the media/lookup handlers — records everything they send. */
@@ -71,7 +73,19 @@ export function fakeInteraction(o: FakeOpts = {}) {
     },
     options,
     deferReply: async (p?: { flags?: number }) => { state.deferred = true; state.deferFlags = p?.flags ?? 0; },
-    reply: async (p: unknown) => { state.replied = true; sent.push(p); return { id: `m${++msgSeq}` }; },
+    // A reply with buttons can be answered: `click` says which one gets pressed ('none' = nobody answers before the timeout).
+    reply: async (p: any) => {
+      state.replied = true; sent.push(p);
+      const message = {
+        awaitMessageComponent: async () => {
+          if ((o.click ?? 'confirm') === 'none') throw new Error('time');
+          const want = o.click === 'cancel' ? 'Cancel' : 'Confirm';
+          const b = (p?.components ?? []).flatMap((c: any) => c.components ?? []).find((x: any) => x?.data?.label === want);
+          return { customId: b.data.custom_id, user: interaction.user, update: async (u: unknown) => { sent.push(u); } };
+        },
+      };
+      return { id: `m${++msgSeq}`, resource: { message } };
+    },
     editReply: async (p: unknown) => { sent.push(p); return { id: `m${++msgSeq}` }; },
     followUp: async (p: unknown) => { sent.push(p); return {}; },
     deleteReply: async () => { deleted = true; },

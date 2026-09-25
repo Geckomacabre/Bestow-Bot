@@ -24,7 +24,7 @@ const del = (table: string, label: string, ...columns: string[]): PrivacyEntry =
 
 export const REGISTRY: PrivacyEntry[] = [
   // Economy
-  del('economy', 'Balance, bank and lifetime totals'), del('eco_ledger', 'Transaction history'), del('eco_bank_ledger', 'Bank history'), del('eco_bonus_claim', 'One-time bonuses claimed'),
+  del('economy', 'Balance, bank and lifetime totals'), del('eco_ledger', 'Transaction history'), del('eco_bank_ledger', 'Bank history'), del('eco_bonus_claim', 'One-time bonuses claimed'), del('eco_streaks', 'Daily reward streak'),
   del('eco_business', 'Businesses'), del('eco_lab', 'Labs'), del('eco_investment', 'Investments'), del('eco_quest', 'Quests'), del('eco_quest_stats', 'Quest stats'),
   del('eco_case', 'Cases'), del('eco_card', 'Trading cards', 'owner_id'), del('eco_wallet_style', 'Wallet card style'),
   del('eco_company_member', 'Company memberships'), del('eco_company_contrib', 'Company contributions'), del('eco_company_log', 'Company activity'), del('eco_company_invite', 'Company invites'), del('eco_company_request', 'Company join requests'),

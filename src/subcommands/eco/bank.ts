@@ -1,4 +1,6 @@
 import type { Sub } from '../../framework/group.js';
+import { confirmPanel } from '../../framework/confirm.js';
+import { cv2Panel } from '../../utils/components.js';
 import { BANK_SELL_REFUND, BANK_SPACE_PRICE, BANK_START_CAP, bankDeposit, bankSell, bankUpgrade, bankWithdraw, getEco } from '../../eco/core.js';
 import { AMOUNT_HELP, Colors, cv2Box, cv2Err, ecoCtx, parseAmount } from './ui.js';
 
@@ -41,9 +43,19 @@ export const bankSubs: Sub[] = [
     async run(i) {
       const ctx = await ecoCtx(i);
       const spaces = i.options.getInteger('amount', true);
-      const r = await bankUpgrade(ctx.guildId, ctx.userId, spaces);
-      if (!r.ok) { await i.reply(cv2Err(`❌ ${spaces.toLocaleString()} spaces cost **${ctx.fmt(r.cost)}** and you only have ${ctx.fmt(r.cash)} in cash.`)); return; }
-      await i.reply(cv2Box(`🏦 **Bought ${spaces.toLocaleString()} bank space** for ${ctx.fmt(r.cost)}\nCapacity: **${r.bankCap.toLocaleString()}**\nCash: **${ctx.fmt(r.cash)}**`, Colors.Gold));
+      const cost = spaces * BANK_SPACE_PRICE, cash = (await getEco(ctx.guildId, ctx.userId)).balance;
+      if (cash < cost) { await i.reply(cv2Err(`❌ ${spaces.toLocaleString()} spaces cost **${ctx.fmt(cost)}** and you only have ${ctx.fmt(cash)} in cash.`)); return; }
+      // Heist asks first: only the buyer can press Confirm, and nothing is spent until they do.
+      const click = await confirmPanel(i, {
+        userId: ctx.userId, header: 'Confirm bank space purchase',
+        body: `Buy ${ctx.fmt(spaces)} of bank space for ${ctx.fmt(cost)}?`,
+        cancelHeader: 'Purchase cancelled', cancelBody: 'You didn\'t buy any bank space.',
+      });
+      if (!click) return;
+      const r = await bankUpgrade(ctx.guildId, ctx.userId, spaces); // the cash may have been spent while the question was open
+      await click.update(r.ok
+        ? cv2Panel('Bank space bought', `Bought ${ctx.fmt(spaces)} of bank space. New capacity: ${ctx.fmt(r.bankCap)}.`)
+        : cv2Panel('Purchase failed', `${spaces.toLocaleString()} spaces cost ${ctx.fmt(r.cost)} and you only have ${ctx.fmt(r.cash)} in cash.`));
     },
   },
   {

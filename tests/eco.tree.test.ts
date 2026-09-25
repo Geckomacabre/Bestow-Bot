@@ -73,7 +73,7 @@ describe('Premium commands', () => {
     const u = uid(); Bun.env.OWNER_IDS = u;
     await run({ userId: u, sub: 'message', group: 'wallet-edit', options: { text: 'welcome' } });
     expect((await getWalletStyle(u)).message).toBe('welcome');
-    const m = await run({ userId: u, sub: 'monthly' }); expect(m.text).toContain('Monthly Reward'); expect(await cash(u)).toBeGreaterThan(0);
+    const m = await run({ userId: u, sub: 'monthly' }); expect(m.text).toContain('Claimed your monthly reward'); expect(await cash(u)).toBeGreaterThan(0);
   });
 });
 
