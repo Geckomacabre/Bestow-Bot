@@ -83,6 +83,7 @@ describe('other commands with no guild', () => {
       ['math', null, null, { expression: '2+2' }], ['color', null, 'inspect', { color: 'coral' }], ['qr', null, 'generate', { text: 'hi' }], ['asciify', null, null, { text: 'hi' }],
       ['ship', null, null, {}], ['juul', null, 'hit', {}], ['juul', null, 'stats', {}], ['rating', null, 'rate', { thing: 'pizza' }], ['say', null, null, { text: 'hello' }],
       ['about', null, null, {}], ['help', null, null, {}],
+      ['8ball', null, null, { question: 'will it work?' }], ['base64', null, null, { action: 'encode', text: 'hello' }], ['ping', null, null, {}],
     ];
     for (const [name, group, sub, options] of cases) {
       const users = name === 'ship' ? { user: { id: 'a1', username: 'A' }, other: { id: 'b1', username: 'B' } } : undefined;

@@ -5,8 +5,8 @@ const Base64: Command = {
   data: new SlashCommandBuilder()
     .setName('base64')
     .setDescription('Encode or decode base64')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addStringOption(o => o.setName('action').setDescription('Encode or decode').setRequired(true).setChoices(
       { name: 'Encode', value: 'encode' }, { name: 'Decode', value: 'decode' }
     ))

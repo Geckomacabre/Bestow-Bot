@@ -12,8 +12,8 @@ const Avatar: Command = {
   data: new SlashCommandBuilder()
     .setName('avatar')
     .setDescription("Get a user's avatar")
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addUserOption(o => o.setName('user').setDescription('User (defaults to you)'))
     .addBooleanOption(o => o.setName('server').setDescription('Show server-specific avatar if set (default: false)')) as any,
 

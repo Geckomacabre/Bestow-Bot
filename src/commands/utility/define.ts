@@ -5,8 +5,8 @@ const Define: Command = {
   data: new SlashCommandBuilder()
     .setName('define')
     .setDescription('Get the dictionary definition of a word')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addStringOption(o => o.setName('word').setDescription('Word to define').setRequired(true)) as any,
 
   async run(interaction: ChatInputCommandInteraction) {

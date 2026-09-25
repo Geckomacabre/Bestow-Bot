@@ -12,8 +12,8 @@ const Banner: Command = {
   data: new SlashCommandBuilder()
     .setName('banner')
     .setDescription("Get a user's profile banner")
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addUserOption(o => o.setName('user').setDescription('User (defaults to you)'))
     .addBooleanOption(o => o.setName('server').setDescription('Show server-specific banner if set (default: false)')) as any,
 

@@ -5,8 +5,8 @@ const Ping: Command = {
   data: new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Check bot latency')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM]) as any,
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]) as any,
 
   async run(interaction: ChatInputCommandInteraction) {
     const sent = await interaction.reply({ content: 'Pinging...', fetchReply: true });

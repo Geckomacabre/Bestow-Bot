@@ -9,10 +9,10 @@ import { generateQuote } from '../../utils/quote.js';
 
 const MakeAQuote: Command = {
   data: new ContextMenuCommandBuilder()
-    .setName('Make it a Quote')
+    .setName('Quote Message')
     .setType(ApplicationCommandType.Message)
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM]) as any,
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]) as any,
 
   async runMessage(interaction: MessageContextMenuCommandInteraction) {
     const msg = interaction.targetMessage;

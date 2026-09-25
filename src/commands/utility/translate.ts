@@ -19,8 +19,8 @@ const Translate: Command = {
   data: new SlashCommandBuilder()
     .setName('translate')
     .setDescription('Translate text between languages')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addStringOption(o => o.setName('text').setDescription('Text to translate').setRequired(true))
     .addStringOption(o =>
       o.setName('to').setDescription('Target language (default: English)')

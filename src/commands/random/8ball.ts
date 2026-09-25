@@ -19,8 +19,8 @@ const EightBall: Command = {
   data: new SlashCommandBuilder()
     .setName('8ball')
     .setDescription('Ask the magic 8-ball a question')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addStringOption(o => o.setName('question').setDescription('Your question').setRequired(true)),
 
   async run(interaction: ChatInputCommandInteraction) {
