@@ -1,9 +1,9 @@
-import { describe, expect, test } from 'bun:test';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { afterEach, describe, expect, test } from 'bun:test';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
-import { batteryEmoji, batteryLevel, batterySteps, juulEmoji, juulIcons } from '../src/fun/juulEmoji';
+import { BATTERY_LEVELS, batteryEmoji, batteryLevel, batteryPercent, juulEmoji, juulIcons, resetJuulEmojis, syncJuulEmojis } from '../src/fun/juulEmoji';
 
 /** A stand-in full battery: black outline, white gap, green fill in rows 32–107. */
 function battery(): Buffer {
@@ -18,40 +18,71 @@ async function pixel(png: Buffer, x: number, y: number) {
   g.drawImage(img, 0, 0);
   return Array.from(g.getImageData(x, y, 1, 1).data);
 }
+const greenPixels = async (png: Buffer) => {
+  const img = await loadImage(png), c = createCanvas(img.width, img.height), g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, img.width, img.height).data; let n = 0;
+  for (let k = 0; k < d.length; k += 4) if (d[k + 3]! > 30 && d[k + 1]! - Math.max(d[k]!, d[k + 2]!) > 12) n++;
+  return n;
+};
+
+afterEach(() => resetJuulEmojis());
 
 describe('juul battery icons', () => {
-  test('bars per battery level: flat is empty, any charge shows at least one bar', () => {
-    expect([0, 1, 10, 11, 20, 21, 30, 47, 50].map(batterySteps)).toEqual([0, 1, 1, 2, 2, 3, 3, 5, 5]);
+  test('one icon per percent: flat is 0%, any charge shows at least 1%, full is 100%', () => {
+    expect(BATTERY_LEVELS).toBe(100);
+    expect([0, 1, 10, 25, 49, 50, 99].map(batteryPercent)).toEqual([0, 2, 20, 50, 98, 100, 100]);
+    expect(batteryPercent(-5)).toBe(0);
   });
   test('until the art is synced, plain emoji stand in', () => {
     expect(juulEmoji()).toBe('🖊️');
     expect([batteryEmoji(50), batteryEmoji(15), batteryEmoji(5), batteryEmoji(0)]).toEqual(['🟩', '🟨', '🟥', '🟥']);
   });
-  test('levels are cut from the full battery: emptied from the top, amber at two bars, red at one', async () => {
+  test('levels are cut from the full battery: emptied from the top, amber up to 40%, red up to 20%', async () => {
     const full = battery();
-    const three = await batteryLevel(full, 3);
-    expect(await pixel(three, 64, 36)).toEqual([255, 255, 255, 255]); // top of the fill → the white gap
-    expect(await pixel(three, 64, 100)).toEqual([31, 200, 115, 255]); // bottom keeps the art's green
-    expect((await pixel(await batteryLevel(full, 2), 64, 100)).slice(0, 3)).toEqual([245, 197, 24]);
-    expect((await pixel(await batteryLevel(full, 1), 64, 104)).slice(0, 3)).toEqual([229, 72, 77]);
+    const sixty = await batteryLevel(full, 60);
+    expect(await pixel(sixty, 64, 36)).toEqual([255, 255, 255, 255]); // top of the fill → the white gap
+    expect(await pixel(sixty, 64, 100)).toEqual([31, 200, 115, 255]); // bottom keeps the art's green
+    expect((await pixel(await batteryLevel(full, 40), 64, 100)).slice(0, 3)).toEqual([245, 197, 24]);
+    expect((await pixel(await batteryLevel(full, 41), 64, 100)).slice(0, 3)).toEqual([31, 200, 115]);
+    expect((await pixel(await batteryLevel(full, 20), 64, 104)).slice(0, 3)).toEqual([229, 72, 77]);
+    expect((await pixel(await batteryLevel(full, 21), 64, 104)).slice(0, 3)).toEqual([245, 197, 24]);
     const empty = await batteryLevel(full, 0);
     expect(await pixel(empty, 64, 100)).toEqual([255, 255, 255, 255]);
     expect(await pixel(empty, 34, 60)).toEqual([17, 17, 17, 255]); // the outline is untouched
   });
-  test('icons come only from the art in the folder: none without it, juul + six levels with it', async () => {
+  test('the cut line falls between pixel rows, so neighbouring percents are different images', async () => {
+    const full = battery();
+    const levels = await Promise.all(Array.from({ length: 101 }, (_, p) => batteryLevel(full, p)));
+    // 76 rows of fill can't give 101 whole-row images; the blended boundary row is what separates them.
+    expect(new Set(levels.map(b => b.toString('base64'))).size).toBeGreaterThanOrEqual(95);
+    // 47% puts the cut line a quarter of the way down row 72: that row is part green, part gap (white).
+    const edge = await pixel(await batteryLevel(full, 47), 64, 72);
+    expect(edge[1]).toBeGreaterThan(200); expect(edge[0]).toBeGreaterThan(31); expect(edge[0]).toBeLessThan(255);
+  });
+  test('the levels are monotonic: more charge never shows less green', async () => {
+    const full = battery(); let last = -1;
+    for (const p of [0, 10, 25, 40, 55, 70, 85, 100]) { const n = await greenPixels(await batteryLevel(full, p === 100 ? 100 : p)); expect(n).toBeGreaterThanOrEqual(last); last = n; }
+  });
+  test('the battery.png shipped in the repo is cut cleanly: an empty battery has no green left over', async () => {
+    const art = await readFile(path.resolve(import.meta.dir, '../src/assets/images/juul/battery.png'));
+    expect(await greenPixels(art)).toBeGreaterThan(300);
+    expect(await greenPixels(await batteryLevel(art, 0))).toBeLessThan(12); // was ~270 before the fringe was handled
+    expect(await greenPixels(await batteryLevel(art, 100))).toBe(await greenPixels(art)); // full is the art itself, byte for byte in effect
+  });
+  test('icons come only from the art in the folder: none without it, juul + 101 levels with it', async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'juul-art-'));
     expect(await juulIcons(dir)).toBeNull();
     const juul = createCanvas(64, 64).toBuffer('image/png');
     await writeFile(path.join(dir, 'juul.png'), juul); await writeFile(path.join(dir, 'battery.png'), battery());
     const icons = (await juulIcons(dir))!;
-    expect(icons.map(i => i.name.replace(/_[0-9a-f]{6}$/, ''))).toEqual(['juul', 'battery0', 'battery1', 'battery2', 'battery3', 'battery4', 'battery5']);
+    expect(icons).toHaveLength(102);
+    expect(icons.map(i => i.name.replace(/_[0-9a-f]{6}$/, ''))).toEqual(['juul', ...Array.from({ length: 101 }, (_, p) => `battery${p}`)]);
+    for (const i of icons) expect(i.name.length).toBeLessThanOrEqual(32); // Discord's emoji name limit
     expect(icons[0]!.data.equals(juul)).toBe(true); // the juul art is uploaded untouched
-    expect(icons[6]!.data.equals(battery())).toBe(true); // and so is the full battery
-  });
+    expect(icons[101]!.data.equals(battery())).toBe(true); // and so is the full battery (100%)
+  }, 30_000);
 });
-
-import { afterEach } from 'bun:test';
-import { resetJuulEmojis, syncJuulEmojis } from '../src/fun/juulEmoji';
 
 /** Just enough of a Client for the emoji sync: the application's emoji list, and creating one. */
 function fakeClient(existing: { id: string; name: string }[] = []) {
@@ -60,7 +91,6 @@ function fakeClient(existing: { id: string; name: string }[] = []) {
   const client = { application: { emojis: { fetch: async () => have, create: async (o: { name: string }) => { created.push(o); return { id: String(1000 + created.length - 1), name: o.name }; } } } };
   return { client: client as never, created, deleted };
 }
-afterEach(() => resetJuulEmojis());
 
 describe('juul.png on its own', () => {
   test('is enough: only the juul icon is uploaded, the battery keeps its squares', async () => {
@@ -93,4 +123,28 @@ describe('juul.png on its own', () => {
     const img = await loadImage(icons[0]!.data);
     expect(img.width).toBeGreaterThan(8); expect(img.height).toBeGreaterThan(8);
   });
+});
+
+describe('with juul.png and battery.png', () => {
+  test('all 102 icons are uploaded, the juul icon works straight away, and every battery percent gets its own emoji', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'juul-both-'));
+    await writeFile(path.join(dir, 'juul.png'), createCanvas(40, 36).toBuffer('image/png')); await writeFile(path.join(dir, 'battery.png'), battery());
+    const { client, created } = fakeClient();
+    await syncJuulEmojis(client, dir);
+    expect(created).toHaveLength(102);
+    expect(juulEmoji()).toMatch(/^<:juul_[0-9a-f]{6}:1000>$/);
+    // 50/50 is 100% → the last emoji created; 25/50 is 50% → the 51st battery emoji.
+    expect(batteryEmoji(50)).toBe(`<:${created[101]!.name}:1101>`);
+    expect(batteryEmoji(25)).toBe(`<:${created[51]!.name}:1051>`);
+    expect(batteryEmoji(0)).toBe(`<:${created[1]!.name}:1001>`);
+  }, 30_000);
+  test('a sync that is cut short keeps the juul icon and carries on with what is missing next time', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'juul-cut-'));
+    await writeFile(path.join(dir, 'juul.png'), createCanvas(40, 36).toBuffer('image/png')); await writeFile(path.join(dir, 'battery.png'), battery());
+    const made: string[] = [];
+    const client = { application: { emojis: { fetch: async () => new Map(), create: async (o: { name: string }) => { if (made.length >= 5) throw new Error('rate limited'); made.push(o.name); return { id: String(made.length), name: o.name }; } } } } as never;
+    await expect(syncJuulEmojis(client, dir)).rejects.toThrow('rate limited');
+    expect(juulEmoji()).toMatch(/^<:juul_[0-9a-f]{6}:1>$/); // the juul icon is already in use
+    expect(batteryEmoji(50)).toBe('🟩'); // the batteries stay on squares until all of them are up
+  }, 30_000);
 });
