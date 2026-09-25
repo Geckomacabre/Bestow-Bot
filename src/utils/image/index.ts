@@ -40,8 +40,9 @@ export async function getImageBuffer(interaction: ChatInputCommandInteraction): 
   if (selected) return fetchUrl(selected);
 
   if (interaction.channel && 'messages' in interaction.channel) {
-    const messages = await interaction.channel.messages.fetch({ limit: 20 });
-    for (const [, msg] of messages) {
+    // In a chat the bot isn't part of (a group DM, a server it isn't in) it can't read messages: fall through to "no image found".
+    const messages = await interaction.channel.messages.fetch({ limit: 20 }).catch(() => null);
+    for (const [, msg] of messages ?? []) {
       for (const att of msg.attachments.values()) {
         if (IMAGE_MIME.has(att.contentType ?? '')) return fetchUrl(att.url);
       }

@@ -1,6 +1,9 @@
-import { ButtonInteraction, Client, MessageFlags } from 'discord.js';
+import { ActionRowBuilder, ButtonInteraction, Client, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, type ModalSubmitInteraction } from 'discord.js';
 import { EventModule } from '../feature';
-import { activeGames, castVoteSkip, checkGuess, NEXT_ROUND_PREFIX, nextRoundButton, requestHint, resolveGame, restoreActiveGames, roundBusy, startGame, type MediaType } from '../../utils/mediagame';
+import {
+  activeGames, castVoteSkip, checkGuess, GUESS_BUTTON, GUESS_INPUT, GUESS_MODAL, INTERACTIVE_NEXT_PREFIX, interactiveNextButton, NEXT_ROUND_PREFIX, nextRoundButton,
+  requestHint, resolveGame, restoreActiveGames, roundBusy, startGame, startInteractiveRound, submitGuess, type InteractiveHost, type MediaType,
+} from '../../utils/mediagame';
 import { awardBonusXp } from '../../utils/xpBonus';
 import * as db from '../../utils/db';
 import { recordGameResult } from '../../utils/db';
@@ -91,8 +94,14 @@ const mediaguessModule: EventModule = {
     },
 
     interactionCreate: async ({ data: [interaction] }) => {
+      if (interaction.isModalSubmit()) {
+        if (interaction.customId === GUESS_MODAL) await guessFromModal(interaction);
+        return;
+      }
       if (!interaction.isButton()) return;
       const btn = interaction as ButtonInteraction;
+      if (btn.customId === GUESS_BUTTON) return openGuessBox(btn);
+      if (btn.customId.startsWith(INTERACTIVE_NEXT_PREFIX)) return nextInteractiveRound(btn);
       if (btn.customId.startsWith(NEXT_ROUND_PREFIX)) return nextRound(btn);
       if (btn.customId !== 'mg_hint' && btn.customId !== 'mg_voteskip') return;
 
@@ -111,7 +120,12 @@ const mediaguessModule: EventModule = {
         return;
       }
 
-      // mg_voteskip
+      // mg_voteskip — in an interactive round anyone can play, but only the person who started it can give up on it.
+      const live = activeGames.get(btn.channelId);
+      if (live?.interactive && !live.answered && btn.user.id !== live.interactive.ownerId) {
+        await btn.reply({ content: `⏭️ Only <@${live.interactive.ownerId}> can skip this round — keep guessing!`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+        return;
+      }
       const { content, ephemeral } = await castVoteSkip(btn.channelId, btn.user.id, btn.client);
       await btn.reply({ content, flags: ephemeral ? MessageFlags.Ephemeral : undefined });
     },
@@ -119,6 +133,47 @@ const mediaguessModule: EventModule = {
 };
 
 export default mediaguessModule;
+
+const NO_ROUND = '❌ There is no active guessing game in this channel.';
+
+/** The Guess button: opens a box to type the answer in (the bot can't read chat here, so guesses arrive as form submissions). */
+async function openGuessBox(btn: ButtonInteraction): Promise<void> {
+  const live = activeGames.get(btn.channelId);
+  if (!live || live.answered) { await btn.reply({ content: NO_ROUND, flags: MessageFlags.Ephemeral }); return; }
+  await btn.showModal(new ModalBuilder().setCustomId(GUESS_MODAL).setTitle(`Guess the ${live.type === 'tv' ? 'show' : live.type === 'music' ? 'song' : live.type}`).addComponents(
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(GUESS_INPUT).setLabel('Your guess').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(100))));
+}
+
+/** A submitted guess: only the guesser sees whether it was close; a correct one rewrites the round for everyone. */
+async function guessFromModal(modal: ModalSubmitInteraction): Promise<void> {
+  const name = modal.member && 'displayName' in modal.member ? (modal.member.displayName as string) : modal.user.globalName ?? modal.user.username;
+  const result = await submitGuess(modal.channelId ?? '', modal.fields.getTextInputValue(GUESS_INPUT), { id: modal.user.id, name }, modal.client);
+  const say = { 'no-round': NO_ROUND, correct: '✅ That\'s it — you got it!', very_close: '‼️ Very close!', close: '❗ Close — keep going!', wrong: '❌ Not quite — try again!' }[result];
+  await modal.reply({ content: say, flags: MessageFlags.Ephemeral });
+}
+
+/** Where an interactive round posts and edits: this interaction's own reply and webhook (valid for 15 minutes). */
+function interactiveHost(btn: ButtonInteraction): InteractiveHost {
+  return {
+    client: btn.client, channelId: btn.channelId, userId: btn.user.id,
+    send: payload => btn.followUp(payload).then(m => ({ id: m.id })),
+    edit: (id, payload) => btn.webhook.editMessage(id, payload),
+  };
+}
+
+/** "Next round" under a finished interactive round: take the button off, and post a fresh round as a new message. */
+async function nextInteractiveRound(btn: ButtonInteraction): Promise<void> {
+  const type = btn.customId.slice(INTERACTIVE_NEXT_PREFIX.length) as MediaType;
+  if (!['movie', 'tv', 'game', 'music'].includes(type)) return;
+  if (roundBusy(btn.channelId)) { await btn.reply({ content: '❌ There\'s already a round going — make a guess, or use **Skip**.', flags: MessageFlags.Ephemeral }); return; }
+  const missing = keyMissing(type);
+  if (missing) { await btn.reply({ content: missing, flags: MessageFlags.Ephemeral }); return; }
+  await btn.update({ components: [] });
+  if (!(await startInteractiveRound(interactiveHost(btn), type).catch(() => false))) {
+    await btn.editReply({ components: [interactiveNextButton(type)] }).catch(() => {}); // put the button back so they can retry
+    await btn.followUp({ content: '😵 I couldn\'t load a new round just now — try again in a moment.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  }
+}
 
 /** "Next round" under a finished DM round: take the button off that message and post a fresh round of the same kind. */
 async function nextRound(btn: ButtonInteraction): Promise<void> {

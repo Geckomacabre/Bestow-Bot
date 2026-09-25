@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, Colors, EmbedBuilder, type SendableChannels } from 'discord.js';
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, Colors, EmbedBuilder, escapeMarkdown, type SendableChannels } from 'discord.js';
 import * as db from './db.js';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -53,6 +53,21 @@ export interface GameState {
   messageId: string | null;
   startedAt: number;
   answered: boolean;
+  /**
+   * Set for a round run entirely through interactions — in a group DM, or anywhere the bot can neither read nor post in the channel.
+   * Guesses come from a pop-up box, the round message is edited through the command's own webhook, and it ends by itself before
+   * that webhook's 15 minutes run out.
+   */
+  interactive?: { ownerId: string; edit: (payload: RoundEdit) => Promise<unknown>; timer: ReturnType<typeof setTimeout> };
+}
+
+/** How a finished interactive round rewrites its message. */
+export interface RoundEdit {
+  content?: string;
+  embeds?: EmbedBuilder[];
+  files?: AttachmentBuilder[];
+  attachments?: never[];
+  components?: ActionRowBuilder<ButtonBuilder>[];
 }
 
 export const activeGames = new Map<string, GameState>();
@@ -115,6 +130,7 @@ function scheduleSkipAnnouncement(state: GameState, client: Client): void {
 // discarding it — never awaited on the hot path, a missed write just means
 // the round falls back to a fresh start on the next restart.
 function persistRound(state: GameState): void {
+  if (state.interactive) return; // its interaction can't outlive a restart, so there is nothing to resume
   db.saveMediaGuessRound({
     channel_id: state.channelId,
     guild_id: state.guildId ?? '', // '' marks a DM round (the column is NOT NULL)
@@ -958,12 +974,29 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
 // ever has one active round, so nothing extra needs to survive in the id.
 // That also means these buttons keep working indefinitely, including across
 // restarts, without any collector/timeout tied to the message.
-function buildRoundButtons(dm: boolean): ActionRowBuilder<ButtonBuilder> {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+/** guild = a channel an admin set up (guesses are typed, skips are votes); dm = a solo round in a DM with the bot (guesses are typed); interactive = guesses come from a pop-up box. */
+export type RoundMode = 'guild' | 'dm' | 'interactive';
+
+function buildRoundButtons(mode: RoundMode): ActionRowBuilder<ButtonBuilder> {
+  const row = new ActionRowBuilder<ButtonBuilder>();
+  if (mode === 'interactive') row.addComponents(new ButtonBuilder().setCustomId(GUESS_BUTTON).setLabel('Guess').setEmoji('✏️').setStyle(ButtonStyle.Success));
+  return row.addComponents(
     new ButtonBuilder().setCustomId('mg_hint').setLabel('Hint').setEmoji('💡').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('mg_voteskip').setLabel(dm ? 'Skip' : 'Vote Skip').setEmoji('⏭️').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('mg_voteskip').setLabel(mode === 'guild' ? 'Vote Skip' : 'Skip').setEmoji('⏭️').setStyle(ButtonStyle.Secondary),
   );
 }
+
+/** Custom ids of the interactive round's Guess button and its pop-up box. */
+export const GUESS_BUTTON = 'mg_guess';
+export const GUESS_MODAL = 'mg_guess_modal';
+export const GUESS_INPUT = 'mg_guess_text';
+/** Custom id prefix of the "Next round" button under a finished interactive round. */
+export const INTERACTIVE_NEXT_PREFIX = 'mg_inext:';
+export const interactiveNextButton = (type: MediaType) => new ActionRowBuilder<ButtonBuilder>().addComponents(
+  new ButtonBuilder().setCustomId(`${INTERACTIVE_NEXT_PREFIX}${type}`).setLabel('Next round').setEmoji('▶️').setStyle(ButtonStyle.Primary),
+);
+/** An interactive round ends by itself after this long — a minute inside the 15 minutes its reply stays editable. */
+export const INTERACTIVE_ROUND_MS = 14 * 60_000;
 
 const TYPE_LABEL: Record<MediaType, string> = {
   movie: '🎬 Movie Guessing Game', tv: '📺 TV Show Guessing Game',
@@ -1041,6 +1074,49 @@ export async function startGame(
   }
 }
 
+/** A round's message: the still (or the song clip), how to answer in this mode, and the buttons. Null when a song's clip can't be prepared. */
+export interface RoundPayload { embeds: EmbedBuilder[]; files?: AttachmentBuilder[]; components: ActionRowBuilder<ButtonBuilder>[] }
+
+export async function buildRound(type: MediaType, media: MediaEntry, mode: RoundMode): Promise<RoundPayload | null> {
+  const typeStr = typeNoun(type);
+  const isMusic = type === 'music';
+  const what = isMusic ? `${ROUND_CLIP_SEC}-second clip` : 'still';
+  const how = mode === 'interactive'
+    ? `Press **Guess** to type your answer — anyone here can play!\n` +
+      `> 💡 **Hint** — Reveal the next clue\n` +
+      `> ⏭️ **Skip** — The person who started the round can give up and see the answer\n` +
+      `> ⌛ The round ends by itself after ${INTERACTIVE_ROUND_MS / 60_000} minutes`
+    : mode === 'dm'
+      ? `Type your answer here, or use the buttons below!\n` +
+        `> 💡 **Hint** — Reveal the next clue\n` +
+        `> ⏭️ **Skip** — Give up and see the answer`
+      : `Type your answer in chat, or use the buttons below!\n` +
+        `> 💡 **Hint** / \`/community hint\` — Reveal the next clue for everyone *(shared, 60s cooldown between hints)*\n` +
+        `> ⏭️ **Vote Skip** / \`/community voteskip\` — Vote to skip *(2 votes needed, available after 5 min)*`;
+  const embed = new EmbedBuilder()
+    .setColor(TYPE_COLOR[type])
+    .setTitle(TYPE_LABEL[type])
+    .setDescription(`**Can you guess the ${typeStr} from this ${what}?**\n\n${how}`)
+    .setFooter({ text: `Good luck! ${type === 'music' ? '🎧' : type === 'game' ? '🎮' : '🍿'}` });
+  const components = [buildRoundButtons(mode)];
+
+  if (isMusic) {
+    // No image upfront for music — the album art is a late hint, not a giveaway.
+    // Only the first ROUND_CLIP_SEC seconds are posted publicly — the full clue
+    // needs to come from guessing, not from getting the whole song for free.
+    // discord.js infers the attachment's audio player from the file extension.
+    const full = media.audioPreview ? await downloadPreview(media.audioPreview) : null;
+    const buf = full ? await trimAudio(full, 0, ROUND_CLIP_SEC) : null;
+    if (!buf) {
+      console.warn('[mediaguess] Could not download/trim Deezer preview clip — skipping this pick');
+      return null;
+    }
+    return { embeds: [embed], files: [new AttachmentBuilder(buf, { name: 'preview.mp3' })], components };
+  }
+  embed.setImage(media.stills[0]!);
+  return { embeds: [embed], components };
+}
+
 async function postRound(guildId: string | null, channelId: string, type: MediaType, client: Client): Promise<boolean> {
   const media = await fetchEntry(type, getExcludeIds(channelId));
   if (!media) {
@@ -1052,43 +1128,9 @@ async function postRound(guildId: string | null, channelId: string, type: MediaT
   const channel = await sendable(client, channelId);
   if (!channel) return false;
 
-  const typeStr = typeNoun(type);
-  const isMusic = type === 'music';
-  const dm = !guildId;
-
-  const embed = new EmbedBuilder()
-    .setColor(TYPE_COLOR[type])
-    .setTitle(TYPE_LABEL[type])
-    .setDescription(
-      `**Can you guess the ${typeStr} from this ${isMusic ? `${ROUND_CLIP_SEC}-second clip` : 'still'}?**\n\n` +
-      (dm
-        ? `Type your answer here, or use the buttons below!\n` +
-          `> 💡 **Hint** — Reveal the next clue\n` +
-          `> ⏭️ **Skip** — Give up and see the answer`
-        : `Type your answer in chat, or use the buttons below!\n` +
-          `> 💡 **Hint** / \`/community hint\` — Reveal the next clue for everyone *(shared, 60s cooldown between hints)*\n` +
-          `> ⏭️ **Vote Skip** / \`/community voteskip\` — Vote to skip *(2 votes needed, available after 5 min)*`),
-    )
-    .setFooter({ text: `Good luck! ${type === 'music' ? '🎧' : type === 'game' ? '🎮' : '🍿'}` });
-
-  let msg;
-  if (isMusic) {
-    // No image upfront for music — the album art is a late hint, not a giveaway.
-    // Only the first ROUND_CLIP_SEC seconds are posted publicly — the full clue
-    // needs to come from guessing, not from getting the whole song for free.
-    // discord.js infers the attachment's audio player from the file extension.
-    const full = media.audioPreview ? await downloadPreview(media.audioPreview) : null;
-    const buf = full ? await trimAudio(full, 0, ROUND_CLIP_SEC) : null;
-    if (!buf) {
-      console.warn('[mediaguess] Could not download/trim Deezer preview clip — skipping this pick');
-      return false;
-    }
-    const attachment = new AttachmentBuilder(buf, { name: 'preview.mp3' });
-    msg = await channel.send({ embeds: [embed], files: [attachment], components: [buildRoundButtons(dm)] }).catch(() => null);
-  } else {
-    embed.setImage(media.stills[0]!);
-    msg = await channel.send({ embeds: [embed], components: [buildRoundButtons(dm)] }).catch(() => null);
-  }
+  const payload = await buildRound(type, media, guildId ? 'guild' : 'dm');
+  if (!payload) return false;
+  const msg = await channel.send(payload).catch(() => null);
   if (!msg) return false;
 
   const state: GameState = {
@@ -1114,7 +1156,7 @@ export async function resolveGame(
   state: GameState,
   client: Client,
   winner: { id: string; name: string; xpGained?: number } | null,
-  reason: 'correct' | 'skip',
+  reason: 'correct' | 'skip' | 'timeout',
 ): Promise<void> {
   // Atomic claim — delete first so any concurrent resolveGame call sees undefined and exits.
   if (activeGames.get(state.channelId) !== state) return;
@@ -1122,6 +1164,7 @@ export async function resolveGame(
   db.deleteMediaGuessRound(state.channelId).catch(() => {});
   cancelSkipTimer(state.channelId);
   state.answered = true;
+  if (state.interactive) { clearTimeout(state.interactive.timer); await finishInteractive(state, winner, reason); return; }
   const typeStr = typeNoun(state.type);
   const channel = await sendable(client, state.channelId);
   if (!channel) return;
@@ -1220,4 +1263,98 @@ export async function castVoteSkip(
   }
   const remaining = VOTES_NEEDED - votes;
   return { content: `🗳️ Skip vote recorded: **${votes}/${VOTES_NEEDED}**. Need **${remaining}** more vote${remaining !== 1 ? 's' : ''} to skip.`, ephemeral: false };
+}
+
+// ─── Interactive rounds ───────────────────────────────────────────────────────
+// For anywhere the bot can't read or post in the channel (a group DM, a server it isn't in): the round is the command's own reply,
+// guesses come from a pop-up box, and everything after that is an edit through the same interaction's webhook.
+
+/** Test hooks: swap how a round's pick is fetched, or how long an interactive round lasts. */
+export const hooks: { fetchEntry?: typeof fetchEntry; roundMs?: number } = {};
+
+export interface InteractiveHost {
+  client: Client;
+  channelId: string;
+  /** Who started the round — the only person who can skip it. */
+  userId: string;
+  /** Posts the round's message and resolves with its id (null if it couldn't be posted). */
+  send: (payload: RoundPayload) => Promise<{ id: string } | null>;
+  /** Edits that message later, through the same interaction's webhook. */
+  edit: (messageId: string, payload: RoundEdit) => Promise<unknown>;
+}
+
+/** Starts an interactive round. Resolves false when nothing could be posted, or a round is already going in the channel. */
+export async function startInteractiveRound(host: InteractiveHost, type: MediaType): Promise<boolean> {
+  const { channelId } = host;
+  if (starting.has(channelId) || activeGames.has(channelId)) return false;
+  starting.add(channelId);
+  try {
+    const media = await (hooks.fetchEntry ?? fetchEntry)(type, getExcludeIds(channelId));
+    if (!media) {
+      console.warn(`[mediaguess] Could not fetch ${type} — check TMDB_API_KEY/RAWG_API_KEY are set`);
+      return false;
+    }
+    recordShown(channelId, media.id);
+    const payload = await buildRound(type, media, 'interactive');
+    if (!payload) return false;
+    const msg = await host.send(payload).catch(() => null);
+    if (!msg) return false;
+    const state: GameState = {
+      guildId: null, channelId, type, media, hintOrder: buildHintOrder(media), hintsUsed: 0, lastHintAt: 0, voteskips: new Set(),
+      messageId: msg.id, startedAt: Date.now(), answered: false,
+      interactive: {
+        ownerId: host.userId,
+        edit: p => host.edit(msg.id, p),
+        timer: setTimeout(() => {
+          if (activeGames.get(channelId) !== state || state.answered) return;
+          state.answered = true;
+          void resolveGame(state, host.client, null, 'timeout').catch(() => {});
+        }, hooks.roundMs ?? INTERACTIVE_ROUND_MS),
+      },
+    };
+    state.interactive!.timer.unref?.(); // never keep the process alive just for a round
+    activeGames.set(channelId, state);
+    return true;
+  } finally {
+    starting.delete(channelId);
+  }
+}
+
+/** A display name that is safe inside the bot's message: no formatting, no masked links, no mentions or pings. */
+export function safeName(name: string): string {
+  return escapeMarkdown(name.replace(/[<>]/g, ''), { maskedLink: true }).replace(/@/g, `@${String.fromCharCode(0x200b)}`).slice(0, 40);
+}
+
+/** Rewrites the round's message with the answer (and a Next round button). */
+async function finishInteractive(state: GameState, winner: { id: string; name: string } | null, reason: 'correct' | 'skip' | 'timeout'): Promise<void> {
+  const { media, type } = state;
+  const lead = reason === 'correct' && winner ? `🎉 **${safeName(winner.name)}** got it!` : reason === 'timeout' ? '⌛ Time\'s up!' : '⏭️ Skipped!';
+  const components = [interactiveNextButton(type)];
+  let edit: RoundEdit;
+  if (type === 'music') {
+    const embed = new EmbedBuilder()
+      .setColor(reason === 'correct' ? Colors.Green : Colors.Greyple)
+      .setTitle(reason === 'correct' ? '🎉 Correct Guess!' : 'The answer')
+      .addFields({ name: 'Song', value: media.title, inline: false }, { name: 'Artist', value: media.director ?? 'Unknown', inline: false });
+    if (media.stills[0]) embed.setThumbnail(media.stills[0]);
+    // The 5-second clip was only ever a snippet: the whole preview is the reveal.
+    const full = media.audioPreview ? await downloadPreview(media.audioPreview) : null;
+    edit = { content: lead, embeds: [embed], files: full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [], attachments: [], components };
+  } else {
+    edit = { content: `${lead} The ${typeNoun(type)} was **${media.title}**.`, embeds: [], attachments: [], components };
+  }
+  await state.interactive!.edit(edit).catch(() => {});
+}
+
+export type GuessResult = 'no-round' | MatchResult;
+
+/** Checks a typed-in guess against the channel's live round; a correct one ends the round (only the first of several at once can win). */
+export async function submitGuess(channelId: string, text: string, who: { id: string; name: string }, client: Client): Promise<GuessResult> {
+  const state = activeGames.get(channelId);
+  if (!state || state.answered) return 'no-round';
+  const result = checkGuess(text.trim(), state.media.title);
+  if (result !== 'correct') return result;
+  state.answered = true; // lock before any await so two correct guesses can't both win
+  await resolveGame(state, client, { id: who.id, name: who.name }, 'correct');
+  return 'correct';
 }

@@ -69,7 +69,7 @@ describe('solo guessing rounds in DMs', () => {
 
   test('Next round refuses while a round is live', async () => {
     const state = round(), replies: any[] = [];
-    const btn: any = { isButton: () => true, customId: 'mg_next:movie', guildId: null, channelId: state.channelId, reply: async (p: any) => { replies.push(p); } };
+    const btn: any = { isModalSubmit: () => false, isButton: () => true, customId: 'mg_next:movie', guildId: null, channelId: state.channelId, reply: async (p: any) => { replies.push(p); } };
     await mediaguessModule.handlers.interactionCreate!({ data: [btn] } as any);
     expect(replies[0].content).toContain('already a round going');
     activeGames.delete(state.channelId);
@@ -84,11 +84,7 @@ describe('/community guess', () => {
     try { await guess.run(i); } finally { for (const k of Object.keys(env)) { if (saved[k] === undefined) delete Bun.env[k]; else Bun.env[k] = saved[k]; } }
     return replies;
   };
-  test('outside my DMs it points you there (and at the server setup in a server)', async () => {
-    expect((await run(InteractionContextType.Guild, true))[0].content).toContain('/server guess setup');
-    const elsewhere = (await run(InteractionContextType.PrivateChannel, false))[0].content;
-    expect(elsewhere).toContain('open a DM'); expect(elsewhere).not.toContain('/server');
-  });
+  // Outside a DM with the bot the round is played with buttons and a pop-up box: see mediaguess.interactive.test.ts.
   test('says so when the mode has no API key', async () => {
     expect((await run(InteractionContextType.BotDM, false, { TMDB_API_KEY: undefined }))[0].content).toContain('TMDB_API_KEY');
   });

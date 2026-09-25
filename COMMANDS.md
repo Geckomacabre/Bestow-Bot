@@ -153,7 +153,7 @@ Levels, reputation, birthdays, reminders and small extras
 - `/community topic` — Get a random conversation topic
 - `/community wouldyourather` — Get a would you rather question
 - `/community gif <query>` — Search for a GIF using Tenor
-- `/community guess <type>` — Play the movie, TV, game or song guessing game in your DMs with me
+- `/community guess <type>` — Play the movie, TV, game or song guessing game right here
 - `/community hint` — Reveal the next clue for the guessing game round in this channel
 - `/community voteskip` — Vote to skip the guessing game round (2 votes, after 5 min; instant in DMs)
 - `/community weekly` — Claim your weekly reward
