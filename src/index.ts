@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import Config from './config';
 import { registerEvents } from './events';
 import { registerFeatures } from './features';
@@ -33,7 +33,9 @@ const intents = [
 ];
 if (Bun.env.ENABLE_PRESENCE_INTENT === '1') intents.push(GatewayIntentBits.GuildPresences); // privileged: streaming detection only
 
-export const Bot = new Client({ intents });
+// Partials.Channel: DM channels aren't cached at startup, and without it discord.js drops messages from uncached DMs (DM chat,
+// solo guessing rounds).
+export const Bot = new Client({ intents, partials: [Partials.Channel] });
 
 await db.initDb();
 registerEvents(Bot);

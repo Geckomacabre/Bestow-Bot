@@ -1,6 +1,6 @@
 import { ButtonInteraction, Client, MessageFlags } from 'discord.js';
 import { EventModule } from '../feature';
-import { activeGames, castVoteSkip, checkGuess, requestHint, resolveGame, restoreActiveGames, startGame } from '../../utils/mediagame';
+import { activeGames, castVoteSkip, checkGuess, NEXT_ROUND_PREFIX, nextRoundButton, requestHint, resolveGame, restoreActiveGames, roundBusy, startGame, type MediaType } from '../../utils/mediagame';
 import { awardBonusXp } from '../../utils/xpBonus';
 import * as db from '../../utils/db';
 import { recordGameResult } from '../../utils/db';
@@ -42,7 +42,8 @@ const mediaguessModule: EventModule = {
   name: 'mediaguess',
   handlers: {
     messageCreate: async ({ data: [message], bot }) => {
-      if (!message.guildId || message.author.bot) return;
+      // Server channels and solo rounds in someone's DMs alike — the channel only matters if it has a live round.
+      if (message.author.bot) return;
       if (!message.content || message.content.startsWith('/') || message.content.length < 2) return;
 
       const state = activeGames.get(message.channelId);
@@ -60,16 +61,19 @@ const mediaguessModule: EventModule = {
         if (state.answered) return;
         state.answered = true;
 
-        const xpGained = await awardBonusXp({
-          guildId: message.guildId,
-          userId: message.author.id,
-          baseAmount: CORRECT_GUESS_XP,
-          client: bot,
-          channelId: message.channelId,
-          isGame: true,
-        });
+        // XP and game stats are per server, so a DM round is just for fun.
+        const xpGained = message.guildId
+          ? await awardBonusXp({
+            guildId: message.guildId,
+            userId: message.author.id,
+            baseAmount: CORRECT_GUESS_XP,
+            client: bot,
+            channelId: message.channelId,
+            isGame: true,
+          })
+          : 0;
 
-        recordGameResult(message.guildId, message.author.id, `mediaguess_${state.type}`, true, 0).catch(() => {});
+        if (message.guildId) recordGameResult(message.guildId, message.author.id, `mediaguess_${state.type}`, true, 0).catch(() => {});
 
         await message.react('✅').catch(() => {});
         // Music folds XP into resolveGame's structured embed instead of a
@@ -89,6 +93,7 @@ const mediaguessModule: EventModule = {
     interactionCreate: async ({ data: [interaction] }) => {
       if (!interaction.isButton()) return;
       const btn = interaction as ButtonInteraction;
+      if (btn.customId.startsWith(NEXT_ROUND_PREFIX)) return nextRound(btn);
       if (btn.customId !== 'mg_hint' && btn.customId !== 'mg_voteskip') return;
 
       if (btn.customId === 'mg_hint') {
@@ -114,6 +119,33 @@ const mediaguessModule: EventModule = {
 };
 
 export default mediaguessModule;
+
+/** "Next round" under a finished DM round: take the button off that message and post a fresh round of the same kind. */
+async function nextRound(btn: ButtonInteraction): Promise<void> {
+  const type = btn.customId.slice(NEXT_ROUND_PREFIX.length) as MediaType;
+  if (btn.guildId || !['movie', 'tv', 'game', 'music'].includes(type)) return;
+  if (roundBusy(btn.channelId)) {
+    await btn.reply({ content: '❌ There\'s already a round going — make a guess, or use **Skip**.', flags: MessageFlags.Ephemeral });
+    return;
+  }
+  const missing = keyMissing(type);
+  if (missing) {
+    await btn.reply({ content: missing, flags: MessageFlags.Ephemeral });
+    return;
+  }
+  await btn.update({ components: [] });
+  if (!(await startGame(null, btn.channelId, type, btn.client).catch(() => false))) {
+    await btn.editReply({ components: [nextRoundButton(type)] }).catch(() => {}); // put the button back so they can retry
+    await btn.followUp({ content: '😵 I couldn\'t load a new round just now — try again in a moment.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  }
+}
+
+/** Why a guessing mode can't run on this bot, or null when its API key is set. */
+export function keyMissing(type: MediaType): string | null {
+  if ((type === 'movie' || type === 'tv') && !Bun.env.TMDB_API_KEY) return '❌ Movie and TV guessing isn\'t set up on this bot yet (it needs a `TMDB_API_KEY`).';
+  if (type === 'game' && !Bun.env.RAWG_API_KEY) return '❌ Video game guessing isn\'t set up on this bot yet (it needs a `RAWG_API_KEY`).';
+  return null;
+}
 
 // Movie/TV need TMDB, games need RAWG — music (Deezer) needs no key at all.
 // Each type is gated independently so a missing key only disables that one

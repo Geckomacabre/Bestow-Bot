@@ -16,6 +16,7 @@ import roll from '../../legacy/utility/roll.js';
 import weather from '../../legacy/utility/weather.js';
 import hint from '../../legacy/mediaguess/hint.js';
 import voteskip from '../../legacy/mediaguess/voteskip.js';
+import guess from '../../legacy/mediaguess/guess.js';
 import { extraClaimSubs } from '../../subcommands/eco/claims.js';
 import { protection } from '../../subcommands/eco/protection.js';
 import shopCommand from '../../subcommands/eco/shop.js';
@@ -27,7 +28,7 @@ export default defineGroup({
   scope: 'anywhere',
   subs: [
     fromCommand(rank), fromCommand(roll), fromCommand(weather), fromCommand(trivia), fromCommand(advice), fromCommand(dadjoke),
-    fromCommand(topic), fromCommand(wouldyourather), fromCommand(tenor, 'gif'), fromCommand(hint), fromCommand(voteskip),
+    fromCommand(topic), fromCommand(wouldyourather), fromCommand(tenor, 'gif'), guess, fromCommand(hint), fromCommand(voteskip),
     ...extraClaimSubs, protection, // economy extras that don't fit under /eco
   ],
   groups: [

@@ -107,7 +107,7 @@ const MediaGuess: Command = {
       cancelSkipTimer(interaction.channelId);
 
       await interaction.reply({
-        content: `🛑 Game stopped. The answer was **${state.media.title}**. Configure a new game with \`/mediaguess setup\`.`,
+        content: `🛑 Game stopped. The answer was **${state.media.title}**. Configure a new game with \`/server guess setup\`.`,
         flags: MessageFlags.Ephemeral,
       });
     }

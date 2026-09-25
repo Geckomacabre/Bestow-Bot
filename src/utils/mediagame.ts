@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, Colors, EmbedBuilder, TextChannel } from 'discord.js';
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, Colors, EmbedBuilder, type SendableChannels } from 'discord.js';
 import * as db from './db.js';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -41,7 +41,8 @@ export interface MediaEntry {
 }
 
 export interface GameState {
-  guildId: string;
+  /** null for a solo round in someone's DMs with the bot: skipping is instant, hints have no cooldown and no XP is at stake. */
+  guildId: string | null;
   channelId: string;
   type: MediaType;
   media: MediaEntry;
@@ -55,6 +56,10 @@ export interface GameState {
 }
 
 export const activeGames = new Map<string, GameState>();
+/** Channels whose next round is being fetched/posted right now, so a double click can't post two rounds. */
+const starting = new Set<string>();
+/** A round is live in the channel, or one is on its way. */
+export const roundBusy = (channelId: string) => activeGames.has(channelId) || starting.has(channelId);
 
 // /voteskip is locked out for the first 5 minutes of a round — gives people
 // a fair shot before the round can be cut short.
@@ -65,6 +70,18 @@ export const VOTES_NEEDED = 2;
 // cancelled if the round resolves (correct guess, admin skip, stop) before
 // the delay elapses.
 const skipTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/** The channel to post the round in — fetched (not just read from cache) so DM channels work after a restart. */
+async function sendable(client: Client, channelId: string): Promise<SendableChannels | null> {
+  const channel = await client.channels.fetch(channelId).catch(() => null);
+  return channel?.isSendable() ? channel : null;
+}
+
+/** Custom id of the "Next round" button posted after a DM round ends. */
+export const NEXT_ROUND_PREFIX = 'mg_next:';
+export const nextRoundButton = (type: MediaType) => new ActionRowBuilder<ButtonBuilder>().addComponents(
+  new ButtonBuilder().setCustomId(`${NEXT_ROUND_PREFIX}${type}`).setLabel('Next round').setEmoji('▶️').setStyle(ButtonStyle.Primary),
+);
 
 export function cancelSkipTimer(channelId: string): void {
   const t = skipTimers.get(channelId);
@@ -77,17 +94,18 @@ export function cancelSkipTimer(channelId: string): void {
 // not "now".
 function scheduleSkipAnnouncement(state: GameState, client: Client): void {
   cancelSkipTimer(state.channelId);
+  if (!state.guildId) return; // DM rounds can be skipped straight away
   const remaining = VOTESKIP_DELAY_MS - (Date.now() - state.startedAt);
-  if (remaining <= 0) return; // already past the delay — /voteskip works immediately, no announcement needed
+  if (remaining <= 0) return; // already past the delay — /community voteskip works immediately, no announcement needed
   const timer = setTimeout(async () => {
     skipTimers.delete(state.channelId);
     if (activeGames.get(state.channelId) !== state || state.answered) return;
-    const channel = client.channels.cache.get(state.channelId) as TextChannel | undefined;
+    const channel = await sendable(client, state.channelId);
     if (!channel) return;
     const embed = new EmbedBuilder()
       .setColor(HINT_COLOR)
       .setTitle('⏰ Vote Skip Available')
-      .setDescription(`The skip delay has elapsed! Anyone can now vote to skip this ${typeNoun(state.type)} using \`/voteskip\` *(2 votes needed)*.`);
+      .setDescription(`The skip delay has elapsed! Anyone can now vote to skip this ${typeNoun(state.type)} using \`/community voteskip\` *(2 votes needed)*.`);
     await channel.send({ embeds: [embed] }).catch(() => {});
   }, remaining);
   skipTimers.set(state.channelId, timer);
@@ -99,7 +117,7 @@ function scheduleSkipAnnouncement(state: GameState, client: Client): void {
 function persistRound(state: GameState): void {
   db.saveMediaGuessRound({
     channel_id: state.channelId,
-    guild_id: state.guildId,
+    guild_id: state.guildId ?? '', // '' marks a DM round (the column is NOT NULL)
     type: state.type,
     media: JSON.stringify(state.media),
     hint_order: JSON.stringify(state.hintOrder),
@@ -118,7 +136,7 @@ export async function restoreActiveGames(client: Client): Promise<void> {
   for (const row of rows) {
     try {
       const state: GameState = {
-        guildId: row.guild_id,
+        guildId: row.guild_id || null,
         channelId: row.channel_id,
         type: row.type as MediaType,
         media: JSON.parse(row.media),
@@ -818,11 +836,12 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
 
   const maxHints = state.hintOrder.length;
   if (state.hintsUsed >= maxHints) {
-    return { content: `❌ All ${maxHints} hints have been used! Keep guessing or \`/voteskip\`.` };
+    return { content: `❌ All ${maxHints} hints have been used! Keep guessing or ${state.guildId ? '`/community voteskip`' : 'skip'}.` };
   }
 
+  // The cooldown keeps one person from burning through a shared round; a solo DM round has nobody to spoil it for.
   const elapsed = Date.now() - state.lastHintAt;
-  if (state.lastHintAt > 0 && elapsed < HINT_COOLDOWN_MS) {
+  if (state.guildId && state.lastHintAt > 0 && elapsed < HINT_COOLDOWN_MS) {
     const rush = await db.getActiveBoost(state.guildId, userId, 'guesscd').catch(() => null);
     if (!rush) {
       const secsLeft = Math.ceil((HINT_COOLDOWN_MS - elapsed) / 1000);
@@ -939,10 +958,10 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
 // ever has one active round, so nothing extra needs to survive in the id.
 // That also means these buttons keep working indefinitely, including across
 // restarts, without any collector/timeout tied to the message.
-function buildRoundButtons(): ActionRowBuilder<ButtonBuilder> {
+function buildRoundButtons(dm: boolean): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId('mg_hint').setLabel('Hint').setEmoji('💡').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('mg_voteskip').setLabel('Vote Skip').setEmoji('⏭️').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('mg_voteskip').setLabel(dm ? 'Skip' : 'Vote Skip').setEmoji('⏭️').setStyle(ButtonStyle.Secondary),
   );
 }
 
@@ -1003,33 +1022,52 @@ async function trimAudio(buffer: Buffer, startSec: number, durationSec: number):
   }
 }
 
+/**
+ * Post a new round in the channel. `guildId` null = a solo round in someone's DMs. Resolves false when nothing could be posted
+ * (the pick couldn't be fetched, the clip couldn't be downloaded, or the channel is gone).
+ */
 export async function startGame(
-  guildId: string,
+  guildId: string | null,
   channelId: string,
   type: MediaType,
   client: Client,
-): Promise<void> {
+): Promise<boolean> {
+  if (starting.has(channelId)) return false;
+  starting.add(channelId);
+  try {
+    return await postRound(guildId, channelId, type, client);
+  } finally {
+    starting.delete(channelId);
+  }
+}
+
+async function postRound(guildId: string | null, channelId: string, type: MediaType, client: Client): Promise<boolean> {
   const media = await fetchEntry(type, getExcludeIds(channelId));
   if (!media) {
     console.warn(`[mediaguess] Could not fetch ${type} — check TMDB_API_KEY/RAWG_API_KEY are set`);
-    return;
+    return false;
   }
   recordShown(channelId, media.id);
 
-  const channel = client.channels.cache.get(channelId) as TextChannel | undefined;
-  if (!channel) return;
+  const channel = await sendable(client, channelId);
+  if (!channel) return false;
 
   const typeStr = typeNoun(type);
   const isMusic = type === 'music';
+  const dm = !guildId;
 
   const embed = new EmbedBuilder()
     .setColor(TYPE_COLOR[type])
     .setTitle(TYPE_LABEL[type])
     .setDescription(
       `**Can you guess the ${typeStr} from this ${isMusic ? `${ROUND_CLIP_SEC}-second clip` : 'still'}?**\n\n` +
-      `Type your answer in chat, or use the buttons below!\n` +
-      `> 💡 **Hint** / \`/hint\` — Reveal the next clue for everyone *(shared, 60s cooldown between hints)*\n` +
-      `> ⏭️ **Vote Skip** / \`/voteskip\` — Vote to skip *(2 votes needed, available after 5 min)*`,
+      (dm
+        ? `Type your answer here, or use the buttons below!\n` +
+          `> 💡 **Hint** — Reveal the next clue\n` +
+          `> ⏭️ **Skip** — Give up and see the answer`
+        : `Type your answer in chat, or use the buttons below!\n` +
+          `> 💡 **Hint** / \`/community hint\` — Reveal the next clue for everyone *(shared, 60s cooldown between hints)*\n` +
+          `> ⏭️ **Vote Skip** / \`/community voteskip\` — Vote to skip *(2 votes needed, available after 5 min)*`),
     )
     .setFooter({ text: `Good luck! ${type === 'music' ? '🎧' : type === 'game' ? '🎮' : '🍿'}` });
 
@@ -1043,15 +1081,15 @@ export async function startGame(
     const buf = full ? await trimAudio(full, 0, ROUND_CLIP_SEC) : null;
     if (!buf) {
       console.warn('[mediaguess] Could not download/trim Deezer preview clip — skipping this pick');
-      return;
+      return false;
     }
     const attachment = new AttachmentBuilder(buf, { name: 'preview.mp3' });
-    msg = await channel.send({ embeds: [embed], files: [attachment], components: [buildRoundButtons()] }).catch(() => null);
+    msg = await channel.send({ embeds: [embed], files: [attachment], components: [buildRoundButtons(dm)] }).catch(() => null);
   } else {
     embed.setImage(media.stills[0]!);
-    msg = await channel.send({ embeds: [embed], components: [buildRoundButtons()] }).catch(() => null);
+    msg = await channel.send({ embeds: [embed], components: [buildRoundButtons(dm)] }).catch(() => null);
   }
-  if (!msg) return;
+  if (!msg) return false;
 
   const state: GameState = {
     guildId,
@@ -1069,6 +1107,7 @@ export async function startGame(
   activeGames.set(channelId, state);
   persistRound(state);
   scheduleSkipAnnouncement(state, client);
+  return true;
 }
 
 export async function resolveGame(
@@ -1084,8 +1123,12 @@ export async function resolveGame(
   cancelSkipTimer(state.channelId);
   state.answered = true;
   const typeStr = typeNoun(state.type);
-  const channel = client.channels.cache.get(state.channelId) as TextChannel | undefined;
+  const channel = await sendable(client, state.channelId);
   if (!channel) return;
+  // Server channels roll straight into the next round; a DM waits for the player to ask for one.
+  const dm = !state.guildId;
+  const next = dm ? '' : '\n_Next round starting in 10 seconds…_';
+  const components = dm ? [nextRoundButton(state.type)] : [];
 
   // Delete the original round message — keeps the channel clean and means a
   // stale Hint/Vote Skip click can't land on a round that's already over.
@@ -1106,31 +1149,32 @@ export async function resolveGame(
       const embed = new EmbedBuilder()
         .setColor(Colors.Green)
         .setTitle('🎉 Correct Guess!')
-        .setDescription(`🏆 **${winner.name}** guessed the song title!`)
+        .setDescription(dm ? '🏆 You guessed the song title!' : `🏆 **${winner.name}** guessed the song title!`)
         .addFields(
           { name: 'Song', value: state.media.title, inline: false },
           { name: 'Artist', value: state.media.director ?? 'Unknown', inline: false },
-          { name: 'XP Awarded', value: xpLine, inline: false },
-        )
-        .setFooter({ text: '🎵 Next song will start in 10 seconds…' });
+          ...(dm ? [] : [{ name: 'XP Awarded', value: xpLine, inline: false }]),
+        );
+      if (!dm) embed.setFooter({ text: '🎵 Next song will start in 10 seconds…' });
       if (state.media.stills[0]) embed.setThumbnail(state.media.stills[0]);
 
       const full = state.media.audioPreview ? await downloadPreview(state.media.audioPreview) : null;
       const files = full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [];
-      await channel.send({ embeds: [embed], files }).catch(() => {});
+      await channel.send({ embeds: [embed], files, components }).catch(() => {});
     } else {
       // Show the display name as plain text (not a <@id> mention) so it reads
       // correctly in mobile push notifications, which don't resolve raw mentions.
       await channel
-        .send(`🎉 **${winner.name}** got it! The ${typeStr} was **${state.media.title}**!\n_Next round starting in 10 seconds…_`)
+        .send({ content: `🎉 ${dm ? 'You got it' : `**${winner.name}** got it`}! The ${typeStr} was **${state.media.title}**!${next}`, components })
         .catch(() => {});
     }
   } else {
     await channel
-      .send(`⏭️ Skipped! The ${typeStr} was **${state.media.title}**.\n_Next round starting in 10 seconds…_`)
+      .send({ content: `⏭️ Skipped! The ${typeStr} was **${state.media.title}**.${next}`, components })
       .catch(() => {});
   }
 
+  if (dm) return;
   setTimeout(async () => {
     // Only start if nothing else has already claimed this channel
     if (!activeGames.has(state.channelId)) {
@@ -1147,6 +1191,13 @@ export async function castVoteSkip(
   const state = activeGames.get(channelId);
   if (!state || state.answered) {
     return { content: '❌ There is no active guessing game in this channel.', ephemeral: true };
+  }
+
+  // Solo DM round: no vote and no wait — skipping just reveals the answer.
+  if (!state.guildId) {
+    state.answered = true;
+    await resolveGame(state, client, null, 'skip');
+    return { content: '⏭️ Round skipped.', ephemeral: true };
   }
 
   const remainingDelay = VOTESKIP_DELAY_MS - (Date.now() - state.startedAt);
