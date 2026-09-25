@@ -178,9 +178,11 @@ async function memberIds(guild: Guild): Promise<string[]> {
   return [...members.filter(m => !m.user.bot).keys()];
 }
 
-async function renderLb(i: import('discord.js').ChatInputCommandInteraction, kind: 'cash' | 'networth', scope: 'server' | 'global') {
+async function renderLb(i: import('discord.js').ChatInputCommandInteraction, kind: 'cash' | 'networth', requested: 'server' | 'global') {
   await i.deferReply();
   const ctx = await ecoCtx(i);
+  // Outside a server (DM, group DM, or a server where the bot isn't installed) there is no member list, so the board is global.
+  const scope = requested === 'server' && i.guild ? 'server' : 'global';
   const rows: LbRow[] = await leaderboard(kind, scope === 'server' ? await memberIds(i.guild!) : null, 10);
   if (!rows.length) { await i.editReply(cv2Box('Nobody has any money yet. Start with `/eco daily`!', Colors.Blurple)); return; }
   const medals = ['🥇', '🥈', '🥉'];
@@ -189,7 +191,7 @@ async function renderLb(i: import('discord.js').ChatInputCommandInteraction, kin
     ? await Promise.all(rows.map(async r => (await i.client.users.fetch(r.user_id).catch(() => null))?.username ?? 'Unknown user'))
     : null;
   const lines = rows.map((r, n) => `${medals[n] ?? `**${n + 1}.**`} ${names ? `**${names[n]}**` : `<@${r.user_id}>`} — ${ctx.sym} **${short(r.value)}**`);
-  const title = `${kind === 'cash' ? 'Cash' : 'Net worth'} leaderboard — ${scope === 'server' ? i.guild!.name : 'global'}`;
+  const title = `${kind === 'cash' ? 'Cash' : 'Net worth'} leaderboard — ${scope === 'server' ? (i.guild?.name ?? "this server") : 'global'}`;
   await i.editReply(cv2Box(`🏆 **${title}**\n\n${lines.join('\n')}`, Colors.Gold));
 }
 

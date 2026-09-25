@@ -1,0 +1,2687 @@
+{
+ "source": "https://status.heist.lol/api/commands (public commands only; owner-only \"Staff\" commands excluded)",
+ "commands": [
+  {
+   "path": "action",
+   "type": "slash",
+   "cog": "Action",
+   "premium": false
+  },
+  {
+   "path": "roleplay",
+   "type": "slash",
+   "cog": "Action",
+   "premium": false
+  },
+  {
+   "path": "customize color",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": true
+  },
+  {
+   "path": "serverprofile avatar reset",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "serverprofile avatar set",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "serverprofile banner reset",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "serverprofile banner set",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "serverprofile bio reset",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "serverprofile bio set",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "serverprofile name reset",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "serverprofile name set",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "settings",
+   "type": "slash",
+   "cog": "Customize",
+   "premium": false
+  },
+  {
+   "path": "eco bank deposit",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco bank sell",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco bank upgrade",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco bank withdraw",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco beg",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco bonus",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco business buy",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco business collect",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco business info",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco business list",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco business sell",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card buy",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card cases",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card equip",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card list",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card open",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card sell",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card shred",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card trade",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card unequip",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco card upgrade",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco cooldowns",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco daily",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games blackjack",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games coinflip",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games dice",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games higherlower",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games ladder",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games mines",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games odds",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games roulette",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games slots",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games stats",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco games towers",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco giveaway",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco graph",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco guide",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco history",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco investment complete",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco investment list",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco investment start",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco investment status",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco joinbonus",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco lab ampoules",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco lab buy",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco lab collect",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco lab info",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco lab sell",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco lab upgrade",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco leaderboard cash",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco leaderboard global",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco leaderboard networth",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco monthly",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco quest complete",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco quest leaderboard",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco quest start",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco quest status",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco quest stop",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco rob",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco slut",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco toggle-notifications",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco transfer",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco wallet",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco wallet-edit avatar",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco wallet-edit background",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco wallet-edit message",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco wallet-edit opacity",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco wallet-edit privacy",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco wallet-edit reset",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco wallet-edit studio",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco wallet-edit text-color",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": true
+  },
+  {
+   "path": "eco work",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company create",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company delete",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company description",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company downrank",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company icon",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company info",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company invite",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company join",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company kick",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company leaderboard networth",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company leaderboard vault",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company leave",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company members",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company name",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company privacy",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project cancel",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project collect",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project complete",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project contribute",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project list",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project participants",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project start",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company project status",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company requests accept",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company requests deny",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company requests list",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company requests send",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company reset-icon",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company tag",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company transfer",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company uninvite",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company upgrade",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company uprank",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company userinfo",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company vault bonus",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company vault deposit",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company vault limit",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company vault logs",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "eco-company vault withdraw",
+   "type": "slash",
+   "cog": "Economy",
+   "premium": false
+  },
+  {
+   "path": "8ball",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "asciify",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "button",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "coinflip",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "emojimix",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "juul charge",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "juul customize",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "juul flavor",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "juul hit",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "juul stats",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "lyrics",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "math",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "nitro",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "Pet User",
+   "type": "user",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "petpet",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "rate",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "rating hotcalc",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "rating howautistic",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "rating howgay",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "rating ppsize",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "rizz",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "Rizz User",
+   "type": "user",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "roast",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "Roast User",
+   "type": "user",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "say",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "ship",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "urban",
+   "type": "slash",
+   "cog": "Fun",
+   "premium": false
+  },
+  {
+   "path": "games blackjack",
+   "type": "slash",
+   "cog": "Games",
+   "premium": false
+  },
+  {
+   "path": "games cookie",
+   "type": "slash",
+   "cog": "Games",
+   "premium": false
+  },
+  {
+   "path": "games rps",
+   "type": "slash",
+   "cog": "Games",
+   "premium": false
+  },
+  {
+   "path": "games snake",
+   "type": "slash",
+   "cog": "Games",
+   "premium": false
+  },
+  {
+   "path": "games tictactoe",
+   "type": "slash",
+   "cog": "Games",
+   "premium": false
+  },
+  {
+   "path": "giveaway cancel",
+   "type": "slash",
+   "cog": "Giveaway",
+   "premium": false
+  },
+  {
+   "path": "giveaway edit",
+   "type": "slash",
+   "cog": "Giveaway",
+   "premium": false
+  },
+  {
+   "path": "giveaway end",
+   "type": "slash",
+   "cog": "Giveaway",
+   "premium": false
+  },
+  {
+   "path": "giveaway list",
+   "type": "slash",
+   "cog": "Giveaway",
+   "premium": false
+  },
+  {
+   "path": "giveaway reroll",
+   "type": "slash",
+   "cog": "Giveaway",
+   "premium": false
+  },
+  {
+   "path": "giveaway start",
+   "type": "slash",
+   "cog": "Giveaway",
+   "premium": false
+  },
+  {
+   "path": "about",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "avatar",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "banner",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "donate leaderboard",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "donate submit",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "getbotinvite",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "invite",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "me",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "ping",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "plus",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "serveravatar",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "serverbanner",
+   "type": "slash",
+   "cog": "Info",
+   "premium": false
+  },
+  {
+   "path": "pingonjoin list",
+   "type": "slash",
+   "cog": "Management",
+   "premium": false
+  },
+  {
+   "path": "pingonjoin remove",
+   "type": "slash",
+   "cog": "Management",
+   "premium": false
+  },
+  {
+   "path": "pingonjoin setup",
+   "type": "slash",
+   "cog": "Management",
+   "premium": false
+  },
+  {
+   "path": "pingonjoin stop",
+   "type": "slash",
+   "cog": "Management",
+   "premium": false
+  },
+  {
+   "path": "audio 8d",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio bassboost",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio earrape",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio lofi",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio nightcore",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio phonk",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio reverse",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio slowedandreverb",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "audio spatial",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate among-us",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake ai-watermark",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake apply",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake convo",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake message",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake quote",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake reply",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake report",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake request",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake tiktokfollowing",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate fake vc",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate rip",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate spotifylyrics",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "generate tierlist",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media ahshit",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media frames",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image addaudio",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image blur",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image caption",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image deepfry",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image fisheye",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image flip",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image globe",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image grayscale",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image invert",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image magik",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image meme",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image motivate",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image overlay",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image pingpong",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image pixelate",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image rotate",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image speechbubble",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image spin",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image swirl",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image togif",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image watermark",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media image zoomblur",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media info",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet backtattoo",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet billboard",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet book",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet circuitboard",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet flag",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet flag2",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet fortunecookie",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet heartlocket",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet rubiks",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet toaster",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media makesweet valentine",
+   "type": "slash",
+   "cog": "Media",
+   "premium": false
+  },
+  {
+   "path": "media video caption",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video crop",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video resize",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video reverse",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video rotate",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video scramble",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video speechbubble",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video speed",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video togif",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "media video watermark",
+   "type": "slash",
+   "cog": "Media",
+   "premium": true
+  },
+  {
+   "path": "lastfm artistplays",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm collage",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm cover",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm latest",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm login",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm logout",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm love",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm loved",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm nowplaying",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm np-style",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm spotify",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm taste",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm topalbums",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm topartists",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm toptracks",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm trackplays",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm unlove",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "lastfm year",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "spotify album",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "spotify cover",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "spotify preview",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "spotify search",
+   "type": "slash",
+   "cog": "Music",
+   "premium": false
+  },
+  {
+   "path": "premium buy",
+   "type": "slash",
+   "cog": "Premium",
+   "premium": false
+  },
+  {
+   "path": "premium gifts buy",
+   "type": "slash",
+   "cog": "Premium",
+   "premium": false
+  },
+  {
+   "path": "premium gifts inventory",
+   "type": "slash",
+   "cog": "Premium",
+   "premium": false
+  },
+  {
+   "path": "premium gifts redeem",
+   "type": "slash",
+   "cog": "Premium",
+   "premium": false
+  },
+  {
+   "path": "premium perks",
+   "type": "slash",
+   "cog": "Premium",
+   "premium": false
+  },
+  {
+   "path": "premium syncrole",
+   "type": "slash",
+   "cog": "Premium",
+   "premium": true
+  },
+  {
+   "path": "✨ Lookup Roblox",
+   "type": "user",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "bio gunslol",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "bio hauntgg",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "cashapp user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "discord2roblox",
+   "type": "slash",
+   "cog": "Social",
+   "premium": true
+  },
+  {
+   "path": "fortnite cosmetic",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "fortnite map",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "fortnite shop",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "fortnite user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "get banner",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "get pfp",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "github 2email",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "github repo",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "github user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "instagram repost",
+   "type": "slash",
+   "cog": "Social",
+   "premium": true
+  },
+  {
+   "path": "instagram user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": true
+  },
+  {
+   "path": "medaltv repost",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "minecraft randomserver",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "minecraft server",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "minecraft skin",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "minecraft user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "pinterest pin",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "pinterest search",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox asset",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox avatar",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox blendavatars",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox britcheck",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox calctax",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox devex",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox followers",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox following",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox friends",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox game",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox games",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox group",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox groups",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox history user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox item",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox necklaces",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox outfits",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox previousnames",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox profilelink",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox recentbadges",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox render asset",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox render avatar",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox template",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox wearing",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "roblox2discord",
+   "type": "slash",
+   "cog": "Social",
+   "premium": true
+  },
+  {
+   "path": "rolimons chart",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "rolimons user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "sherlock cancel",
+   "type": "slash",
+   "cog": "Social",
+   "premium": true
+  },
+  {
+   "path": "sherlock user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": true
+  },
+  {
+   "path": "snapchat user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "socialscan",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "steam",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram archive",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram avatars",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram bot",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram channel",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram connections",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram emoji",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram giftinfo",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram group",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram message",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram mutuals",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "telegram whois",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "tiktok country user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "tiktok country video",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "tiktok posts",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "tiktok repost",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "tiktok sound",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "tiktok user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "ton address",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "ton dns",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "ton events",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "ton jettons",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "ton nfts",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "twitch live",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "twitch user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant agents",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant history",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant maps",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant match",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant seasons",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant skin",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant store",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "valorant weapon",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "x repost",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "x user",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "youtube search",
+   "type": "slash",
+   "cog": "Social",
+   "premium": false
+  },
+  {
+   "path": "ai chatgpt",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ai custom build",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "ai custom chat",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "ai custom models",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "ai deepgeolocate",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "ai edit-imagine",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ai imagine",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "ai llama",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ai ocr",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ai perplexity",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "AI Tools",
+   "type": "message",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ai transcript",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ai tts openai",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "ai usage",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "badtranslate",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "base64 decode",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "base64 encode",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "bypass",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "color gradient",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "color inspect",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "convert discordid2user",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "convert discorduser2id",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "convert robloxid2user",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "convert robloxuser2id",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "convert telegramuser2id",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto chart",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto gas",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto price",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto rates",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto stoptrack",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto track",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto transaction",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "crypto wallet",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "define",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "discord dsa",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "discord emoji",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "discord server",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "discord user",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "dns lookup",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "download",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "gif",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "Identify Song",
+   "type": "message",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ip lookup",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "ip ping",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "markov-chain",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "paste",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "qr generate",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "qr scan",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "Quote Message",
+   "type": "message",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "quotemessage config apply",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "quotemessage config create",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "quotemessage config delete",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "quotemessage config edit",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "quotemessage config list",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "quotemessage howto",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "search ai-overview",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "search grokipedia",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "search images",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "search news",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "search text",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "shazam",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "soundcloud",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tags create",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tags delete",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tags edit",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tags export",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tags import",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tags list",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tags send",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "timezone set",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "timezone view",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "Transcribe Audio",
+   "type": "message",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "translate",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "Translate Message",
+   "type": "message",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "tts",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "View Profile",
+   "type": "user",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "voicemessage",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "website download",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  },
+  {
+   "path": "website screenshot",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": false
+  },
+  {
+   "path": "website scroll",
+   "type": "slash",
+   "cog": "Utility",
+   "premium": true
+  }
+ ]
+}

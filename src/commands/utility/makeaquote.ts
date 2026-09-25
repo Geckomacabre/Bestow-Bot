@@ -47,7 +47,7 @@ const MakeAQuote: Command = {
     const author = msg.author;
     let avatarUrl: string | null = null;
     if (interaction.inGuild()) {
-      const member = await interaction.guild!.members.fetch(author.id).catch(() => null);
+      const member = await interaction.guild?.members.fetch(author.id).catch(() => null);
       avatarUrl = member?.displayAvatarURL({ size: 1024, extension: 'png' })
         ?? author.displayAvatarURL({ size: 1024, extension: 'png' });
     } else {

@@ -805,6 +805,8 @@ export async function initDb() {
   await initFunSchema();
   const { initAiSchema } = await import('../ai/schema.js');
   await initAiSchema();
+  const { initHeistSchemas } = await import('../heist/schema.js');
+  await initHeistSchemas();
 }
 
 export async function closeDb(): Promise<void> {

@@ -17,6 +17,8 @@ import mediaguessModule, { startMediaGames } from './mediaguess';
 import { startLottery } from './lottery';
 import stickyModule, { startStickyRefresh } from './sticky';
 import aiModule from './ai';
+import premiumModule from './premium';
+import { startPremiumSync } from '../premium/sync.js';
 
 const features = [
   countingModule,
@@ -30,6 +32,7 @@ const features = [
   mediaguessModule,
   stickyModule,
   aiModule,
+  premiumModule,
 ];
 
 export function registerFeatures(bot: Client) {
@@ -54,5 +57,6 @@ export function registerFeatures(bot: Client) {
     startMediaGames(bot);
     startLottery(bot);
     startStickyRefresh(bot);
+    startPremiumSync(bot);
   });
 }

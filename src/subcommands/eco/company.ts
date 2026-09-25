@@ -121,7 +121,7 @@ export const companySubs: Sub[] = [
       const t = i.options.getUser('user') ?? i.user;
       const ms = await getMembership(t.id);
       if (!ms) { await i.reply(cv2Err(`${t.username} isn't in a company.`)); return; }
-      const w = await getWallet(i.guildId!, t.id);
+      const w = await getWallet((i.guildId ?? 'global'), t.id);
       await i.reply({ ...cv2Box(`${rankIcon(ms.member.rank)} <@${t.id}> is a **${ms.member.rank}** of **[${ms.company.tag}] ${ms.company.name}**\nJoined ${ts(ms.member.joined_at)} · net worth ${(await ecoCtx(i)).fmt(w.networth)}`, Colors.Blurple), allowedMentions: { parse: [] } });
     },
   },
@@ -206,7 +206,7 @@ export const companySubs: Sub[] = [
       if (!ms || ms.member.rank !== 'ceo') { await i.reply(say(ms ? 'perm' : 'none')); return; }
       const ok = await askUser(i, { userId: i.user.id, acceptLabel: 'Delete it', declineLabel: 'Keep it', content: `⚠️ Permanently delete **[${ms.company.tag}] ${ms.company.name}**? Its vault is split evenly between all members. This can't be undone.` });
       if (!ok) { await i.editReply({ content: 'Cancelled — your company is safe.', components: [] }).catch(() => {}); return; }
-      const r = await deleteCompany(i.guildId!, i.user.id);
+      const r = await deleteCompany((i.guildId ?? 'global'), i.user.id);
       if (r.ok && existsSync(iconPath(r.company.id))) unlinkSync(iconPath(r.company.id));
       await i.editReply({ content: r.ok ? `🗑️ **${r.company.name}** was disbanded. Each of the ${r.members} members received **${r.each.toLocaleString()}** from the vault.` : `❌ ${REASONS[r.reason] ?? r.reason}`, components: [] });
     },
@@ -396,7 +396,7 @@ export const companyGroups: SubGroup[] = [
         name: 'start', description: 'Start a project for your company (CEO only)',
         options: s => s.addStringOption(o => o.setName('name').setDescription('Which project').setRequired(true).addChoices(...Object.entries(PROJECTS).map(([value, p]) => ({ name: `${p.emoji} ${p.name}`, value })))),
         async run(i) {
-          const r = await startProject(i.guildId!, i.user.id, i.options.getString('name', true));
+          const r = await startProject((i.guildId ?? 'global'), i.user.id, i.options.getString('name', true));
           if (!r.ok) { await i.reply(r.reason === 'active' ? cv2Err('❌ You already have a project running — finish or cancel it first.') : say(r.reason)); return; }
           await i.reply(cv2Box(`${r.def.emoji} **${r.def.name} started!** Everyone can chip in with \`/eco-company project contribute\` until ${(await ecoCtx(i)).fmt(r.def.goal)} is raised.`, Colors.Green));
         },
@@ -455,7 +455,7 @@ export const companyGroups: SubGroup[] = [
       {
         name: 'cancel', description: 'Cancel your company project while it\'s still funding (CEO only)',
         async run(i) {
-          const r = await cancelProject(i.guildId!, i.user.id);
+          const r = await cancelProject((i.guildId ?? 'global'), i.user.id);
           if (!r.ok) { await i.reply(r.reason === 'locked' ? cv2Err('❌ Once fully funded a project can\'t be cancelled.') : r.reason === 'no-project' ? cv2Err('You have no project.') : say(r.reason)); return; }
           await i.reply(cv2Box(`🛑 Project cancelled. Refunded **${r.refunded.toLocaleString()}** to ${r.contributors} contributor(s).`, Colors.Orange));
         },

@@ -1,0 +1,23 @@
+{
+ "declined": {
+  "github 2email": "Harvests personal email addresses from public commit metadata. Bestow doesn't build tools for collecting people's contact details.",
+  "sherlock user": "Username enumeration across social platforms assembles a profile of one individual; declined on privacy grounds.",
+  "sherlock cancel": "Companion to /sherlock user, which is declined.",
+  "socialscan": "Checks whether an email or username is registered across platforms — an account-enumeration / OSINT tool; declined.",
+  "discord2roblox": "Cross-links a person's Discord and Roblox identities without their consent; declined.",
+  "roblox2discord": "Cross-links a person's Roblox and Discord identities without their consent; declined.",
+  "telegram whois": "Resolves a Telegram handle to its TON wallets — links an identity to a financial address; declined.",
+  "telegram connections": "NFT/gift/wallet breakdown for a handle — cross-links identity and holdings; declined.",
+  "telegram mutuals": "Lists groups a person shares with a userbot; needs a Telegram userbot session and exposes private membership; declined.",
+  "telegram avatars": "Profile-photo history needs a Telegram userbot session and surfaces images the person removed; declined.",
+  "telegram archive": "Pinned-story archive needs a Telegram userbot session; declined.",
+  "telegram emoji": "Rendering custom emoji by document ID needs a Telegram MTProto session, which Bestow doesn't hold.",
+  "discord dsa": "There is no public per-user Discord DSA data source to query.",
+  "tiktok country user": "Infers where a person is located; there is no reliable public source and it is a location-inference tool; declined.",
+  "tiktok country video": "Infers where a video's author is located; declined for the same reason as /tiktok country user.",
+  "rating howgay": "Rates a person on sexual orientation — can be used to out or harass someone; declined. (Bestow offers non-identity ratings instead.)",
+  "rating howautistic": "Rates a person on a disability — demeaning and harassing; declined. (Bestow offers non-identity ratings instead.)",
+  "rating ppsize": "Sexual content aimed at a specific person; declined. (Bestow offers non-identity ratings instead.)"
+ },
+ "notYet": []
+}

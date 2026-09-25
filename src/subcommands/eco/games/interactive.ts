@@ -41,7 +41,7 @@ const betOption = (s: SlashCommandSubcommandBuilder) => s.addIntegerOption(o => 
  * clearing the board, or (after 90s idle) an automatic cash-out — so walking away never confiscates progress.
  */
 async function runInteractive<S>(i: ChatInputCommandInteraction, def: Def<S>): Promise<void> {
-  const guildId = i.guildId!, userId = i.user.id;
+  const guildId = (i.guildId ?? 'global'), userId = i.user.id;
   const bet = i.options.getInteger('amount', true);
   const cfg = await getEconomyConfig(guildId);
   const sym = cfg.currency_symbol;
@@ -236,7 +236,7 @@ const hiloDef: Def<HiloState> = {
 
 const die = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 async function playDice(i: ChatInputCommandInteraction) {
-  const guildId = i.guildId!, userId = i.user.id;
+  const guildId = (i.guildId ?? 'global'), userId = i.user.id;
   const bet = i.options.getInteger('amount', true);
   const cfg = await getEconomyConfig(guildId);
   const sym = cfg.currency_symbol;

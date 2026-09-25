@@ -105,7 +105,7 @@ function makeClaim(def: ClaimDef): Sub {
     name: def.name,
     description: def.description,
     async run(interaction) {
-      const guildId = interaction.guildId!;
+      const guildId = (interaction.guildId ?? 'global');
       const userId = interaction.user.id;
       const cooldownMs = typeof def.cooldownMs === 'number' ? def.cooldownMs : await def.cooldownMs(guildId, userId);
 

@@ -6,6 +6,7 @@ import { card, trunc } from '../../lookups/card.js';
 import { friendlyError, lookup, LookupError } from '../../lookups/handler.js';
 import { chat, ask, LlmUnavailable, llmConfigured, sanitizeReply } from '../../services/llm.js';
 import { checkLimit, limitMessage, refund } from '../../ai/limits.js';
+import { premiumOf } from '../../premium/index.js';
 import { buildSystem, DESCRIBE_SYSTEM, FUN_KINDS, FUN_SYSTEM, funKind, GEOLOCATE_SYSTEM, OCR_SYSTEM, SUMMARIZE_SYSTEM } from '../../ai/prompts.js';
 import { userContent } from '../../ai/chat.js';
 import { imageUrlToDataUri } from '../../ai/vision.js';
@@ -24,7 +25,7 @@ const str = (n: string, d: string, max: number, required = true) => (s: SlashCom
 function aiRun(fn: (i: ChatInputCommandInteraction) => Promise<unknown>, opts: { needs?: 'chat' | 'vision' } = {}) {
   return lookup(async i => {
     if (!llmConfigured(opts.needs ?? 'chat')) throw new LookupError(opts.needs === 'vision' ? 'Image understanding isn\'t configured on this bot (set VISION_MODEL or use a vision-capable LLM_MODEL).' : 'The AI isn\'t set up on this bot yet — the owner needs to set LLM_BASE_URL and LLM_MODEL.');
-    const lim = checkLimit(i.user.id);
+    const lim = checkLimit(i.user.id, Date.now(), (await premiumOf(i)).premium);
     if (!lim.ok) throw new LookupError(limitMessage(lim));
     try { await fn(i); } catch (e) {
       if (!(e instanceof LookupError) && !(e instanceof MediaError)) refund(i.user.id);
@@ -75,7 +76,7 @@ const transcriptSub: Sub = {
   options: s => mediaOptions('audio', s),
   run: lookup(async i => {
     if (!whisperConfig()) throw new LookupError('Speech-to-text isn\'t configured on this bot yet.');
-    const lim = checkLimit(i.user.id);
+    const lim = checkLimit(i.user.id, Date.now(), (await premiumOf(i)).premium);
     if (!lim.ok) throw new LookupError(limitMessage(lim));
     try {
       const ref = await findMedia(i, 'audio');

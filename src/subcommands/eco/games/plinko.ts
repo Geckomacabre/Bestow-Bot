@@ -100,12 +100,12 @@ const Plinko: Command = {
   data: new SlashCommandBuilder()
     .setName('plinko')
     .setDescription('Drop a ball down the Plinko board — the edges pay 120x!')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addIntegerOption(o => o.setName('bet').setDescription('Amount to bet').setRequired(true).setMinValue(1)),
 
   async run(interaction: ChatInputCommandInteraction) {
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
     const cfg = await getEconomyConfig(guildId);

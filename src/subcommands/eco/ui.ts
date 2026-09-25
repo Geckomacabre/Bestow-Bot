@@ -15,7 +15,7 @@ export interface EcoCtx {
 }
 
 export async function ecoCtx(i: ChatInputCommandInteraction): Promise<EcoCtx> {
-  const guildId = i.guildId!;
+  const guildId = (i.guildId ?? 'global');
   const cfg = await getEconomyConfig(guildId);
   const sym = cfg.currency_symbol;
   return { guildId, userId: i.user.id, cfg, sym, name: cfg.currency_name, fmt: n => `${sym} ${n.toLocaleString()}` };

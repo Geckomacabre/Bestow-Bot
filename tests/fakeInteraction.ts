@@ -19,6 +19,9 @@ export interface FakeOpts {
   /** Whether the invoker has Manage Server (default false). */
   manageGuild?: boolean;
   guildName?: string;
+  /** Subcommand / group names, for dispatching through a real registered command (`commands.get('eco').run(...)`). */
+  sub?: string;
+  group?: string | null;
 }
 
 /** Just enough of a ChatInputCommandInteraction for the media/lookup handlers — records everything they send. */
@@ -34,22 +37,34 @@ export function fakeInteraction(o: FakeOpts = {}) {
     getNumber: (n: string, req?: boolean) => { const v = val(n); if (v == null && req) throw new Error(`missing required option ${n}`); return v == null ? null : Number(v); },
     getBoolean: (n: string) => { const v = val(n); return v == null ? null : Boolean(v); },
     getAttachment: (n: string, req?: boolean) => { const a = o.attachments?.[n] ?? null; if (!a && req) throw new Error(`missing required attachment ${n}`); return a ? { size: 1024, ...a } : null; },
-    getUser: (n: string, req?: boolean) => { const u = o.users?.[n] ?? null; if (!u && req) throw new Error(`missing required user ${n}`); return u ? { displayName: u.username, ...u } : null; },
-    getSubcommand: () => 'test',
-    getSubcommandGroup: () => null,
+    getUser: (n: string, req?: boolean) => {
+      const u = o.users?.[n] ?? null; if (!u && req) throw new Error(`missing required user ${n}`);
+      return u ? { displayName: u.username, bot: false, displayAvatarURL: () => 'https://cdn.discordapp.com/embed/avatars/1.png', avatarURL: () => null, bannerURL: () => null, send: async () => ({}), ...u } : null;
+    },
+    getSubcommand: () => o.sub ?? 'test',
+    getSubcommandGroup: () => o.group ?? null,
+    getMember: () => null,
   };
   const interaction = {
     get deferred() { return state.deferred; },
     get replied() { return state.replied; },
-    user: { id: o.userId ?? 'u-test', username: 'tester', displayName: o.displayName ?? 'Tester' },
+    user: {
+      id: o.userId ?? 'u-test', username: 'tester', displayName: o.displayName ?? 'Tester', bot: false,
+      displayAvatarURL: () => 'https://cdn.discordapp.com/embed/avatars/0.png', avatarURL: () => null, bannerURL: () => null,
+      send: async () => ({}), toString() { return `<@${this.id}>`; },
+    },
     guildId: o.guildId === undefined ? 'g-test' : o.guildId,
     guild: o.guildName ? { name: o.guildName } : null,
-    memberPermissions: { has: () => !!o.manageGuild },
+    inGuild: () => (o.guildId === undefined ? true : o.guildId !== null),
+    memberPermissions: o.guildId === null ? null : { has: () => !!o.manageGuild },
+    createdTimestamp: Date.now(),
     channel: o.channel ?? null,
     channelId: 'c-test',
     attachmentSizeLimit: o.limit ?? 10 * 1024 * 1024,
     client: {
       users: { fetch: async () => null },
+      channels: { cache: new Map(), fetch: async () => null },
+      guilds: { cache: new Map() },
       rest: { post: async (route: string, options: unknown) => { if (o.restFails) throw new Error('Missing Permissions'); restPosts.push({ route, options }); return {}; } },
     },
     options,

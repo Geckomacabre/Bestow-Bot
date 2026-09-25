@@ -21,8 +21,8 @@ const Roulette: Command = {
   data: new SlashCommandBuilder()
     .setName('roulette')
     .setDescription('Spin the roulette wheel and bet on the outcome')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addIntegerOption(o => o.setName('bet').setDescription('Amount to bet').setRequired(true).setMinValue(1))
     .addStringOption(o =>
       o.setName('type').setDescription('What to bet on').setRequired(true)
@@ -39,7 +39,7 @@ const Roulette: Command = {
       o.setName('number').setDescription('1–36 (only used with Single Number)').setMinValue(1).setMaxValue(36)),
 
   async run(interaction: ChatInputCommandInteraction) {
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
     const type = interaction.options.getString('type', true);

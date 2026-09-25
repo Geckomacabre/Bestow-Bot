@@ -24,7 +24,7 @@ const Avatar: Command = {
     let url: string | null = null;
 
     if (serverAvatar && interaction.inGuild()) {
-      const member = await interaction.guild!.members.fetch(targetUser.id).catch(() => null);
+      const member = await interaction.guild?.members.fetch(targetUser.id).catch(() => null);
       url = member?.avatarURL({ size: 4096 }) ?? targetUser.displayAvatarURL({ size: 4096 });
     } else {
       url = targetUser.displayAvatarURL({ size: 4096 });

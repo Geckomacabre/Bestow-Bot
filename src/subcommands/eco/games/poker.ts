@@ -73,12 +73,12 @@ const Poker: Command = {
   data: new SlashCommandBuilder()
     .setName('poker')
     .setDescription('Video Poker (Jacks or Better) — select cards to hold, then draw')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addIntegerOption(o => o.setName('bet').setDescription('Amount to bet').setRequired(true).setMinValue(1)),
 
   async run(interaction: ChatInputCommandInteraction) {
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
 

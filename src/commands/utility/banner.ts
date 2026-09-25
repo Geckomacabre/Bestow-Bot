@@ -28,7 +28,7 @@ const Banner: Command = {
     let url: string | null = null;
 
     if (serverBanner && interaction.inGuild()) {
-      const member = await interaction.guild!.members.fetch({ user: targetUser.id, force: true }).catch(() => null);
+      const member = await interaction.guild?.members.fetch({ user: targetUser.id, force: true }).catch(() => null);
       url = member?.bannerURL({ size: 4096 }) ?? freshUser.bannerURL({ size: 4096 }) ?? null;
     } else {
       url = freshUser.bannerURL({ size: 4096 }) ?? null;

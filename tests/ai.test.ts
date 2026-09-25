@@ -327,7 +327,7 @@ describe('chat on mention', () => {
     Bun.env.AI_USER_LIMIT = '1'; const u = uid();
     expect(await handleAiMessage(fakeMessage({ authorId: u, mentionsBot: true }).msg, deps())).toBe('replied');
     const second = fakeMessage({ authorId: u, mentionsBot: true });
-    expect(await handleAiMessage(second.msg, deps())).toBe('limited'); expect(second.replies[0].content).toContain('AI limit'); expect(chatCalls()).toHaveLength(1);
+    expect(await handleAiMessage(second.msg, deps())).toBe('limited'); expect(second.replies[0].content).toContain('free AI requests'); expect(chatCalls()).toHaveLength(1);
   });
   test('provider failure: friendly apology, request refunded, nothing leaked', async () => {
     Bun.env.AI_USER_LIMIT = '1'; const u = uid();
@@ -360,7 +360,7 @@ describe('/ai commands', () => {
     let fi = fakeInteraction({ options: { question: 'hi' } }); await find(aiSubs, 'ask').run(fi.interaction); expect(textOf(fi.last())).toContain('AI isn\'t set up'); Bun.env.LLM_BASE_URL = saved;
     Bun.env.AI_USER_LIMIT = '1'; const u = uid();
     fi = fakeInteraction({ userId: u, options: { question: 'one' } }); await find(aiSubs, 'ask').run(fi.interaction);
-    fi = fakeInteraction({ userId: u, options: { question: 'two' } }); await find(aiSubs, 'ask').run(fi.interaction); expect(textOf(fi.last())).toContain('AI limit'); expect(chatCalls()).toHaveLength(1);
+    fi = fakeInteraction({ userId: u, options: { question: 'two' } }); await find(aiSubs, 'ask').run(fi.interaction); expect(textOf(fi.last())).toContain('free AI requests'); expect(chatCalls()).toHaveLength(1);
     const v = uid(); failWith = 500; const orig = console.error; console.error = () => {};
     try { fi = fakeInteraction({ userId: v, options: { question: 'boom' } }); await find(aiSubs, 'ask').run(fi.interaction); } finally { console.error = orig; }
     expect(textOf(fi.last())).toContain('❌'); expect(textOf(fi.last())).not.toContain('exploded');

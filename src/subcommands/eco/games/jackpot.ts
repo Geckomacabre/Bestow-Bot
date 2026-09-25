@@ -12,15 +12,15 @@ const Jackpot: Command = {
   data: new SlashCommandBuilder()
     .setName('jackpot')
     .setDescription('See the current progressive jackpot pool')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     // An option rather than a subcommand: Discord won't let a command be both
     // bare-invokable and have subcommands, and plain /jackpot should keep working.
     .addBooleanOption(o => o.setName('sticky')
       .setDescription('Pin a live-updating jackpot message to this channel (Manage Messages)')),
 
   async run(interaction: ChatInputCommandInteraction) {
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const wantSticky = interaction.options.getBoolean('sticky') ?? false;
 
     if (!wantSticky) {

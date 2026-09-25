@@ -122,8 +122,8 @@ const Shop: Command = {
   data: new SlashCommandBuilder()
     .setName('shop')
     .setDescription('Buy boosts and items with your coins')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addSubcommand(sub =>
       sub.setName('browse').setDescription('View all available items')
     )
@@ -162,7 +162,7 @@ const Shop: Command = {
 
   async run(interaction: ChatInputCommandInteraction) {
     const sub = interaction.options.getSubcommand(true);
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const userId = interaction.user.id;
     const cfg = await getEconomyConfig(guildId);
     const sym = cfg.currency_symbol;

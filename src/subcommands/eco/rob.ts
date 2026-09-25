@@ -22,7 +22,7 @@ export const rob: Sub = {
   options: s => s.addUserOption(o => o.setName('user').setDescription('Who to rob').setRequired(true)),
 
   async run(interaction) {
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const userId = interaction.user.id;
     const target = interaction.options.getUser('user', true);
 

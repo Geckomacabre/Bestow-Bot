@@ -12,7 +12,7 @@ export const protection: Sub = {
   description: 'Hire mob protection for 24 hours (5,000) — nobody can rob you',
 
   async run(interaction) {
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const userId = interaction.user.id;
 
     await withLock(`eco:${userId}`, async () => {

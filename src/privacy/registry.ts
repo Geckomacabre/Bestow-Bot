@@ -38,6 +38,8 @@ export const REGISTRY: PrivacyEntry[] = [
   del('juul_state', 'Juul'),
   // AI — all opt-in, entered by the person
   del('ai_persona', 'Your AI persona'), del('ai_prefs', 'AI memory preference'), del('ai_memory', 'AI memory notes you saved'),
+  // Premium — a local mirror of your subscription/grant, plus gift codes you bought or redeemed
+  del('premium_users', 'Premium status'), del('premium_gifts', 'Premium gift codes', 'buyer_id', 'redeemed_by'),
   // Content you authored for a server: kept for the server, detached from you
   { table: 'tags', columns: ['owner_id'], label: 'Tags you created', policy: 'anonymize', note: 'the tag stays for the server; you are removed as its owner' },
 ];

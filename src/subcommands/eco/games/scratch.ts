@@ -115,12 +115,12 @@ const Scratch: Command = {
   data: new SlashCommandBuilder()
     .setName('scratch')
     .setDescription('Buy a scratch card — reveal all 9 symbols and match 3 to win!')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addIntegerOption(o => o.setName('bet').setDescription('Cost of the scratch card').setRequired(true).setMinValue(1)),
 
   async run(interaction: ChatInputCommandInteraction) {
-    const guildId = interaction.guildId!;
+    const guildId = (interaction.guildId ?? 'global');
     const userId = interaction.user.id;
     const bet = interaction.options.getInteger('bet', true);
 

@@ -1,6 +1,7 @@
 import type { Message } from 'discord.js';
 import { chat as realChat, LlmUnavailable, llmConfigured, sanitizeReply, type ChatMessage, type ChatOptions, type ImagePart, type TextPart } from '../services/llm.js';
 import { checkLimit, limitMessage, refund } from './limits.js';
+import { hasPremium } from '../premium/index.js';
 import { buildSystem } from './prompts.js';
 import { getGuildAi, getPersona, notesForPrompt } from './store.js';
 import { imageUrlToDataUri } from './vision.js';
@@ -66,7 +67,7 @@ export async function handleAiMessage(message: Message, deps: Deps = defaultDeps
   const imageAtts = [...message.attachments.values()].filter(a => a.contentType?.startsWith('image/') && !a.contentType.includes('svg')).slice(0, MAX_IMAGES);
   if (!text && !imageAtts.length) { await message.reply({ content: '👋 Ask me anything — for example: `@me explain how tides work`.', allowedMentions: { parse: [], repliedUser: false } }).catch(() => {}); return 'replied'; }
 
-  const lim = checkLimit(message.author.id);
+  const lim = checkLimit(message.author.id, Date.now(), await hasPremium(message.author.id, { client: message.client }));
   if (!lim.ok) { await message.reply({ content: limitMessage(lim), allowedMentions: { parse: [], repliedUser: false } }).catch(() => {}); return 'limited'; }
 
   try {

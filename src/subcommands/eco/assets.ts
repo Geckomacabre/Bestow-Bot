@@ -247,14 +247,16 @@ export const questSubs: Sub[] = [
     },
   },
   {
-    name: 'leaderboard', description: 'View the quest leaderboard for this server',
+    name: 'leaderboard', description: 'View the quest leaderboard (this server, or everyone outside a server)',
     async run(i) {
       await i.deferReply();
       const ctx = await ecoCtx(i);
-      const rows = await questLeaderboard(await memberIds(i.guild!), 10);
+      // No guild (DM / user install) → no member list, so rank everyone and show plain usernames (mentions of strangers render as raw IDs).
+      const rows = await questLeaderboard(i.guild ? await memberIds(i.guild) : null, 10);
       if (!rows.length) { await i.editReply(cv2Box('Nobody has completed a quest yet.', Colors.Blurple)); return; }
       const medals = ['🥇', '🥈', '🥉'];
-      await i.editReply(cv2Box(`🗺️ **Quest leaderboard**\n\n${rows.map((r, n) => `${medals[n] ?? `**${n + 1}.**`} <@${r.user_id}> — **${r.completed}** quests · ${ctx.sym} ${short(r.total_earned)}`).join('\n')}`, Colors.Gold));
+      const names = i.guild ? null : await Promise.all(rows.map(async r => (await i.client.users.fetch(r.user_id).catch(() => null))?.username ?? 'Unknown user'));
+      await i.editReply(cv2Box(`🗺️ **Quest leaderboard**\n\n${rows.map((r, n) => `${medals[n] ?? `**${n + 1}.**`} ${names ? `**${names[n]}**` : `<@${r.user_id}>`} — **${r.completed}** quests · ${ctx.sym} ${short(r.total_earned)}`).join('\n')}`, Colors.Gold));
     },
   },
 ];
