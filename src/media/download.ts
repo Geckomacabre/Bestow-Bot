@@ -122,6 +122,32 @@ export async function downloadPost(input: string, o: { maxBytes: number; mode?: 
   });
 }
 
+/**
+ * /soundcloud: a track URL, or a search (yt-dlp's `scsearch1:` prefix — a search, never a URL, so no allow-list is needed for it).
+ * Audio comes back as MP3 with the track's metadata.
+ */
+export async function soundcloud(query: string, o: { maxBytes: number; run?: Runner }): Promise<{ info: PostInfo; data: Buffer }> {
+  const q = query.trim();
+  if (/^https?:\/\//i.test(q)) {
+    const u = parseDownloadUrl(q);
+    if (!/(^|\.)soundcloud\.com$/i.test(u.hostname)) throw new MediaError('That isn\'t a SoundCloud link.');
+    const r = await downloadPost(u.toString(), { maxBytes: o.maxBytes, mode: 'audio', run: o.run });
+    return { info: r.info, data: r.data };
+  }
+  if (!q || q.length > 200) throw new MediaError('Give me a song to search for.');
+  const run = o.run ?? defaultRun;
+  return withWorkdir(async dir => {
+    const args = buildArgs('x', { mode: 'audio', maxBytes: o.maxBytes, dir, cookies: Bun.env.YTDLP_COOKIES });
+    args.splice(args.indexOf('--'), 2, '--dump-json', '--no-simulate', '--', `scsearch1:${q}`);
+    const r = await run(YTDLP, args, { cwd: dir, timeoutMs: TIMEOUT_MS });
+    const files = (await readdir(dir)).filter(f => f.startsWith('out.') && !/\.(part|ytdl|json|jpg|webp|png)$/.test(f));
+    const info = parseInfoJson(r.stdout);
+    if (r.code !== 0) throw new MediaError(explainFailure(r.stderr));
+    if (!files.length || !info) throw new MediaError(`No SoundCloud tracks found for **${q.slice(0, 80)}**.`);
+    return { info, data: Buffer.from(await Bun.file(path.join(dir, files[0]!)).arrayBuffer()) };
+  });
+}
+
 export const HEIGHTS = [1080, 720, 480, 360, 240, 144] as const;
 
 /** The resolutions to try, best first: the requested one (default 720p) and then each smaller one, so an oversized file can shrink. */

@@ -4,6 +4,7 @@ import { initCustomizeSchema } from '../customize/accent.js';
 import { initTagsSchema } from '../tags/store.js';
 import { initProfileSchema } from '../profile/store.js';
 import { initTrackerSchema } from '../crypto/tracker.js';
+import { initLastfmSchema } from '../music/lastfm.js';
 
 /** Schemas for the Heist-parity features. Each module owns its tables; this is the one place they are started. */
 export async function initHeistSchemas(): Promise<void> {
@@ -13,4 +14,5 @@ export async function initHeistSchemas(): Promise<void> {
   await initTagsSchema();
   await initProfileSchema();
   await initTrackerSchema();
+  await initLastfmSchema();
 }

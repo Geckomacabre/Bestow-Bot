@@ -38,6 +38,8 @@ export const REGISTRY: PrivacyEntry[] = [
   del('juul_state', 'Juul'),
   // Your own tags (/tags) and any unused export codes for them
   del('user_tags', 'Your tags'), del('tag_exports', 'Tag export codes you made'),
+  // /lastfm login (your Last.fm username, login key and display preferences)
+  del('lastfm_users', 'Your linked Last.fm account'),
   // /crypto track (transaction hashes you asked to watch)
   del('crypto_trackers', 'Crypto transactions you are tracking'),
   // /me and /donate
