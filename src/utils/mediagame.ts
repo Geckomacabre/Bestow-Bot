@@ -840,7 +840,7 @@ export interface HintPayload {
   files?: AttachmentBuilder[];
 }
 
-const HINT_COOLDOWN_MS = 60_000;
+export const HINT_COOLDOWN_MS = 60_000;
 
 // Hints are shared and public — one hint sequence for the whole room, posted
 // visibly so everyone benefits from the same reveal. Free of charge, but
@@ -857,13 +857,14 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
     return { content: `❌ All ${maxHints} hints have been used! Keep guessing or ${state.guildId ? '`/community voteskip`' : 'skip'}.` };
   }
 
-  // The cooldown keeps one person from burning through a shared round; a solo DM round has nobody to spoil it for.
+  // The cooldown keeps one person from burning through a shared round — a server channel or a group chat; a solo DM round has nobody to spoil it for.
   const elapsed = Date.now() - state.lastHintAt;
-  if (state.guildId && state.lastHintAt > 0 && elapsed < HINT_COOLDOWN_MS) {
-    const rush = await db.getActiveBoost(state.guildId, userId, 'guesscd').catch(() => null);
+  if ((state.guildId || state.interactive) && state.lastHintAt > 0 && elapsed < HINT_COOLDOWN_MS) {
+    // Outside a server the shop keeps boosts under the 'global' scope, so that is where a group chat player's Hint Rush lives.
+    const rush = await db.getActiveBoost(state.guildId ?? 'global', userId, 'guesscd').catch(() => null);
     if (!rush) {
       const secsLeft = Math.ceil((HINT_COOLDOWN_MS - elapsed) / 1000);
-      return { content: `⏳ Hints are on cooldown — next hint available in **${secsLeft}s**. *(skip with ⚡ Hint Rush from \`/shop\`)*` };
+      return { content: `⏳ Hints are on cooldown — next hint available in **${secsLeft}s**. *(skip with ⚡ Hint Rush from \`/community shop\`)*` };
     }
   }
 
@@ -1116,7 +1117,7 @@ export async function buildRound(type: MediaType, media: MediaEntry, mode: Round
   const what = isMusic ? `${ROUND_CLIP_SEC}-second clip` : 'still';
   const how = mode === 'interactive'
     ? `Press **Guess** — or use \`/guess\` — to answer; anyone here can play!\n` +
-      `> 💡 **Hint** — Reveal the next clue\n` +
+      `> 💡 **Hint** — Reveal the next clue for everyone *(shared, ${HINT_COOLDOWN_MS / 1000}s cooldown between hints)*\n` +
       `> ⏭️ **Skip** — The person who started the game can skip a round on their own; anyone else needs ${VOTES_NEEDED} people to vote\n` +
       `> ⏹️ **Stop game** — Rounds keep coming until someone stops the game\n` +
       `> ⌛ A round nobody answers ends by itself after ${INTERACTIVE_ROUND_MS / 60_000} minutes`

@@ -1,8 +1,8 @@
 import { afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import { InteractionContextType } from 'discord.js';
-import { initDb } from '../src/utils/db';
+import { addBoost, initDb } from '../src/utils/db';
 import {
-  GUESS_BUTTON, GUESS_INPUT, GUESS_MODAL, INTERACTIVE_NEXT_PREFIX, activeGames, buildRound, cancelPendingNext, castVoteSkip, hooks, requestHint, roundBusy, safeName, startInteractiveRound,
+  GUESS_BUTTON, GUESS_INPUT, GUESS_MODAL, HINT_COOLDOWN_MS, INTERACTIVE_NEXT_PREFIX, activeGames, buildRound, cancelPendingNext, castVoteSkip, hooks, requestHint, roundBusy, safeName, startInteractiveRound,
   stopGame, submitGuess, type InteractiveHost, type MediaEntry, type RoundEdit, type RoundPayload,
 } from '../src/utils/mediagame';
 import mediaguessModule from '../src/features/mediaguess';
@@ -111,10 +111,44 @@ describe('guessing', () => {
     expect(s).not.toContain('<'); expect(s).not.toContain('@everyone'); expect(s).not.toContain('@here'); expect(s).not.toMatch(/@[a-z]/);
     expect(safeName('x'.repeat(200))).toHaveLength(40); expect(safeName('Sam G')).toBe('Sam G');
   });
-  test('hints work the same as in a DM, shared by everyone in the chat and without a cooldown', async () => {
+  test('hints are shared by everyone in the chat: the first is free, the next waits out the 60-second cooldown', async () => {
     stub(); const { h } = host(); await startInteractiveRound(h, 'movie');
     const first = await requestHint(h.channelId, 'u1'), second = await requestHint(h.channelId, 'u2');
-    expect(first?.embeds?.[0]?.toJSON().title).toMatch(/Hint #1/); expect(second?.embeds?.[0]?.toJSON().title).toMatch(/Hint #2/);
+    expect(first?.embeds?.[0]?.toJSON().title).toMatch(/Hint #1/);
+    expect(second?.embeds).toBeUndefined(); // someone else asking doesn't get round it either
+    expect(second?.content).toMatch(/on cooldown — next hint available in \*\*(59|60)s\*\*/);
+    expect(second?.content).toContain('/community shop');
+    const state = activeGames.get(h.channelId)!;
+    expect(state.hintsUsed).toBe(1);
+    state.lastHintAt = Date.now() - HINT_COOLDOWN_MS - 1; // the minute is up
+    expect((await requestHint(h.channelId, 'u2'))?.embeds?.[0]?.toJSON().title).toMatch(/Hint #2/);
+    expect((await requestHint(h.channelId, 'u1'))?.content).toContain('on cooldown'); // and the clock restarts
+  });
+  test('the countdown shrinks as the minute passes', async () => {
+    stub(); const { h } = host(); await startInteractiveRound(h, 'movie');
+    await requestHint(h.channelId, 'u1');
+    activeGames.get(h.channelId)!.lastHintAt = Date.now() - 45_000;
+    expect((await requestHint(h.channelId, 'u1'))?.content).toMatch(/available in \*\*(14|15)s\*\*/);
+  });
+  test('⚡ Hint Rush skips the cooldown for its owner only, using their chat-wide (global) boost', async () => {
+    stub(); const { h } = host(); await startInteractiveRound(h, 'movie');
+    await requestHint(h.channelId, 'u1');
+    const rusher = `rush-${Date.now()}`;
+    await addBoost('global', rusher, 'guesscd', 1, Date.now() + 60_000);
+    expect((await requestHint(h.channelId, 'other'))?.content).toContain('on cooldown');
+    expect((await requestHint(h.channelId, rusher))?.embeds?.[0]?.toJSON().title).toMatch(/Hint #2/);
+    expect((await requestHint(h.channelId, rusher))?.embeds?.[0]?.toJSON().title).toMatch(/Hint #3/); // still no wait
+  });
+  test('an expired Hint Rush no longer helps', async () => {
+    stub(); const { h } = host(); await startInteractiveRound(h, 'movie');
+    await requestHint(h.channelId, 'u1');
+    const late = `late-${Date.now()}`;
+    await addBoost('global', late, 'guesscd', 1, Date.now() - 1000);
+    expect((await requestHint(h.channelId, late))?.content).toContain('on cooldown');
+  });
+  test('the round message tells players about the cooldown', async () => {
+    const round = await buildRound('movie', media, 'interactive');
+    expect(round!.embeds[0]!.toJSON().description).toContain('60s cooldown between hints');
   });
 });
 
