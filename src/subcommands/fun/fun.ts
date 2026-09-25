@@ -6,6 +6,7 @@ import * as w from '../../lookups/web.js';
 import { heartBar, pick, shipName } from '../../lookups/textfun.js';
 import { funTextSubs } from '../lookups/tools.js';
 import * as j from '../../fun/juul.js';
+import { batteryEmoji, juulEmoji } from '../../fun/juulEmoji.js';
 import * as s from '../../fun/social.js';
 import { hsub } from '../../framework/heist.js';
 import { cv2Err, cv2Text } from '../../utils/components.js';
@@ -75,7 +76,6 @@ const socialSubs: Sub[] = [
 
 /** The pause between "hitting the juul…" and the result, like Heist. Tests set it to 0. */
 export const JUUL_TIMING = { hitDelayMs: 1200 };
-const PEN = '🖊️';
 const juulName = (x: j.Juul, u: User) => x.name ? `**${x.name}**` : `${name(u)}'s juul`;
 
 const juulSubs: Sub[] = [
@@ -85,26 +85,26 @@ const juulSubs: Sub[] = [
       await i.reply(cv2Text(`🪫 Your juul is dead. Plug it in with \`/juul charge\`.${r.charging && r.fullAt ? `\n-# Charging — full ${when(r.fullAt, 'R')}` : ''}`));
       return;
     }
-    await i.reply(cv2Text(`${PEN} hitting the juul...`));
+    await i.reply(cv2Text(`${juulEmoji()} hitting the juul...`));
     if (JUUL_TIMING.hitDelayMs) await Bun.sleep(JUUL_TIMING.hitDelayMs);
-    await i.editReply(cv2Text(`${PEN} **${r.puffs.toLocaleString('en-US')}** puffs total.\n-# Battery: ${r.battery}/${j.MAX_BATTERY} ${j.batteryDot(r.battery)}`));
+    await i.editReply(cv2Text(`${juulEmoji()} **${r.puffs.toLocaleString('en-US')}** puffs total.\n-# Battery: ${r.battery}/${j.MAX_BATTERY} ${batteryEmoji(r.battery)}`));
   }),
   hsub('juul charge', async i => {
     const r = await j.charge(i.user.id);
-    const text = r.kind === 'full' ? `🔋 Your juul is already fully charged.\n-# Battery: ${j.MAX_BATTERY}/${j.MAX_BATTERY} ${j.batteryDot(j.MAX_BATTERY)}`
-      : `🔌 ${r.kind === 'started' ? 'Plugged in' : 'Already charging'} — full ${when(r.fullAt, 'R')}.\n-# Battery: ${r.battery}/${j.MAX_BATTERY} ${j.batteryDot(r.battery)}`;
+    const text = r.kind === 'full' ? `🔋 Your juul is already fully charged.\n-# Battery: ${j.MAX_BATTERY}/${j.MAX_BATTERY} ${batteryEmoji(j.MAX_BATTERY)}`
+      : `🔌 ${r.kind === 'started' ? 'Plugged in' : 'Already charging'} — full ${when(r.fullAt, 'R')}.\n-# Battery: ${r.battery}/${j.MAX_BATTERY} ${batteryEmoji(r.battery)}`;
     await i.reply(cv2Text(text));
   }),
   hsub('juul flavor', async i => {
     const f = i.options.getString('flavor', true);
     await j.setFlavor(i.user.id, f);
-    await i.reply(cv2Text(`${PEN} Loaded a **${f}** pod.`));
+    await i.reply(cv2Text(`${juulEmoji()} Loaded a **${f}** pod.`));
   }),
   hsub('juul customize', async i => {
     const nameIn = i.options.getString('name'), skin = i.options.getString('skin');
     if (nameIn == null && skin == null) { await i.reply({ ...cv2Err('❌ Give your juul a `name`, pick a `skin`, or both.') }); return; }
     const x = await j.customize(i.user.id, { name: nameIn, skin });
-    await i.reply(cv2Text(`${PEN} ${[nameIn != null ? (x.name ? `Renamed your juul to **${x.name}**.` : 'Cleared your juul\'s name.') : null, skin ? `Applied the **${x.skin}** skin.` : null].filter(Boolean).join(' ')}`, j.skinColor(x)));
+    await i.reply(cv2Text(`${juulEmoji()} ${[nameIn != null ? (x.name ? `Renamed your juul to **${x.name}**.` : 'Cleared your juul\'s name.') : null, skin ? `Applied the **${x.skin}** skin.` : null].filter(Boolean).join(' ')}`, j.skinColor(x)));
   }, { tweaks: { name: { maxLength: j.NAME_MAX } } }),
   hsub('juul stats', async i => {
     const u = i.options.getUser('user') ?? i.user;
@@ -113,9 +113,9 @@ const juulSubs: Sub[] = [
     const charging = x.charging_since != null && b < j.MAX_BATTERY;
     await i.reply({
       ...cv2Text([
-        `### ${PEN} ${juulName(x, u)}`,
+        `### ${juulEmoji()} ${juulName(x, u)}`,
         `**Puffs:** ${x.puffs.toLocaleString('en-US')}`,
-        `**Battery:** ${b}/${j.MAX_BATTERY} ${j.batteryDot(b)}${charging ? ` · 🔌 full ${when(j.fullAt(x, Date.now()), 'R')}` : ''}`,
+        `**Battery:** ${b}/${j.MAX_BATTERY} ${batteryEmoji(b)}${charging ? ` · 🔌 full ${when(j.fullAt(x, Date.now()), 'R')}` : ''}`,
         `**Flavor:** ${x.flavor}`,
         `**Skin:** ${x.skin}`,
         `**Last hit:** ${x.last_hit ? when(x.last_hit, 'R') : 'never'}`,

@@ -5,6 +5,7 @@ import commands from '../handlers/commandHandler';
 import { ownerGuardScan } from './onGuildCreate';
 import { getBotConfig } from '../utils/db';
 import { staffCommand, staffGuildId } from '../staff/index';
+import { syncJuulEmojis } from '../fun/juulEmoji';
 
 /**
  * Registers every command GLOBALLY. Bestow is a user-install app: people add it to their own account and use it in any
@@ -26,6 +27,8 @@ export const onReady = async (Bot: Client) => {
         .catch(err => logger.warn(`Couldn't register /staff in the support server (is the bot in it?): ${err}`));
     }
     logger.info(`Logged in as ${Bot.user?.tag}!`);
+    // The juul/battery art as application emojis (plain emoji until it's there); never holds up startup.
+    syncJuulEmojis(Bot).catch(err => logger.warn(`Couldn't sync the juul emojis: ${err}`));
 
     await ownerGuardScan([...Bot.guilds.cache.values()]);
 
