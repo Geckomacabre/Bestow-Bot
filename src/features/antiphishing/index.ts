@@ -7,7 +7,7 @@ let phishingDomains = new Set<string>();
 async function refreshDomains() {
   try {
     const res = await fetch('https://phish.sinking.yachts/v2/all', {
-      headers: { 'X-Identity': 'TMCBot antiphishing' },
+      headers: { 'X-Identity': 'Onyx antiphishing' },
     });
     if (!res.ok) return;
     const list: string[] = await res.json();

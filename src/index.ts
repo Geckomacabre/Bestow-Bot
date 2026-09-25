@@ -19,19 +19,21 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));
 
-export const Bot = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,          // autorole, logs (privileged — enable in Dev Portal)
-    GatewayIntentBits.GuildPresences,        // streaming detection (privileged)
-    GatewayIntentBits.GuildVoiceStates,      // voice roles
-    GatewayIntentBits.GuildModeration,       // ban/unban events
-    GatewayIntentBits.GuildMessageReactions, // polls, reaction roles
-    GatewayIntentBits.DirectMessages,        // reminder DMs
-  ],
-});
+// Privileged intents are the ones that expose the most about people, so each is documented, and presence
+// (who is playing/streaming what) is OFF unless you deliberately turn it on for the streaming-announcement feature.
+const intents = [
+  GatewayIntentBits.Guilds,
+  GatewayIntentBits.GuildMessages,
+  GatewayIntentBits.MessageContent,        // privileged: auto-moderation, counting, custom commands, XP counts, @mention chat. Content is processed in memory, never stored.
+  GatewayIntentBits.GuildMembers,          // privileged: autorole, welcome, member logs
+  GatewayIntentBits.GuildVoiceStates,      // voice roles
+  GatewayIntentBits.GuildModeration,       // ban/unban events
+  GatewayIntentBits.GuildMessageReactions, // polls, reaction roles
+  GatewayIntentBits.DirectMessages,        // reminder DMs, DM chat
+];
+if (Bun.env.ENABLE_PRESENCE_INTENT === '1') intents.push(GatewayIntentBits.GuildPresences); // privileged: streaming detection only
+
+export const Bot = new Client({ intents });
 
 await db.initDb();
 registerEvents(Bot);

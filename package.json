@@ -11,6 +11,7 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "validate": "bun scripts/validate-commands.ts",
+    "docs": "bun scripts/gen-commands-doc.ts",
     "check": "bun run typecheck && bun run validate && bun test",
     "format": "prettier --write src",
     "build:native": "cmake-js compile --CDWITH_BACKWARD=OFF",

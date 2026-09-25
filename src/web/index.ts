@@ -37,17 +37,20 @@ const CLIENT_SECRET = Bun.env.DISCORD_CLIENT_SECRET;
 
 function getSessionFromCookie(cookieHeader: string | null): SessionUser | null {
   if (!cookieHeader) return null;
-  const match = cookieHeader.match(/tmcbot_session=([^;]+)/);
+  const match = cookieHeader.match(/onyx_session=([^;]+)/);
   if (!match) return null;
   return getSession(decodeURIComponent(match[1]!));
 }
 
+// `Secure` whenever the dashboard is served over HTTPS (browsers refuse Secure cookies on plain http://localhost, so it stays off there).
+const SECURE = WEB_URL.startsWith('https://') ? '; Secure' : '';
+
 function sessionCookie(id: string): string {
-  return `tmcbot_session=${encodeURIComponent(id)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400`;
+  return `onyx_session=${encodeURIComponent(id)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400${SECURE}`;
 }
 
 function clearCookie(): string {
-  return `tmcbot_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`;
+  return `onyx_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${SECURE}`;
 }
 
 function redirect(url: string, extra?: Record<string, string>): Response {
@@ -157,7 +160,7 @@ export function startWebServer() {
 
   app.get('/auth/logout', ({ request }) => {
     const cookie = request.headers.get('cookie');
-    const match = cookie?.match(/tmcbot_session=([^;]+)/);
+    const match = cookie?.match(/onyx_session=([^;]+)/);
     if (match) deleteSession(decodeURIComponent(match[1]!));
     return redirect('/', { 'Set-Cookie': clearCookie() });
   });
