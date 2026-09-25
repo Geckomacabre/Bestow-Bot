@@ -1,7 +1,7 @@
-import { getJson, getBuffer, postJson, HttpError, USER_AGENT } from '../framework/http.js';
+import { getJson, getBuffer, getText, postJson, HttpError, USER_AGENT } from '../framework/http.js';
 import { LookupError } from './handler.js';
 
-/** Roblox public web APIs (no key). Some endpoints (badges, followers list, presence) need a login and are not used. */
+/** Roblox public web APIs (no key). Follower/following lists need a login; see ROBLOX_COOKIE below. */
 
 const cache = 5 * 60_000;
 export const ROBLOX_TAX = 0.3;
@@ -197,7 +197,166 @@ export function findRolimons(items: RolimonsItem[], q: string): RolimonsItem | n
   return items.find(i => i.name.toLowerCase() === s) ?? items.find(i => i.acronym.toLowerCase() === s) ?? items.find(i => i.name.toLowerCase().includes(s)) ?? null;
 }
 
+// ─── Follow lists, badges, inventory (Heist extras) ─────────────────────────
+
+/**
+ * Roblox now serves follower/following lists only to logged-in accounts. ROBLOX_COOKIE (the .ROBLOSECURITY cookie of a spare account
+ * you own — never your main one) unlocks them; without it these commands explain why they can't list names.
+ */
+const authHeaders = (): Record<string, string> => (Bun.env.ROBLOX_COOKIE ? { Cookie: `.ROBLOSECURITY=${Bun.env.ROBLOX_COOKIE}` } : {});
+
+export async function followList(id: number, which: 'followers' | 'followings'): Promise<{ id: number; name: string; displayName: string }[]> {
+  let r: { data: { id: number }[] };
+  try {
+    r = await getJson(`https://friends.roblox.com/v1/users/${id}/${which}?limit=50&sortOrder=Desc`, { cacheMs: cache, headers: authHeaders() });
+  } catch (e) {
+    if (e instanceof HttpError && (e.status === 401 || e.status === 403)) {
+      throw new LookupError(`Roblox only shows ${which === 'followers' ? 'follower' : 'following'} lists to logged-in accounts, and the bot owner hasn't set one up (ROBLOX_COOKIE).`);
+    }
+    throw e;
+  }
+  return usersByIds((r.data ?? []).map(x => x.id));
+}
+
+export interface RbxBadge { id: number; name: string; description?: string; awarder?: { id: number; type: string }; awardedDate?: string; icon?: string }
+
+export async function recentBadges(id: number, limit = 25): Promise<RbxBadge[]> {
+  let r: { data: RbxBadge[] };
+  try { r = await getJson(`https://badges.roblox.com/v1/users/${id}/badges?limit=${limit}&sortOrder=Desc`, { cacheMs: cache }); }
+  catch (e) { if (e instanceof HttpError && e.status === 403) throw new LookupError('That user\'s badges are private.'); throw e; }
+  const list = (r.data ?? []).slice(0, limit);
+  if (!list.length) return [];
+  const ids = list.map(b => b.id).join(',');
+  const [dates, icons] = await Promise.all([
+    getJson<{ data: { badgeId: number; awardedDate: string }[] }>(`https://badges.roblox.com/v1/users/${id}/badges/awarded-dates?badgeIds=${ids}`, { cacheMs: cache }).catch(() => ({ data: [] })),
+    getJson<{ data: { targetId: number; imageUrl?: string; state: string }[] }>(`https://thumbnails.roblox.com/v1/badges/icons?badgeIds=${ids}&size=150x150&format=Png`, { cacheMs: cache }).catch(() => ({ data: [] })),
+  ]);
+  return list.map(b => ({
+    ...b, awardedDate: dates.data.find(d => d.badgeId === b.id)?.awardedDate,
+    icon: icons.data.find(t => t.targetId === b.id && t.state === 'Completed')?.imageUrl,
+  }));
+}
+
+/** Games a user recently played, inferred from where their newest badges came from (most recent first, one row per game). */
+export async function gameHistory(id: number): Promise<{ universeId: number; name: string; rootPlaceId: number; lastBadge: string; badgeName: string }[]> {
+  const badges = (await recentBadges(id, 30)).slice(0, 20);
+  const details = await Promise.all(badges.map(b => getJson<{ awardingUniverse?: { id: number; name: string; rootPlaceId: number } }>(`https://badges.roblox.com/v1/badges/${b.id}`, { cacheMs: cache }).catch(() => null)));
+  const seen = new Set<number>();
+  const out: { universeId: number; name: string; rootPlaceId: number; lastBadge: string; badgeName: string }[] = [];
+  details.forEach((d, n) => {
+    const u = d?.awardingUniverse;
+    if (!u || seen.has(u.id)) return;
+    seen.add(u.id);
+    out.push({ universeId: u.id, name: u.name, rootPlaceId: u.rootPlaceId, lastBadge: badges[n]!.awardedDate ?? '', badgeName: badges[n]!.name });
+  });
+  return out;
+}
+
+/**
+ * Roblox hides the friends list of some accounts (for example under UK/Australian child-safety rules) while the count stays public.
+ * A non-zero count with an empty list means the list is hidden.
+ */
+export async function friendsHidden(id: number): Promise<{ count: number | null; listed: number; hidden: boolean }> {
+  const [c, list] = await Promise.all([counts(id), getJson<{ data: unknown[] }>(`https://friends.roblox.com/v1/users/${id}/friends`, { cacheMs: cache }).then(r => r.data?.length ?? 0).catch(() => 0)]);
+  return { count: c.friends, listed: list, hidden: (c.friends ?? 0) > 0 && list === 0 };
+}
+
+/** Names like "A Initial Necklace", "Letter B Chain", "Initial C" — the popular single-letter necklace UGC items. */
+export const isInitialNecklace = (name: string) => /\binitials?\b|\bletter\b|^\s*[A-Z]\s*(necklace|chain)\b|\b[A-Z]\s*(necklace|chain)\s*$/i.test(name);
+
+export async function necklaces(id: number): Promise<{ assetId: number; name: string }[]> {
+  let r: { data: { assetId: number; name: string }[] };
+  try { r = await getJson(`https://inventory.roblox.com/v2/users/${id}/inventory/43?limit=100&sortOrder=Desc`, { cacheMs: cache }); }
+  catch (e) { if (e instanceof HttpError && (e.status === 403 || e.status === 401)) throw new LookupError('That user\'s inventory is private.'); throw e; }
+  return (r.data ?? []).filter(x => isInitialNecklace(x.name)).map(x => ({ assetId: x.assetId, name: x.name }));
+}
+
+// ─── 3D renders ──────────────────────────────────────────────────────────────
+
+export interface Manifest3d { obj: string; mtl: string; textures: string[] }
+
+/** Roblox's CDN host for a content hash (the classic t0–t7 sharding); tr.rbxcdn.com is tried first. */
+export function hashUrl(hash: string): string[] {
+  let i = 31;
+  for (const ch of hash) i ^= ch.charCodeAt(0);
+  return [`https://tr.rbxcdn.com/${hash}`, `https://t${i % 8}.rbxcdn.com/${hash}`];
+}
+
+async function fetchHash(hash: string): Promise<Buffer> {
+  let last: unknown;
+  for (const u of hashUrl(hash)) { try { return await getBuffer(u, { maxBytes: 15 * 1024 * 1024, timeoutMs: 20_000 }); } catch (e) { last = e; } }
+  throw last;
+}
+
+async function manifestFrom(url: string): Promise<Manifest3d> {
+  const r = await getJson<{ imageUrl?: string; state?: string }>(url, { cacheMs: 60_000 });
+  if (r.state !== 'Completed' || !r.imageUrl) throw new LookupError('Roblox is still rendering that 3D model — try again in a few seconds.');
+  const m = await getJson<Partial<Manifest3d>>(r.imageUrl, { cacheMs: 60_000 });
+  if (!m.obj || !m.mtl) throw new LookupError('Roblox didn\'t return a 3D model for that.');
+  return { obj: m.obj, mtl: m.mtl, textures: m.textures ?? [] };
+}
+
+export const avatar3d = (userId: number) => manifestFrom(`https://thumbnails.roblox.com/v1/users/avatar-3d?userId=${userId}`);
+export const asset3d = (assetId: number) => manifestFrom(`https://thumbnails.roblox.com/v1/assets-thumbnail-3d?assetId=${assetId}`);
+
+/** Downloads a model and renames its files so any 3D viewer can open it: model.obj → model.mtl → <texture>.png. */
+export async function modelFiles(m: Manifest3d): Promise<{ name: string; data: Buffer }[]> {
+  const [obj, mtl, ...tex] = await Promise.all([fetchHash(m.obj), fetchHash(m.mtl), ...m.textures.slice(0, 8).map(fetchHash)]);
+  let objText = obj!.toString('utf8').replace(/^mtllib\s+\S+/m, 'mtllib model.mtl');
+  if (!/^mtllib/m.test(objText)) objText = `mtllib model.mtl\n${objText}`;
+  let mtlText = mtl!.toString('utf8');
+  for (const h of m.textures) mtlText = mtlText.split(h).join(`${h}.png`);
+  return [{ name: 'model.obj', data: Buffer.from(objText) }, { name: 'model.mtl', data: Buffer.from(mtlText) }, ...tex.map((t, n) => ({ name: `${m.textures[n]}.png`, data: t }))];
+}
+
+// ─── Rolimons players ────────────────────────────────────────────────────────
+
+export interface RolimonsPlayer { name: string; rap: number | null; value: number | null; rank: number | null; premium: boolean; privacy: boolean; terminated: boolean; lastOnline?: number; lastLocation?: string; updated?: number }
+
+export function parsePlayer(r: { success?: boolean; playername?: string; rap?: number | null; value?: number | null; rank?: number | null; premium?: boolean; privacy_enabled?: boolean; terminated?: boolean; last_online?: number | null; last_location?: string | null; stats_updated?: number | null }): RolimonsPlayer | null {
+  if (!r.success) return null;
+  return { name: r.playername ?? '', rap: r.rap ?? null, value: r.value ?? null, rank: r.rank ?? null, premium: !!r.premium, privacy: !!r.privacy_enabled, terminated: !!r.terminated,
+    lastOnline: r.last_online ?? undefined, lastLocation: r.last_location ?? undefined, updated: r.stats_updated ?? undefined };
+}
+
+export async function rolimonsPlayer(id: number): Promise<RolimonsPlayer> {
+  const p = parsePlayer(await getJson(`https://api.rolimons.com/players/v1/playerinfo/${id}`, { cacheMs: 5 * 60_000 }));
+  if (!p) throw new LookupError('Rolimons doesn\'t have that player yet (they need to be scanned first on rolimons.com).');
+  return p;
+}
+
+export interface ValuePoint { t: number; rap: number; value: number }
+
+/** Rolimons player pages embed their chart as `var chart_data = {...}`. */
+export function parseChart(html: string): ValuePoint[] {
+  const m = /var\s+chart_data\s*=\s*(\{[\s\S]*?\});/.exec(html);
+  if (!m) return [];
+  let d: { timestamp?: number[]; rap?: number[]; value?: number[] };
+  try { d = JSON.parse(m[1]!); } catch { return []; }
+  const ts = d.timestamp ?? [];
+  return ts.map((t, n) => ({ t: t < 1e12 ? t * 1000 : t, rap: d.rap?.[n] ?? 0, value: d.value?.[n] ?? 0 })).filter(p => Number.isFinite(p.t));
+}
+
+export async function rolimonsChart(id: number): Promise<ValuePoint[]> {
+  return parseChart(await getText(`https://www.rolimons.com/player/${id}`, { cacheMs: 10 * 60_000 }));
+}
+
 // ─── Pure calculators ────────────────────────────────────────────────────────
+
+/** "100k" / "1.5m" / "10b" / "1,000" → a whole number of Robux (null if it isn't one). */
+export function parseRobux(input: string): number | null {
+  const m = /^\s*R?\$?\s*([\d,]*\.?\d+)\s*([kmb])?\s*$/i.exec(input);
+  if (!m) return null;
+  const n = Number(m[1]!.replace(/,/g, '')) * ({ k: 1e3, m: 1e6, b: 1e9 }[(m[2] ?? '').toLowerCase() as 'k' | 'm' | 'b'] ?? 1);
+  return Number.isFinite(n) && n >= 1 && n <= 1e12 ? Math.round(n) : null;
+}
+
+/** An asset ID or a catalog/library/bundle URL → the ID. */
+export function parseAssetId(input: string): number | null {
+  const s = input.trim();
+  const m = /(?:catalog|library|bundles|marketplace\/asset|games)\/(\d{1,15})/i.exec(s) ?? /[?&]id=(\d{1,15})/.exec(s) ?? /^(\d{1,15})$/.exec(s);
+  return m ? Number(m[1]) : null;
+}
 
 /** Robux you receive when something sells at `price` (Roblox keeps 30%). */
 export const afterTax = (price: number) => Math.floor(price * (1 - ROBLOX_TAX));

@@ -187,6 +187,28 @@ export async function fnCosmetic(name: string): Promise<FnCosmetic> {
   try { return (await getJson<{ data: FnCosmetic }>(`https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURIComponent(name.trim())}`, { cacheMs: MIN5 })).data; }
   catch (e) { if (e instanceof HttpError && e.status === 404) throw new LookupError(`I couldn't find a Fortnite cosmetic called **${name}**.`); throw e; }
 }
+/** Battle Royale stats need a free fortnite-api.com key (FORTNITE_API_KEY). */
+export interface FnStats { name: string; level?: number; image?: string; wins: number; kills: number; kd: number; matches: number; winRate: number; minutes: number; top10?: number }
+export function parseFnStats(d: { account?: { name?: string }; battlePass?: { level?: number }; image?: string; stats?: { all?: { overall?: { wins?: number; kills?: number; kd?: number; matches?: number; winRate?: number; minutesPlayed?: number; top10?: number } } } }): FnStats | null {
+  const o = d.stats?.all?.overall;
+  if (!o) return null;
+  return { name: d.account?.name ?? '?', level: d.battlePass?.level, image: d.image, wins: o.wins ?? 0, kills: o.kills ?? 0, kd: o.kd ?? 0, matches: o.matches ?? 0, winRate: o.winRate ?? 0, minutes: o.minutesPlayed ?? 0, top10: o.top10 };
+}
+export async function fnStats(name: string): Promise<FnStats> {
+  const key = Bun.env.FORTNITE_API_KEY;
+  if (!key) throw new LookupError('Fortnite player stats need a fortnite-api.com key (FORTNITE_API_KEY), which the bot owner hasn\'t set.');
+  let r: { data?: Parameters<typeof parseFnStats>[0] };
+  try { r = await getJson(`https://fortnite-api.com/v2/stats/br/v2?name=${encodeURIComponent(name.trim())}&image=all`, { headers: { Authorization: key }, cacheMs: 5 * 60_000 }); }
+  catch (e) {
+    if (e instanceof HttpError && e.status === 404) throw new LookupError(`There's no Fortnite player called **${name.slice(0, 40)}**.`);
+    if (e instanceof HttpError && e.status === 403) throw new LookupError('That player\'s Fortnite stats are private.');
+    throw e;
+  }
+  const s = r.data ? parseFnStats(r.data) : null;
+  if (!s) throw new LookupError('Fortnite returned no stats for that player.');
+  return s;
+}
+
 export interface FnMap { images: { blank: string; pois: string }; pois: { name: string }[] }
 export const fnMap = () => getJson<{ data: FnMap }>('https://fortnite-api.com/v1/map', { cacheMs: HOUR }).then(r => r.data);
 

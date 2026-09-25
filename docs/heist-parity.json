@@ -18,7 +18,8 @@
   "rating howgay": "Rates a person on sexual orientation — can be used to out or harass someone; declined. (Bestow offers non-identity ratings instead.)",
   "rating howautistic": "Rates a person on a disability — demeaning and harassing; declined. (Bestow offers non-identity ratings instead.)",
   "rating ppsize": "Sexual content aimed at a specific person; declined. (Bestow offers non-identity ratings instead.)",
-  "eco slut": "Sexual-work variant of /eco work. Bestow ships /eco hustle in that slot: the same idea (a bigger payout that can flop) with a neutral theme."
+  "eco slut": "Sexual-work variant of /eco work. Bestow ships /eco hustle in that slot: the same idea (a bigger payout that can flop) with a neutral theme.",
+  "✨ Lookup Roblox": "Looks up the Roblox account linked to a Discord user — the same Discord↔Roblox identity cross-link as /discord2roblox, declined for the same reason."
  },
  "declinedChoices": {
   "action do": {

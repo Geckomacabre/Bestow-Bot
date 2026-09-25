@@ -77,6 +77,51 @@ export function explainFailure(stderr: string): string {
 
 export interface Downloaded { file: string; name: string; bytes: number; height?: number; mode: Mode }
 
+/** yt-dlp's metadata for a post — the fields reposts use. */
+export interface PostInfo {
+  title?: string; description?: string; uploader?: string; uploader_id?: string; uploader_url?: string; channel?: string; channel_url?: string;
+  like_count?: number; comment_count?: number; view_count?: number; repost_count?: number; timestamp?: number; thumbnail?: string; webpage_url?: string; ext?: string;
+}
+
+/** Parses the JSON line yt-dlp prints with --dump-json (ignores any other output). */
+export function parseInfoJson(stdout: string): PostInfo | null {
+  for (const line of stdout.split('\n')) {
+    const t = line.trim();
+    if (!t.startsWith('{')) continue;
+    try { return JSON.parse(t) as PostInfo; } catch { /* next line */ }
+  }
+  return null;
+}
+
+/**
+ * Downloads a post (video, or audio with mode 'audio') and returns its metadata too — used by the repost commands for
+ * Instagram and Medal, whose pages need yt-dlp's extractors. Tries 720p, 480p, 360p until it fits.
+ */
+export async function downloadPost(input: string, o: { maxBytes: number; mode?: Mode; run?: Runner }): Promise<{ info: PostInfo; data: Buffer; ext: string }> {
+  const url = parseDownloadUrl(input).toString();
+  const run = o.run ?? defaultRun;
+  const mode = o.mode ?? 'video';
+  return withWorkdir(async dir => {
+    let lastErr = '';
+    for (const h of mode === 'audio' ? [undefined] : [720, 480, 360]) {
+      const args = buildArgs(url, { mode, maxBytes: o.maxBytes, dir, height: h, cookies: Bun.env.YTDLP_COOKIES });
+      args.splice(args.indexOf('--'), 0, '--dump-json', '--no-simulate');
+      const r = await run(YTDLP, args, { cwd: dir, timeoutMs: TIMEOUT_MS });
+      const files = (await readdir(dir)).filter(f => f.startsWith('out.') && !/\.(part|ytdl|json|jpg|webp|png)$/.test(f));
+      const info = parseInfoJson(r.stdout);
+      if (r.code === 0 && files.length && info) {
+        const file = path.join(dir, files[0]!);
+        if ((await stat(file)).size <= o.maxBytes) return { info, data: Buffer.from(await Bun.file(file).arrayBuffer()), ext: files[0]!.split('.').pop()! };
+        lastErr = 'larger than max-filesize';
+        continue;
+      }
+      lastErr = r.stderr;
+      if (!/larger than max-filesize|file is larger/i.test(r.stderr)) break;
+    }
+    throw new MediaError(explainFailure(lastErr));
+  });
+}
+
 export const HEIGHTS = [1080, 720, 480, 360, 240, 144] as const;
 
 /** The resolutions to try, best first: the requested one (default 720p) and then each smaller one, so an oversized file can shrink. */
