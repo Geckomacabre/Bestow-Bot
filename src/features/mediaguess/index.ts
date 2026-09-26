@@ -5,7 +5,7 @@ import {
 import { EventModule } from '../feature';
 import {
   activeGames, castVoteSkip, checkGuess, GUESS_BUTTON, GUESS_INPUT, GUESS_MODAL, INTERACTIVE_NEXT_PREFIX, interactiveNextButton, NEXT_ROUND_PREFIX, nextRoundButton,
-  requestHint, resolveGame, restoreActiveGames, roundBusy, safeName, startGame, startInteractiveRound, STOP_PREFIX, stopGame, submitGuess, tidyAtEnd, type InteractiveHost, type MediaType,
+  requestHint, resolveGame, restoreActiveGames, roundBusy, safeName, startGame, startInteractiveRound, STOP_PREFIX, stopGame, submitGuess, tidyAtEnd, deleteLater, type InteractiveHost, type MediaType,
 } from '../../utils/mediagame';
 import { awardBonusXp } from '../../utils/xpBonus';
 import * as db from '../../utils/db';
@@ -185,6 +185,7 @@ export function followHost(i: ButtonInteraction | ModalSubmitInteraction | ChatI
     client: i.client, channelId: i.channelId ?? '', userId: i.user.id, via: i.id,
     send: payload => i.followUp(payload).then(m => ({ id: m.id })),
     edit: (id, payload) => i.webhook.editMessage(id, payload),
+    remove: id => i.webhook.deleteMessage(id),
   };
 }
 
@@ -199,7 +200,8 @@ async function stopFromButton(btn: ButtonInteraction): Promise<void> {
     const again = btn.context === InteractionContextType.BotDM ? nextRoundButton(type) : interactiveNextButton(type);
     await btn.editReply({ content: `${btn.message.content}\n⏹️ Game stopped.`, components: [again] }).catch(() => {});
   }
-  await btn.followUp({ content: `⏹️ **${safeName(displayName(btn))}** stopped the game.`, allowedMentions: { parse: [] } }).catch(() => {});
+  const note = await btn.followUp({ content: `⏹️ **${safeName(displayName(btn))}** stopped the game.`, allowedMentions: { parse: [] } }).catch(() => null);
+  if (note) deleteLater(() => btn.webhook.deleteMessage(note.id)); // the last thing the game says goes too, like its results
 }
 
 /** How the person who pressed a button is named in the chat. */

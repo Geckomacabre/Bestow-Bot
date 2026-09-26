@@ -58,7 +58,7 @@ export interface GameState {
    * Guesses come from a pop-up box, the round message is edited through the command's own webhook, and it ends by itself before
    * that webhook's 15 minutes run out.
    */
-  interactive?: { ownerId: string; edit: (payload: RoundEdit) => Promise<unknown>; timer: ReturnType<typeof setTimeout>; tidy?: TidyJob[] };
+  interactive?: { ownerId: string; edit: (payload: RoundEdit) => Promise<unknown>; remove?: (messageId: string) => Promise<unknown>; timer: ReturnType<typeof setTimeout>; tidy?: TidyJob[] };
 }
 
 /** A message a person's own press put into a round (their guess and how it went, a hint, a skip vote), and how to take it away again. */
@@ -1256,6 +1256,11 @@ export async function resolveGame(
   const seconds = dm ? Math.round(nextDelay() / 1000) : 10;
   const next = !goOn ? '\n⏹️ Game stopped.' : dm ? `\n_Next round in ${seconds} seconds… press ⏹️ Stop game to end it._` : '\n_Next round starting in 10 seconds…_';
   const components = dm ? (goOn ? [stopRow(state.type)] : [nextRoundButton(state.type)]) : [];
+  // A DM game's results are cleared away after a few minutes (a server's stay: those channels are their admins' to keep).
+  const post = async (payload: Parameters<typeof channel.send>[0]) => {
+    const sent = await channel.send(payload).catch(() => null);
+    if (sent && dm) deleteLater(() => sent.delete());
+  };
 
   // Delete the original round message — keeps the channel clean and means a
   // stale Hint/Vote Skip click can't land on a round that's already over.
@@ -1287,18 +1292,14 @@ export async function resolveGame(
 
       const full = state.media.audioPreview ? await downloadPreview(state.media.audioPreview) : null;
       const files = full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [];
-      await channel.send({ embeds: [embed], files, components }).catch(() => {});
+      await post({ embeds: [embed], files, components });
     } else {
       // Show the display name as plain text (not a <@id> mention) so it reads
       // correctly in mobile push notifications, which don't resolve raw mentions.
-      await channel
-        .send({ content: `🎉 ${dm ? 'You got it' : `**${winner.name}** got it`}! The ${typeStr} was **${state.media.title}**!${next}`, components })
-        .catch(() => {});
+      await post({ content: `🎉 ${dm ? 'You got it' : `**${winner.name}** got it`}! The ${typeStr} was **${state.media.title}**!${next}`, components });
     }
   } else {
-    await channel
-      .send({ content: `${reason === 'stop' ? '⏹️ Game stopped!' : '⏭️ Skipped!'} The ${typeStr} was **${state.media.title}**.${next}`, components })
-      .catch(() => {});
+    await post({ content: `${reason === 'stop' ? '⏹️ Game stopped!' : '⏭️ Skipped!'} The ${typeStr} was **${state.media.title}**.${next}`, components });
   }
 
   if (dm) {
@@ -1371,8 +1372,21 @@ export async function castVoteSkip(
 // For anywhere the bot can't read or post in the channel (a group DM, a server it isn't in): the round is the command's own reply,
 // guesses come from a pop-up box, and everything after that is an edit through the same interaction's webhook.
 
-/** Test hooks: swap how a round's pick is fetched, or how long an interactive round lasts. */
-export const hooks: { fetchEntry?: typeof fetchEntry; roundMs?: number; nextDelayMs?: number } = {};
+/** Test hooks: swap how a round's pick is fetched, or how long an interactive round, a pause or a result's stay lasts. */
+export const hooks: { fetchEntry?: typeof fetchEntry; roundMs?: number; nextDelayMs?: number; resultMs?: number } = {};
+
+/** How long a finished round's result stays in the chat before the bot deletes it. */
+export const RESULT_LIFETIME_MS = 5 * 60_000;
+
+/**
+ * Deletes something the game posted once its result has been on show for RESULT_LIFETIME_MS, so a long game doesn't leave a trail
+ * of finished rounds behind. Best effort: a timer is lost if the bot restarts, and a group chat's message can only be deleted while
+ * an interaction's 15 minutes last, so an old one may stay. Never throws, and never keeps the process alive.
+ */
+export function deleteLater(remove: () => Promise<unknown>): void {
+  const t = setTimeout(() => { void (async () => remove())().catch(() => {}); }, hooks.resultMs ?? RESULT_LIFETIME_MS);
+  t.unref?.();
+}
 
 export interface InteractiveHost {
   client: Client;
@@ -1383,6 +1397,8 @@ export interface InteractiveHost {
   send: (payload: RoundPayload) => Promise<{ id: string } | null>;
   /** Edits that message later, through the same interaction's webhook. */
   edit: (messageId: string, payload: RoundEdit) => Promise<unknown>;
+  /** Deletes a message later, through the same interaction's webhook. */
+  remove?: (messageId: string) => Promise<unknown>;
   /** The id of the interaction this host posts through, so its own reply is not removed before the round it posts (see tidyAtEnd). */
   via?: string;
 }
@@ -1409,6 +1425,7 @@ export async function startInteractiveRound(host: InteractiveHost, type: MediaTy
       interactive: {
         ownerId: host.userId,
         edit: p => host.edit(msg.id, p),
+        remove: host.remove,
         timer: setTimeout(() => {
           if (activeGames.get(channelId) !== state || state.answered) return;
           state.answered = true;
@@ -1454,6 +1471,12 @@ async function finishInteractive(state: GameState, winner: { id: string; name: s
     edit = { content: `${lead} The ${typeNoun(type)} was **${media.title}**.${tail}`, embeds: [], attachments: [], components };
   }
   await state.interactive!.edit(edit).catch(() => {});
+  if (state.messageId) {
+    // The round's own message, now its result: it goes after a few minutes. The interaction that started the round is the one that
+    // posted it, so it is asked first; if its 15 minutes are up by then, the one that ended the round (fresher) gets a try.
+    const id = state.messageId, first = state.interactive!.remove, second = nextHost?.remove;
+    if (first || second) deleteLater(async () => { try { await first!(id); } catch { await second?.(id); } });
+  }
   void tidyRound(state, goOn ? nextHost!.via : undefined); // not awaited: many deletions must not hold up the next round
   if (goOn) {
     scheduleNext(state.channelId, nextDelay(), async () => {

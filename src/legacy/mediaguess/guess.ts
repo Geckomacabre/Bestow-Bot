@@ -45,6 +45,7 @@ const guess: Sub = {
         client: interaction.client, channelId: interaction.channelId, userId: interaction.user.id,
         send: payload => interaction.editReply(payload).then(m => ({ id: m.id })),
         edit: (id, payload) => interaction.webhook.editMessage(id, payload),
+        remove: id => interaction.webhook.deleteMessage(id),
       }, type).catch(() => false);
       if (!started) await interaction.editReply('😵 I couldn\'t load a round just now — try again in a moment.');
       return;
