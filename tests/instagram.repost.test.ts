@@ -31,9 +31,9 @@ const reel: InstaJson = { ...carousel, shortcode: 'CxAbCdEfGhI', username: 'brit
 const script = (j: InstaJson | string, seen: string[] = []): ScriptRunner => async code => { seen.push(code); return typeof j === 'string' ? j : `${JSON.stringify(j)}\n`; };
 const missing: ScriptRunner = async () => { throw new InstaloaderMissing('nope'); };
 /** A stand-in for downloading a file from the CDN: records what was asked for, and can refuse (too big). */
-const cdn = (o: { tooBig?: boolean } = {}) => {
+const cdn = (o: { tooBig?: boolean; bytes?: number } = {}) => {
   const asked: { url: string; max: number }[] = [];
-  return { asked, download: async (url: string, max: number) => { asked.push({ url, max }); if (o.tooBig) throw new Error('over the limit'); return Buffer.from('reel-bytes'); } };
+  return { asked, download: async (url: string, max: number) => { asked.push({ url, max }); if (o.tooBig) throw new Error('over the limit'); return o.bytes ? Buffer.alloc(o.bytes, 1) : Buffer.from('reel-bytes'); } };
 };
 
 describe('Instagram links', () => {
@@ -62,24 +62,44 @@ describe('Instaloader reads the post first, so a repost is quick', () => {
     expect(post.stats.map(s => s.value)).toEqual([11101714, 46439, null]);
   });
 
-  test('a single video is downloaded straight from its link, within the upload limit — no yt-dlp, no re-encoding', async () => {
-    const seen: string[] = [], y = goodVideo(), c = cdn();
-    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(reel, seen), download: c.download });
-    expect(y.calls).toBe(0); expect(c.asked).toEqual([{ url: 'https://scontent.cdninstagram.com/reel.mp4', max: 9_000_000 }]);
+  test('a video that fits is downloaded straight from its link — no yt-dlp, no re-encoding', async () => {
+    const seen: string[] = [], y = goodVideo(), c = cdn(), shrunk: number[] = [];
+    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(reel, seen), download: c.download, shrink: async d => { shrunk.push(d.length); return d; } });
+    expect(y.calls).toBe(0); expect(shrunk).toEqual([]);
+    expect(c.asked).toEqual([{ url: 'https://scontent.cdninstagram.com/reel.mp4', max: 72_000_000 }]); // room to fetch one that needs shrinking, in the one request
     expect(post.media[0]).toMatchObject({ type: 'video', ext: 'mp4' }); expect(post.media[0]!.data?.toString()).toBe('reel-bytes');
     expect(post.author.handle).toBe('britneyspears');
   });
 
-  test('a video that does not fit is swapped for the smaller one yt-dlp can make', async () => {
-    const y = goodVideo(), c = cdn({ tooBig: true });
-    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(reel), download: c.download });
+  test('a reel a little over the limit is shrunk to fit — the usual 12 MB reel against a 10 MB limit', async () => {
+    const y = goodVideo(), c = cdn({ bytes: 12_000 }), asked: { size: number; max: number }[] = [];
+    const post = await instagramRepost(REEL, {
+      maxBytes: 10_000, ytdlpRun: y.run, scriptRun: script(reel), download: c.download,
+      shrink: async (d, max) => { asked.push({ size: d.length, max }); return Buffer.alloc(9_000, 1); },
+    });
+    expect(asked).toEqual([{ size: 12_000, max: 10_000 }]); expect(y.calls).toBe(0); // one download, one encode, and no detour through yt-dlp
+    expect(post.media[0]!.data).toHaveLength(9_000); expect(post.media[0]).toMatchObject({ ext: 'mp4' });
+  });
+
+  test('the original is only fetched up to what could be shrunk: 8 times the limit, never more than 80 MB', async () => {
+    const c = cdn({ bytes: 1 });
+    await instagramRepost(REEL, { maxBytes: 100_000_000, scriptRun: script(reel), download: c.download });
+    await instagramRepost(REEL, { maxBytes: 2_000_000, scriptRun: script(reel), download: c.download });
+    expect(c.asked.map(a => a.max)).toEqual([80_000_000, 16_000_000]);
+  });
+
+  test('when it cannot be shrunk, yt-dlp gets one try at a smaller version', async () => {
+    const y = goodVideo(), c = cdn({ bytes: 12_000 });
+    const post = await instagramRepost(REEL, { maxBytes: 10_000, ytdlpRun: y.run, scriptRun: script(reel), download: c.download, shrink: async () => { throw new MediaError('too long'); } });
     expect(y.calls).toBe(1); expect(post.media[0]!.data?.toString()).toBe('small-video');
     expect(post.author.handle).toBe('britneyspears'); expect(post.author.url).toBe('https://www.instagram.com/britneyspears/'); // the name, not the numeric id yt-dlp reports
   });
 
-  test('and if yt-dlp cannot either, the card still comes out — the video stays a link', async () => {
-    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: failing('HTTP Error 429').run, scriptRun: script(reel), download: cdn({ tooBig: true }).download });
-    expect(post.media).toHaveLength(1); expect(post.media[0]!.data).toBeUndefined(); expect(post.author.handle).toBe('britneyspears');
+  test('and if that fails as well, the card still comes out — the video stays a link', async () => {
+    for (const c of [cdn({ bytes: 12_000 }), cdn({ tooBig: true })]) {
+      const post = await instagramRepost(REEL, { maxBytes: 10_000, ytdlpRun: failing('HTTP Error 429').run, scriptRun: script(reel), download: c.download, shrink: async () => { throw new MediaError('too long'); } });
+      expect(post.media).toHaveLength(1); expect(post.media[0]!.data).toBeUndefined(); expect(post.author.handle).toBe('britneyspears');
+    }
   });
 });
 

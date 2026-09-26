@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { getBufferPublic } from '../framework/http.js';
 import { DownloadError, SIZE_OR_LENGTH, downloadPost, type Runner } from '../media/download.js';
+import { shrinkVideo } from '../media/shrink.js';
 import { LookupError } from './handler.js';
 import { ytdlpPost, type RepostPost } from './repost.js';
 
@@ -28,19 +29,6 @@ export function instagramRef(link: string): { kind: 'p' | 'reel' | 'tv'; code: s
 
 /** The shortcode of a post, reel or IGTV link. */
 export const instagramShortcode = (link: string) => instagramRef(link)?.code ?? null;
-
-/**
- * The default way /instagram repost answers: a link to an embed service, which Discord turns into the video or photos itself. The bot
- * downloads and uploads nothing, so the reply is instant (the service can't be called by a program — it puts a browser check in front
- * of everything but Discord's own link preview — so a link is the only way to use it). INSTAGRAM_REPOST=card switches to the repost card
- * built from Instaloader and yt-dlp instead; INSTAGRAM_EMBED_HOST changes the service.
- */
-export const DEFAULT_EMBED_HOST = 'www.d.oginstagram.com';
-export const embedMode = () => (Bun.env.INSTAGRAM_REPOST ?? 'embed').trim().toLowerCase() !== 'card';
-export function embedLink(ref: { kind: string; code: string }): string {
-  const host = Bun.env.INSTAGRAM_EMBED_HOST?.trim().toLowerCase();
-  return `https://${host && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(host) ? host : DEFAULT_EMBED_HOST}/${ref.kind}/${ref.code}`;
-}
 
 /** What instaloader_post.py prints. */
 export type InstaJson =
@@ -101,6 +89,8 @@ export async function fetchInstagramPost(link: string, run: ScriptRunner = defau
 }
 
 const downloadFile = (url: string, maxBytes: number) => getBufferPublic(url, { maxBytes, timeoutMs: 45_000 });
+/** The biggest original that is worth downloading to shrink. */
+const MAX_SHRINKABLE = 80_000_000;
 
 /** yt-dlp's take on a post: the video, sized to fit. `first` is what Instaloader said if it had already failed. */
 async function viaYtdlp(link: string, o: { maxBytes: number; ytdlpRun?: Runner }, first?: unknown): Promise<RepostPost> {
@@ -124,7 +114,10 @@ async function viaYtdlp(link: string, o: { maxBytes: number; ytdlpRun?: Runner }
  */
 export async function instagramRepost(
   link: string,
-  o: { maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner; download?: (url: string, maxBytes: number) => Promise<Buffer> },
+  o: {
+    maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner;
+    download?: (url: string, maxBytes: number) => Promise<Buffer>; shrink?: (data: Buffer, maxBytes: number) => Promise<Buffer>;
+  },
 ): Promise<RepostPost> {
   let post: RepostPost;
   try {
@@ -135,9 +128,13 @@ export async function instagramRepost(
   }
   const only = post.media.length === 1 && post.media[0]!.type === 'video' ? post.media[0]! : null;
   if (only) {
-    // Fetched here, not left to the card, so one that doesn't fit can be swapped for a smaller version.
-    try { only.data = await (o.download ?? downloadFile)(only.url, o.maxBytes); only.ext = 'mp4'; }
-    catch { return viaYtdlp(link, o).catch(() => post); }
+    // Fetched here, not left to the card, so a video that is a little over the limit can be shrunk to fit instead of becoming a link.
+    // Reels are usually 12–13 MB against a 10 MB limit; anything far beyond what could be shrunk is not fetched at all.
+    try {
+      const data = await (o.download ?? downloadFile)(only.url, Math.min(o.maxBytes * 8, MAX_SHRINKABLE));
+      only.data = data.length <= o.maxBytes ? data : await (o.shrink ?? shrinkVideo)(data, o.maxBytes);
+      only.ext = 'mp4';
+    } catch { return viaYtdlp(link, o).catch(() => post); } // one more chance with yt-dlp; failing that, the video stays a link on the card
   }
   return post;
 }
