@@ -1,7 +1,34 @@
 {
   "name": "bestow",
-  "description": "Multipurpose Discord bot: economy, media tools, AI, lookups and community tooling. Derived from TMCBot (GPL-3.0-or-later).",
+  "description": "Free, privacy-first multipurpose Discord bot you add to your own account: economy, casino, giveaways, minigames, media editing, text-to-speech, AI tools, lookups and community tools. Derived from TMCBot (GPL-3.0-or-later).",
   "version": "1.0.0",
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "discord-js",
+    "user-install",
+    "user-installable-app",
+    "multipurpose-bot",
+    "economy-bot",
+    "casino",
+    "giveaway-bot",
+    "minigames",
+    "text-to-speech",
+    "media-editing",
+    "privacy",
+    "self-hosted",
+    "bun",
+    "typescript",
+    "sqlite"
+  ],
+  "homepage": "https://github.com/Geckomacabre/Bestow-Bot#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Geckomacabre/Bestow-Bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Geckomacabre/Bestow-Bot/issues"
+  },
   "private": true,
   "type": "module",
   "main": "src/index.ts",

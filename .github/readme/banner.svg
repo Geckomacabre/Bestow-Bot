@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="t d">
+  <title id="t">Bestow</title>
+  <desc id="d">The multipurpose Discord bot you add to your own account. Built with Bun, TypeScript and discord.js.</desc>
+  <style>
+    text { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, 'Noto Sans', 'DejaVu Sans', sans-serif; fill: #ffffff; }
+    .title { font-size: 104px; font-weight: 800; letter-spacing: -2px; }
+    .tag   { font-size: 30px; font-weight: 500; fill-opacity: 0.92; }
+    .pill  { font-size: 19px; font-weight: 600; }
+    .small { font-size: 14px; font-weight: 700; letter-spacing: 3px; fill-opacity: 0.6; }
+    .tech  { font-size: 20px; font-weight: 600; fill-opacity: 0.9; }
+  </style>
+  
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1d4d"/>
+      <stop offset="0.55" stop-color="#4450d6"/>
+      <stop offset="1" stop-color="#7c4dff"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0.85" cy="0.1" r="0.6">
+      <stop offset="0" stop-color="#ff7ad9" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ff7ad9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0.05" cy="1" r="0.7">
+      <stop offset="0" stop-color="#3ee0ff" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#3ee0ff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.6" fill="#ffffff" fill-opacity="0.10"/>
+    </pattern>
+  </defs>
+  
+  <rect width="1280" height="420" rx="28" fill="url(#bg)"/>
+  <rect width="1280" height="420" rx="28" fill="url(#glowA)"/>
+  <rect width="1280" height="420" rx="28" fill="url(#glowB)"/>
+  <rect width="1280" height="420" rx="28" fill="url(#dots)"/>
+  
+  <g transform="translate(80 90) scale(1)">
+    <rect x="0" y="0" width="200" height="200" rx="46" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/>
+    <path d="M100 58 C 84 30, 50 34, 56 56 C 60 70, 82 70, 100 64 Z" fill="#ffd166"/>
+    <path d="M100 58 C 116 30, 150 34, 144 56 C 140 70, 118 70, 100 64 Z" fill="#ffc43d"/>
+    <rect x="40" y="64" width="120" height="30" rx="8" fill="#ffffff"/>
+    <rect x="48" y="94" width="104" height="72" rx="8" fill="#ffffff" fill-opacity="0.92"/>
+    <rect x="90" y="64" width="20" height="102" fill="#ffc43d"/>
+    <circle cx="100" cy="62" r="9" fill="#ffb703"/>
+  </g>
+  <text class="title" x="330" y="170">Bestow</text>
+  <text class="tag" x="334" y="222">The multipurpose Discord bot you add to your own account</text>
+  <rect x="334" y="256" width="118" height="40" rx="20" fill="#ffffff" fill-opacity="0.13" stroke="#ffffff" stroke-opacity="0.28"/><text class="pill" x="393" y="282.84" text-anchor="middle">Economy</text><rect x="464" y="256" width="108" height="40" rx="20" fill="#ffffff" fill-opacity="0.13" stroke="#ffffff" stroke-opacity="0.28"/><text class="pill" x="518" y="282.84" text-anchor="middle">Casino</text><rect x="584" y="256" width="140" height="40" rx="20" fill="#ffffff" fill-opacity="0.13" stroke="#ffffff" stroke-opacity="0.28"/><text class="pill" x="654" y="282.84" text-anchor="middle">Giveaways</text><rect x="736" y="256" width="140" height="40" rx="20" fill="#ffffff" fill-opacity="0.13" stroke="#ffffff" stroke-opacity="0.28"/><text class="pill" x="806" y="282.84" text-anchor="middle">Minigames</text><rect x="888" y="256" width="97" height="40" rx="20" fill="#ffffff" fill-opacity="0.13" stroke="#ffffff" stroke-opacity="0.28"/><text class="pill" x="936.5" y="282.84" text-anchor="middle">Media</text><rect x="997" y="256" width="97" height="40" rx="20" fill="#ffffff" fill-opacity="0.13" stroke="#ffffff" stroke-opacity="0.28"/><text class="pill" x="1045.5" y="282.84" text-anchor="middle">Voice</text><rect x="1106" y="256" width="118" height="40" rx="20" fill="#ffffff" fill-opacity="0.13" stroke="#ffffff" stroke-opacity="0.28"/><text class="pill" x="1165" y="282.84" text-anchor="middle">Lookups</text>
+  <text class="small" x="334" y="334">BUILT WITH</text><g transform="translate(334 348) scale(1.0833333333333333)"><path fill="#ffffff" d="M12 22.596c6.628 0 12-4.338 12-9.688 0-3.318-2.057-6.248-5.219-7.986-1.286-.715-2.297-1.357-3.139-1.89C14.058 2.025 13.08 1.404 12 1.404c-1.097 0-2.334.785-3.966 1.821a49.92 49.92 0 0 1-2.816 1.697C2.057 6.66 0 9.59 0 12.908c0 5.35 5.372 9.687 12 9.687v.001ZM10.599 4.715c.334-.759.503-1.58.498-2.409 0-.145.202-.187.23-.029.658 2.783-.902 4.162-2.057 4.624-.124.048-.199-.121-.103-.209a5.763 5.763 0 0 0 1.432-1.977Zm2.058-.102a5.82 5.82 0 0 0-.782-2.306v-.016c-.069-.123.086-.263.185-.172 1.962 2.111 1.307 4.067.556 5.051-.082.103-.23-.003-.189-.126a5.85 5.85 0 0 0 .23-2.431Zm1.776-.561a5.727 5.727 0 0 0-1.612-1.806v-.014c-.112-.085-.024-.274.114-.218 2.595 1.087 2.774 3.18 2.459 4.407a.116.116 0 0 1-.049.071.11.11 0 0 1-.153-.026.122.122 0 0 1-.022-.083 5.891 5.891 0 0 0-.737-2.331Zm-5.087.561c-.617.546-1.282.76-2.063 1-.117 0-.195-.078-.156-.181 1.752-.909 2.376-1.649 2.999-2.778 0 0 .155-.118.188.085 0 .304-.349 1.329-.968 1.874Zm4.945 11.237a2.957 2.957 0 0 1-.937 1.553c-.346.346-.8.565-1.286.62a2.178 2.178 0 0 1-1.327-.62 2.955 2.955 0 0 1-.925-1.553.244.244 0 0 1 .064-.198.234.234 0 0 1 .193-.069h3.965a.226.226 0 0 1 .19.07c.05.053.073.125.063.197Zm-5.458-2.176a1.862 1.862 0 0 1-2.384-.245 1.98 1.98 0 0 1-.233-2.447c.207-.319.503-.566.848-.713a1.84 1.84 0 0 1 1.092-.11c.366.075.703.261.967.531a1.98 1.98 0 0 1 .408 2.114 1.931 1.931 0 0 1-.698.869v.001Zm8.495.005a1.86 1.86 0 0 1-2.381-.253 1.964 1.964 0 0 1-.547-1.366c0-.384.11-.76.32-1.079.207-.319.503-.567.849-.713a1.844 1.844 0 0 1 1.093-.108c.367.076.704.262.968.534a1.98 1.98 0 0 1 .4 2.117 1.932 1.932 0 0 1-.702.868Z"/></g><text class="tech" x="370" y="368">Bun</text><g transform="translate(444 348) scale(1.0833333333333333)"><path fill="#ffffff" d="M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z"/></g><text class="tech" x="480" y="368">TypeScript</text><g transform="translate(618 348) scale(1.0833333333333333)"><path fill="#ffffff" d="M19.427 5.015c-1.586 0-2.907.607-3.702 1.561h.002-.002a3.448 3.448 0 0 0-.806 2.401c.06 1.485.92 2.423 1.92 3.017a6.316 6.316 0 0 0 .796.397l1.833.804c.986.41 1.735.717 1.999 1.39.066.17.102.363.102.588 0 1.05-.844 1.73-2.348 1.73-1.257 0-2.555-.617-3.523-1.524l-1.11 1.31-.27.318a6.93 6.93 0 0 0 4.841 1.978c2.441 0 4.092-1.179 4.64-2.78A3.754 3.754 0 0 0 24 14.988c0-.328-.032-.628-.091-.906-.23-1.07-.879-1.789-1.783-2.321a7.17 7.17 0 0 0-.001 0 7.17 7.17 0 0 0-.844-.42l-1.813-.763c-.895-.364-1.737-.69-2.032-1.35a1.319 1.319 0 0 1-.11-.545c0-.99.824-1.587 2.101-1.587 1.153 0 2.08.433 2.925 1.154l.897-1.106.34-.419a5.96 5.96 0 0 0-4.162-1.71ZM0 5.015v10.313h3.904c1.024 0 1.808-.162 2.535-.53a2.147 2.147 0 0 1 2.247-2.225c.372-.755.522-1.505.522-2.49 0-1.016-.191-1.9-.575-2.666a4.278 4.278 0 0 0-1.738-1.769c-.766-.427-1.694-.633-2.8-.633Zm10.726 0v9.707c0 1.187-.96 2.15-2.144 2.15a2.141 2.141 0 0 1-1.816-1.007l-.215.093a7.533 7.533 0 0 1-.625.24 6.853 6.853 0 0 1-1.113.241c.42 1.344 2.06 2.662 3.974 2.538 1.804 0 3.053-.89 3.717-2.18.372-.72.562-1.567.562-2.454V5.015Zm-8.251 2.21h1.488c.87 0 1.533.25 1.975.766.442.516.662 1.223.662 2.136 0 .928-.236 1.65-.692 2.18-.457.546-1.135.811-2.034.811H2.475Zm6.113 6.142a1.355 1.355 0 1 0 0 2.71 1.355 1.355 0 0 0 0-2.71z"/></g><text class="tech" x="654" y="368">discord.js</text>
+</svg>
