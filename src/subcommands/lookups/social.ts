@@ -66,8 +66,10 @@ export const tiktokSubs: Sub[] = [
     }));
   }), { tweaks: { ...user60, count: { min: 1, max: 40 } } }),
   hsub('tiktok repost', lookup(async i => {
-    const { post } = await tt.tiktokPost(i.options.getString('url', true));
-    await sendRepost(i, post, { open: 'Open on TikTok', authorUrl: post.author.url });
+    const { post, quick } = await tt.tiktokRepost(i.options.getString('url', true));
+    const links = { open: 'Open on TikTok', authorUrl: post.author.url };
+    if (quick) await sendRepostFast(i, post, links);
+    else await sendRepost(i, post, links);
   }), { tweaks: url500 }),
   hsub('tiktok sound', lookup(async i => {
     const { sound, post } = await tt.tiktokPost(i.options.getString('url', true));
@@ -78,7 +80,7 @@ export const tiktokSubs: Sub[] = [
   }), { tweaks: url500 }),
 ];
 
-// ─── Instagram (✨) and Medal: yt-dlp does the fetching ─────────────────────
+// ─── Instagram (✨): OGInstagram, then Instaloader, then yt-dlp. Medal: yt-dlp ─
 
 export const instagramSubs: Sub[] = [
   hsub('instagram user', lookup(async i => {

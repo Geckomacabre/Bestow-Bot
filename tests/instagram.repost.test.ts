@@ -5,6 +5,7 @@ import { AttachmentBuilder } from 'discord.js';
 import { DownloadError, SIZE_OR_LENGTH, explainFailure, type Runner } from '../src/media/download';
 import { MediaError } from '../src/framework/media';
 import { LookupError } from '../src/lookups/handler';
+import type { StatusGet } from '../src/lookups/fixembed';
 import { attachWhatFits, fetchMedia, sendRepostFast } from '../src/lookups/repost';
 import { InstaloaderMissing, fetchInstagramPost, instaPost, instagramRepost, instagramShortcode, type InstaJson, type ScriptRunner } from '../src/lookups/instaloader';
 import { fakeInteraction, textOf } from './fakeInteraction';
@@ -32,6 +33,8 @@ const carousel: InstaJson = {
 const reel: InstaJson = { ...carousel, shortcode: 'CxAbCdEfGhI', username: 'britneyspears', full_name: 'Britney Spears', media: [{ type: 'video', url: 'https://scontent.cdninstagram.com/reel.mp4' }] } as InstaJson;
 const script = (j: InstaJson | string, seen: string[] = []): ScriptRunner => async code => { seen.push(code); return typeof j === 'string' ? j : `${JSON.stringify(j)}\n`; };
 const missing: ScriptRunner = async () => { throw new InstaloaderMissing('nope'); };
+/** OGInstagram not answering, so these tests are about what comes after it (tests/fixembed.test.ts covers OGInstagram itself). */
+const ogDown: StatusGet = async () => { throw new Error('OGInstagram is down'); };
 
 describe('Instagram links', () => {
   test('posts, reels and IGTV are recognised, with or without a username in the path', () => {
@@ -47,10 +50,10 @@ describe('Instagram links', () => {
   });
 });
 
-describe('Instaloader reads the post first, so a repost is quick', () => {
+describe('when OGInstagram can\'t answer, Instaloader reads the post, and that is still quick', () => {
   test('a carousel is read once; yt-dlp is never started and nothing is downloaded on the way', async () => {
     const seen: string[] = [], y = noVideo();
-    const post = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(carousel, seen) });
+    const post = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: y.run, scriptRun: script(carousel, seen) });
     expect(seen).toEqual(['DW1nTDiDvnF']); expect(y.calls).toBe(0);
     expect(post.media.map(m => m.type)).toEqual(['image', 'image', 'video']);
     expect(post.media.every(m => m.data === undefined)).toBe(true); // just the links: the card goes out before any file is fetched
@@ -62,7 +65,7 @@ describe('Instaloader reads the post first, so a repost is quick', () => {
 
   test('a reel is the same: one read, a link to the video, no yt-dlp — however big the video is', async () => {
     const seen: string[] = [], y = goodVideo();
-    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(reel, seen) });
+    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: y.run, scriptRun: script(reel, seen) });
     expect(seen).toEqual(['CxAbCdEfGhI']); expect(y.calls).toBe(0);
     expect(post.media).toEqual([{ type: 'video', url: 'https://scontent.cdninstagram.com/reel.mp4' }]);
     expect(post.author.handle).toBe('britneyspears');
@@ -129,19 +132,19 @@ describe('the card goes out at once, and the files follow', () => {
 describe('when Instaloader cannot read the post, yt-dlp gets its turn', () => {
   test('a login wall on Instaloader\'s side is tried with yt-dlp, which may be signed in through its own cookies', async () => {
     const y = goodVideo();
-    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script({ ok: false, kind: 'login' }) });
+    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: y.run, scriptRun: script({ ok: false, kind: 'login' }) });
     expect(y.calls).toBe(1); expect(post.media[0]!.data?.toString()).toBe('small-video');
     expect(post.author.handle).toBe('britneyspears'); expect(post.author.url).toBe('https://www.instagram.com/britneyspears/'); // the name, not the numeric id yt-dlp reports
   });
 
   test('when both are turned away, Instagram\'s reason is stated plainly', async () => {
-    const err = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, ytdlpRun: noVideo().run, scriptRun: script({ ok: false, kind: 'login' }) }).catch(e => e);
+    const err = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: noVideo().run, scriptRun: script({ ok: false, kind: 'login' }) }).catch(e => e);
     expect(err).toBeInstanceOf(LookupError); expect(err.message).toContain('without a login');
   });
 
   test('but if yt-dlp could read it and it is simply too long or too big, that is what the user is told', async () => {
     for (const stderr of ['ERROR: File is larger than max-filesize (12000000 bytes > 9000000 bytes)', 'reel does not pass filter (!is_live & duration<=600), skipping ..']) {
-      const err = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: failing(stderr).run, scriptRun: script({ ok: false, kind: 'login' }) }).catch(e => e);
+      const err = await instagramRepost(REEL, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: failing(stderr).run, scriptRun: script({ ok: false, kind: 'login' }) }).catch(e => e);
       expect(err, stderr).toBeInstanceOf(DownloadError);
     }
     expect(SIZE_OR_LENGTH.test('No video formats found!')).toBe(false);
@@ -149,13 +152,13 @@ describe('when Instaloader cannot read the post, yt-dlp gets its turn', () => {
 
   test('if yt-dlp itself is missing, Instaloader\'s answer is the one shown', async () => {
     const y = fakeYtdlp(async () => { throw new MediaError('The downloader (yt-dlp) isn\'t installed on this bot.'); });
-    const err = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script({ ok: false, kind: 'ratelimit' }) }).catch(e => e);
+    const err = await instagramRepost(REEL, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: y.run, scriptRun: script({ ok: false, kind: 'ratelimit' }) }).catch(e => e);
     expect(err.message).toContain('rate-limiting');
   });
 
   test('if Instaloader is not installed at all, yt-dlp does everything and its own words are shown', async () => {
-    expect(await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: goodVideo().run, scriptRun: missing }).then(p => p.media[0]!.data?.toString())).toBe('small-video');
-    const err = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, ytdlpRun: noVideo().run, scriptRun: missing }).catch(e => e);
+    expect(await instagramRepost(REEL, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: goodVideo().run, scriptRun: missing }).then(p => p.media[0]!.data?.toString())).toBe('small-video');
+    const err = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, statusGet: ogDown, ytdlpRun: noVideo().run, scriptRun: missing }).catch(e => e);
     expect(err).toBeInstanceOf(DownloadError); expect(err.message).toContain('no video in it');
   });
 

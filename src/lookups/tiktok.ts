@@ -1,15 +1,19 @@
-import { getJson } from '../framework/http.js';
+import { getJson, USER_AGENT } from '../framework/http.js';
 import { withLock } from '../framework/mutex.js';
+import { countAfter, getStatus, statusMedia, statusTime, type MastoStatus, type StatusGet } from './fixembed.js';
 import { LookupError } from './handler.js';
 import type { RepostPost } from './repost.js';
 
 /**
  * TikTok via TikWM's public API (no key): watermark-free video, photo posts, the sound, stats, profiles and recent posts.
- * TikWM allows about one request a second, so calls are serialised.
+ * TikWM allows about one request a second, so calls are serialised. /tiktok repost asks fxTikTok (tnktok.com, no key) first: one JSON
+ * request, the way /x repost asks FxTwitter, and links to the media that Discord can play at once. Env: TNKTOK_URL (default
+ * https://www.tnktok.com).
  */
 
 export const TIKTOK_PINK = 0xfe2c55;
 const API = 'https://www.tikwm.com/api';
+const TNKTOK = (Bun.env.TNKTOK_URL || 'https://www.tnktok.com').replace(/\/+$/, '');
 const abs = (u?: string) => (!u ? undefined : u.startsWith('http') ? u : `https://www.tikwm.com${u.startsWith('/') ? '' : '/'}${u}`);
 
 let last = 0;
@@ -65,6 +69,78 @@ export async function tiktokPost(link: string): Promise<{ post: RepostPost; soun
   const m = d.music_info;
   const soundUrl = abs(m?.play || d.music);
   return { post: parseTikPost(d, url), sound: soundUrl ? { title: m?.title || 'original sound', author: m?.author || d.author?.nickname || '', url: soundUrl, cover: abs(m?.cover) } : undefined };
+}
+
+/** The numeric id in a full post link (…/video/<id>, …/photo/<id>, m.tiktok.com/v/<id>.html), or null. */
+export const tiktokIdOf = (url: string) => /\/(?:video|photo|v)\/(\d{10,20})(?:[/.?#]|$)/.exec(url)?.[1] ?? null;
+
+/** Where a short link (vm.tiktok.com/…, tiktok.com/t/…) leads. Tests replace it. */
+export type ShortResolver = (url: string) => Promise<string | null>;
+
+/** Reads the short link's redirect without following it: the post's full link is all that's wanted. */
+const followShort: ShortResolver = async url => {
+  const res = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(8_000) });
+  void res.body?.cancel();
+  return res.headers.get('location');
+};
+
+/**
+ * tnktok's caption as plain text. It puts the caption in as TikTok gives it, unescaped, only adding line breaks, links around mentions
+ * and hashtags and a bold title, so just those tags are taken out: a caption such as "I <3 you" comes through whole.
+ */
+const tnkText = (html: string) => html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/?(?:a|b)(?:\s[^>]*)?>/gi, '').trim();
+
+/** tnktok's answer as a repost, or null if it holds no post. The counts are its last bold run ("❤️ 1.2K 💬 34 🔁 5"); the caption comes before. */
+export function tnkPost(s: MastoStatus, id: string): RepostPost | null {
+  const handle = s.account?.username;
+  const media = statusMedia(s);
+  if (!handle || !media.length) return null;
+  const content = s.content ?? '';
+  const bold = /<b>([^<]*)<\/b>\s*$/.exec(content);
+  const stats = bold?.[1] ?? '';
+  const shown = s.account?.display_name?.trim() || handle;
+  const name = shown.replace(/\s*\u2611\uFE0F?$/, ''); // a verified account's name ends in ☑️
+  return {
+    site: 'TikTok', color: TIKTOK_PINK, url: `https://www.tiktok.com/@${handle}/video/${id}`,
+    author: { name: name || handle, handle, avatar: s.account?.avatar || undefined, url: `https://www.tiktok.com/@${handle}`, verified: name !== shown || undefined },
+    text: tnkText(bold ? content.slice(0, bold.index) : content) || undefined, createdAt: statusTime(s),
+    stats: [{ icon: '♡', value: countAfter(stats, '❤️') }, { icon: '💬', value: countAfter(stats, '💬') }, { icon: '↗️', value: countAfter(stats, '🔁') }],
+    media,
+  };
+}
+
+/**
+ * A post from tnktok, caption included (the id's "desc"). Photo posts come four to a page, each photo described "Image (n of N)" when
+ * there is more than one page, so the other pages (up to ten photos in all) are asked for at once; should any of those fail, the first
+ * page is used alone. Null if tnktok holds no post.
+ */
+export async function tnktokPost(id: string, get: StatusGet = getStatus): Promise<RepostPost | null> {
+  const first = await get(`${TNKTOK}/api/v1/statuses/${id}desc`);
+  const post = tnkPost(first, id);
+  if (!post) return null;
+  const total = Math.min(10, Number(/ of (\d+)\)$/.exec(first.media_attachments?.[0]?.description ?? '')?.[1] ?? 0));
+  if (total > post.media.length) {
+    const pages = await Promise.allSettled(Array.from({ length: Math.ceil(total / 4) - 1 }, (_, k) => get(`${TNKTOK}/api/v1/statuses/${id}descpage${k + 2}`)));
+    if (pages.every(r => r.status === 'fulfilled')) post.media = [...post.media, ...pages.flatMap(r => statusMedia((r as PromiseFulfilledResult<MastoStatus>).value))].slice(0, 10);
+  }
+  return post;
+}
+
+/**
+ * The post for /tiktok repost. tnktok answers first, and then the card can go out at once with links to the media (`quick`); a short
+ * link is looked up for the post's id on the way. When tnktok can't answer, TikWM reads the post as before, and its media are
+ * downloaded before the card is sent.
+ */
+export async function tiktokRepost(
+  link: string, o: { statusGet?: StatusGet; resolve?: ShortResolver; tikwm?: (url: string) => Promise<RepostPost> } = {},
+): Promise<{ post: RepostPost; quick: boolean }> {
+  const url = parseTikTokUrl(link);
+  const quick = await (async () => {
+    const id = tiktokIdOf(url) ?? tiktokIdOf(await (o.resolve ?? followShort)(url) ?? '');
+    return id ? tnktokPost(id, o.statusGet) : null;
+  })().catch(() => null);
+  if (quick) return { post: quick, quick: true };
+  return { post: await (o.tikwm ?? (async (u: string) => (await tiktokPost(u)).post))(url), quick: false };
 }
 
 export interface TikUser {

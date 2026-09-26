@@ -1,18 +1,21 @@
 import path from 'node:path';
 import { DownloadError, SIZE_OR_LENGTH, downloadPost, type Runner } from '../media/download.js';
+import { countAfter, getStatus, htmlText, statusMedia, statusTime, type MastoStatus, type StatusGet } from './fixembed.js';
 import { LookupError } from './handler.js';
 import { ytdlpPost, type RepostPost } from './repost.js';
 
 /**
- * /instagram repost. Instaloader (https://github.com/instaloader/instaloader) reads the post itself — every photo or video in it, the
- * caption, the counts — and gives links to the media on Instagram's CDN, which Discord can show directly. That is the fast path and it
- * handles photos, carousels, reels and videos alike. yt-dlp is the second opinion: it takes over when Instaloader can't read the post.
- * The helper is src/lookups/instaloader_post.py (Python and `pip install instaloader` are in the Docker image). Env: INSTALOADER_PYTHON
- * (default python3); INSTALOADER_USER + INSTALOADER_SESSIONFILE (optional: a session from `instaloader --login`, for posts Instagram
- * only shows to signed-in visitors).
+ * /instagram repost. OGInstagram (https://github.com/seirenkr/OGInstagram) is asked first: one JSON request, the way /x repost asks
+ * FxTwitter, gives the caption, the author, when it was posted, the counts and links to every photo or video. Its links last two weeks
+ * and Discord can show them directly. When it can't answer, Instaloader (https://github.com/instaloader/instaloader) reads the post
+ * itself, and yt-dlp is the last resort after that. Instaloader's helper is src/lookups/instaloader_post.py (Python and `pip install
+ * instaloader` are in the Docker image). Env: OGINSTAGRAM_URL (default https://oginstagram.com); INSTALOADER_PYTHON (default python3);
+ * INSTALOADER_USER + INSTALOADER_SESSIONFILE (optional: a session from `instaloader --login`, for posts Instagram only shows to
+ * signed-in visitors).
  */
 
 export const INSTAGRAM_COLOR = 0xe1306c;
+const OGINSTAGRAM = (Bun.env.OGINSTAGRAM_URL || 'https://oginstagram.com').replace(/\/+$/, '');
 const SCRIPT = path.resolve(import.meta.dir, 'instaloader_post.py');
 const TIMEOUT_MS = 60_000;
 
@@ -85,6 +88,61 @@ export async function fetchInstagramPost(link: string, run: ScriptRunner = defau
   return instaPost(j, link);
 }
 
+/**
+ * OGInstagram's id for a post, or for item `n` (from 1) of a carousel: its key/values (`"i":"<shortcode>"`, then `"p":"reel"` for a
+ * reel and `"n":<n>` for one item) read as a single number. These are the ids it hands Discord, so a post that has already been
+ * embedded somewhere is answered from its cache.
+ */
+export function ogStatusId(ref: { kind: string; code: string }, n?: number): string {
+  let payload = `"i":"${ref.code}"`;
+  if (ref.kind === 'reel') payload += ',"p":"reel"';
+  if (n) payload += `,"n":${n}`;
+  return BigInt(`0x${Buffer.from(payload).toString('hex')}`).toString();
+}
+
+/** OGInstagram puts the counts in a bold first paragraph ("🖼️ 7  ▶️ 1,234  ❤️ 56  💬 7") and the caption after it. */
+const STATS_PARAGRAPH = /^\s*<p><b>([\s\S]*?)<\/b><\/p>/;
+const statsOf = (s: MastoStatus) => htmlText(STATS_PARAGRAPH.exec(s.content ?? '')?.[1] ?? '');
+
+/** How many items the post has: the 🖼️ count ("🖼️ 7", or "🖼️ 1 / 7" when only one is shown); 1 when there is none. */
+const itemCount = (stats: string) => Number(/\u{1F5BC}\uFE0F?\s*(?:\d+\s*\/\s*)?(\d+)/u.exec(stats)?.[1] ?? 1);
+
+/** OGInstagram's answer as a repost, or null if it holds no post. */
+export function ogPost(s: MastoStatus, code: string): RepostPost | null {
+  const handle = s.account?.username;
+  const media = statusMedia(s);
+  if (!handle || !media.length) return null;
+  const stats = statsOf(s);
+  return {
+    site: 'Instagram', color: INSTAGRAM_COLOR, url: `https://www.instagram.com/p/${code}/`,
+    author: { name: s.account?.display_name || handle, handle, url: `https://www.instagram.com/${handle}/`, avatar: s.account?.avatar || undefined },
+    text: htmlText((s.content ?? '').replace(STATS_PARAGRAPH, '')) || undefined, createdAt: statusTime(s),
+    // A hidden like count comes through as 0, so 0 is left off like any other count that isn't known.
+    stats: [{ icon: '♡', value: countAfter(stats, '❤️') || undefined }, { icon: '💬', value: countAfter(stats, '💬') }, { icon: '', value: countAfter(stats, '▶️'), suffix: ' views' }],
+    media,
+  };
+}
+
+/**
+ * A post from OGInstagram. Its answer for a whole carousel holds up to four photos, or only the first item if that is a video, so a
+ * carousel it doesn't answer in full is asked for item by item (up to ten, all at once); should any of those fail, the first answer
+ * is used as it was. Null if OGInstagram holds no post.
+ */
+export async function ogInstagramPost(ref: { kind: string; code: string }, get: StatusGet = getStatus): Promise<RepostPost | null> {
+  const first = await get(`${OGINSTAGRAM}/api/v1/statuses/${ogStatusId(ref)}`);
+  const post = ogPost(first, ref.code);
+  if (!post) return null;
+  const total = Math.min(10, itemCount(statsOf(first)));
+  if (total > 1 && post.media.length !== total) {
+    const items = await Promise.allSettled(Array.from({ length: total }, (_, k) => get(`${OGINSTAGRAM}/api/v1/statuses/${ogStatusId(ref, k + 1)}`)));
+    if (items.every(r => r.status === 'fulfilled')) {
+      const media = items.flatMap(r => statusMedia((r as PromiseFulfilledResult<MastoStatus>).value).slice(0, 1));
+      if (media.length === total) post.media = media;
+    }
+  }
+  return post;
+}
+
 /** yt-dlp's take on a post: the video, downloaded and sized to fit. `first` is what Instaloader said if it had already failed. */
 async function viaYtdlp(link: string, o: { maxBytes: number; ytdlpRun?: Runner }, first?: unknown): Promise<RepostPost> {
   try {
@@ -101,11 +159,16 @@ async function viaYtdlp(link: string, o: { maxBytes: number; ytdlpRun?: Runner }
 }
 
 /**
- * The post for an Instagram link, ready to send: Instaloader reads it (a second or two — Instagram's own answer time) and nothing is
- * downloaded here, so the card can go out at once with the media as links (see sendRepostFast). yt-dlp is only asked when Instaloader
- * can't read the post; its result comes with the video already downloaded.
+ * The post for an Instagram link, ready to send: OGInstagram answers it (or, failing that, Instaloader reads it) and nothing is
+ * downloaded here, so the card can go out at once with the media as links (see sendRepostFast). yt-dlp is only asked when neither
+ * can read the post; its result comes with the video already downloaded.
  */
-export async function instagramRepost(link: string, o: { maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner }): Promise<RepostPost> {
+export async function instagramRepost(link: string, o: { maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner; statusGet?: StatusGet }): Promise<RepostPost> {
+  const ref = instagramRef(link);
+  if (ref) {
+    const quick = await ogInstagramPost(ref, o.statusGet).catch(() => null);
+    if (quick) return quick;
+  }
   try {
     return await fetchInstagramPost(link, o.scriptRun);
   } catch (err) {
