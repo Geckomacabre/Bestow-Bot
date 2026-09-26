@@ -8,7 +8,6 @@ import { makeZip } from '../../framework/zip.js';
 import { cv2Box } from '../../utils/components.js';
 import * as fx from '../../media/effects.js';
 import * as fx2 from '../../media/fx2.js';
-import { stillOf } from '../../media/anim.js';
 import { makesweet, TEMPLATES } from '../../media/makesweet.js';
 
 /** /media (image, video, makesweet, ahshit, frames, info) and /audio, with Heist's options exactly (docs/heist-spec.json). */
@@ -151,7 +150,7 @@ export const makesweetSubs: Sub[] = TEMPLATES.map(t => hsub(`media makesweet ${t
   if (second) {
     if (!second.contentType?.startsWith('image/')) throw new MediaError('`image2` must be an image.');
     const file = await download({ url: second.url, name: second.name, contentType: second.contentType }, job.dir, 'second');
-    image2 = await stillOf(await fx.makeJob(job.dir, file), 900);
+    image2 = await fx.makeJob(job.dir, file);
   }
   return makesweet(job, t, { output: i.options.getString('output') === 'MP4' ? 'mp4' : 'gif', image2, text });
 }, { visual: true }), t === 'heartlocket' ? { tweaks: { text: { maxLength: 30 } } } : {}));

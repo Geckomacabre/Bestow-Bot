@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
-import { pixelsOf, sample, squareToQuad, toPng, type Pixels } from '../src/media/anim';
+import { pixelsOf, sample, toPng, type Pixels } from '../src/media/anim';
 import { addAudioGraph, ADD_AUDIO_EFFECTS, carveWidth, globeFrame, magikPixels, motivateFrame, swirlPixels } from '../src/media/fx2';
-import { SCENES, TEMPLATES } from '../src/media/makesweet';
 import { pixelSize } from '../src/media/effects';
 
 /** A 64×48 test card: red left half, blue right half, a white stripe down the middle. */
@@ -14,13 +13,7 @@ function card(w = 64, h = 48): Pixels {
 const px = (p: Pixels, x: number, y: number) => Array.from(p.data.subarray((y * p.w + x) * 4, (y * p.w + x) * 4 + 4));
 const isPng = (b: Buffer) => b.subarray(1, 4).toString() === 'PNG';
 
-describe('geometry and pixels', () => {
-  test('the homography sends the unit square to the quad corners', () => {
-    const H = squareToQuad([[10, 20], [110, 5], [120, 90], [0, 100]]);
-    for (const [[u, v], want] of [[[0, 0], [10, 20]], [[1, 0], [110, 5]], [[1, 1], [120, 90]], [[0, 1], [0, 100]]] as const) {
-      const [x, y] = H(u, v); expect(x).toBeCloseTo(want[0], 6); expect(y).toBeCloseTo(want[1], 6);
-    }
-  });
+describe('pixels', () => {
   test('bilinear sampling blends neighbours and clamps at the edges', () => {
     // A single row: the row below is clamped to the same row rather than read past the end.
     const p: Pixels = { w: 2, h: 1, data: new Uint8ClampedArray([0, 0, 0, 255, 200, 100, 50, 255]) }, out = new Uint8ClampedArray(4);
@@ -76,26 +69,4 @@ describe('posters and add-audio graphs', () => {
     expect(pixelSize(960, 480, 'Large')).toBe(40);
     expect(pixelSize(20, 20, 'Small')).toBe(2);
   });
-});
-
-describe('makesweet scenes', () => {
-  /** A plain-colour picture, to tell whether a scene really draws the input. */
-  const plain = (color: string) => { const c = createCanvas(160, 120), g = c.getContext('2d'); g.fillStyle = color; g.fillRect(0, 0, 160, 120); return loadImage(c.toBuffer('image/png')); };
-  for (const t of TEMPLATES) {
-    test(`${t}: a loop of same-sized PNG frames that shows the picture`, async () => {
-      const img = await loadImage(toPng(card(160, 120)));
-      const t0 = performance.now();
-      const frames = await SCENES[t](img, t === 'heartlocket' ? img : null, t === 'heartlocket' ? null : 'hi');
-      expect(performance.now() - t0).toBeLessThan(15_000);
-      expect(frames.length).toBeGreaterThanOrEqual(20);
-      expect(frames.every(isPng)).toBe(true);
-      const size = (b: Buffer) => [b.readUInt32BE(16), b.readUInt32BE(20)];
-      expect(new Set(frames.map(f => size(f).join('x'))).size).toBe(1);
-      expect(frames.some(f => !f.equals(frames[0]!))).toBe(true); // it animates
-      // The picture is really in there: a different picture gives different frames.
-      const [green, magenta] = [await plain('#0f0'), await plain('#f0f')];
-      const a = await SCENES[t](green, t === 'heartlocket' ? green : null, null), b = await SCENES[t](magenta, t === 'heartlocket' ? magenta : null, null);
-      expect(a.some((f, k) => !f.equals(b[k]!))).toBe(true);
-    }, 60_000);
-  }
 });

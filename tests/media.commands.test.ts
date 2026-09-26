@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { probe } from '../src/framework/media';
 import { imageSubs, videoSubs, audioSubs, mediaDirectSubs, makesweetSubs } from '../src/subcommands/media/media';
+import { hooks as makesweetHooks } from '../src/media/makesweet';
 import { fakeInteraction, textOf } from './fakeInteraction';
 import { makeSamples } from './fixtures';
 
@@ -121,19 +122,41 @@ describe('image commands end-to-end (fake Discord interaction, real download + f
   }, 60_000);
 });
 
-describe('/media makesweet', () => {
+describe('/media makesweet (MakeSweet\'s own API, here answered by a stand-in)', () => {
+  /** What the stand-in was asked; it answers with a real GIF, as MakeSweet does. */
+  const asked: { url: URL; auth: string | null; images: number }[] = [];
+  beforeAll(() => {
+    makesweetHooks.key = 'test-key';
+    makesweetHooks.fetch = (async (url: URL, init: RequestInit) => {
+      asked.push({ url: new URL(String(url)), auth: new Headers(init.headers).get('authorization'), images: (init.body as FormData).getAll('images[]').length });
+      return new Response(Bun.file(path.join(dir, 'sample.gif')), { headers: { 'content-type': 'image/gif' } });
+    }) as unknown as typeof fetch;
+  });
+  afterAll(() => { makesweetHooks.key = undefined; makesweetHooks.fetch = undefined; });
+
   it('renders a scene as a GIF by default and an MP4 on request', async () => {
     const gif = await runSub(find(makesweetSubs, 'flag'), { attachments: { image: att('sample.png', 'image/png') } });
     expect(gif.name).toBe('flag.gif');
     expect((await probeBuffer(gif.data!, 'gif')).animated).toBe(true);
     const mp4 = await runSub(find(makesweetSubs, 'rubiks'), { attachments: { image: att('sample.png', 'image/png') }, options: { output: 'MP4' } });
+    expect(mp4.name).toBe('rubiks.mp4');
     expect((await probeBuffer(mp4.data!, 'mp4')).videoCodec).toBe('h264');
   }, 120_000);
-  it('the heart locket takes a second image or text, not both', async () => {
+  it('each scene is asked of MakeSweet by its own design name, with the key, one picture and no text', async () => {
+    asked.length = 0;
+    await runSub(find(makesweetSubs, 'billboard'), { attachments: { image: att('sample.png', 'image/png') } });
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.url.origin + asked[0]!.url.pathname).toBe('https://api.makesweet.com/make/billboard-cityscape');
+    expect(asked[0]!.auth).toBe('test-key'); expect(asked[0]!.images).toBe(1); expect(asked[0]!.url.search).toBe('');
+  }, 60_000);
+  it('the heart locket takes a second image or text, not both — and sends whichever it was given', async () => {
     const both = await runSub(find(makesweetSubs, 'heartlocket'), { attachments: { image: att('sample.png', 'image/png'), image2: att('sample.png', 'image/png') }, options: { text: 'hi' } });
     expect(textOf(both.payload)).toContain('not both');
+    asked.length = 0;
     const two = await runSub(find(makesweetSubs, 'heartlocket'), { attachments: { image: att('sample.png', 'image/png'), image2: att('sample.gif', 'image/gif') } });
-    expect(two.name).toBe('heartlocket.gif');
+    expect(two.name).toBe('heartlocket.gif'); expect(asked[0]!.images).toBe(2);
+    await runSub(find(makesweetSubs, 'heartlocket'), { attachments: { image: att('sample.png', 'image/png') }, options: { text: 'love you' } });
+    expect(asked[1]!.images).toBe(1); expect(asked[1]!.url.searchParams.get('text')).toBe('love you');
   }, 120_000);
 });
 
