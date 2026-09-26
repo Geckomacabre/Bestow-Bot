@@ -1,12 +1,14 @@
 import path from 'node:path';
+import { getBufferPublic } from '../framework/http.js';
 import { DownloadError, SIZE_OR_LENGTH, downloadPost, type Runner } from '../media/download.js';
 import { LookupError } from './handler.js';
 import { ytdlpPost, type RepostPost } from './repost.js';
 
 /**
- * /instagram repost. yt-dlp does the videos and reels (it picks a size that fits and merges the parts), but it cannot read a photo
- * or a carousel of photos — it says "No video formats found" — so those, and anything else yt-dlp is turned away from, go to
- * Instaloader (https://github.com/instaloader/instaloader), which reads the post itself: every slide, the caption, the counts.
+ * /instagram repost. Instaloader (https://github.com/instaloader/instaloader) reads the post itself — every photo or video in it, the
+ * caption, the counts — in about a second, and the media files then download straight from Instagram's CDN. That is the fast path
+ * and it handles photos, carousels, reels and videos alike. yt-dlp is the second opinion: it takes over when Instaloader can't read the
+ * post, and when a single video is too big to upload as it is (it can pick a smaller version, which Instaloader can't).
  * The helper is src/lookups/instaloader_post.py (Python and `pip install instaloader` are in the Docker image). Env: INSTALOADER_PYTHON
  * (default python3); INSTALOADER_USER + INSTALOADER_SESSIONFILE (optional: a session from `instaloader --login`, for posts Instagram
  * only shows to signed-in visitors).
@@ -79,11 +81,10 @@ export async function fetchInstagramPost(link: string, run: ScriptRunner = defau
   return instaPost(j, link);
 }
 
-/**
- * The repost for an Instagram link: yt-dlp first (best for videos), and Instaloader when yt-dlp can't — a photo post, a carousel, or a
- * post it is turned away from. A video that is simply too long or too big is not retried: Instaloader could not shrink it.
- */
-export async function instagramRepost(link: string, o: { maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner }): Promise<RepostPost> {
+const downloadFile = (url: string, maxBytes: number) => getBufferPublic(url, { maxBytes, timeoutMs: 45_000 });
+
+/** yt-dlp's take on a post: the video, sized to fit. `first` is what Instaloader said if it had already failed. */
+async function viaYtdlp(link: string, o: { maxBytes: number; ytdlpRun?: Runner }, first?: unknown): Promise<RepostPost> {
   try {
     const r = await downloadPost(link, { maxBytes: o.maxBytes, run: o.ytdlpRun });
     const post = ytdlpPost('Instagram', INSTAGRAM_COLOR, r.info, r, link);
@@ -91,12 +92,33 @@ export async function instagramRepost(link: string, o: { maxBytes: number; ytdlp
     if (r.info.channel) { post.author.handle = r.info.channel; post.author.url = `https://www.instagram.com/${r.info.channel}/`; }
     return post;
   } catch (err) {
-    if (!(err instanceof DownloadError) || SIZE_OR_LENGTH.test(err.detail)) throw err;
-    try {
-      return await fetchInstagramPost(link, o.scriptRun);
-    } catch (second) {
-      if (second instanceof InstaloaderMissing) throw err; // no second opinion available: what yt-dlp said is all there is
-      throw second;
-    }
+    // Instaloader's reason is the more useful one — unless yt-dlp could read the post and it is just too long or too big.
+    if (first !== undefined && !(err instanceof DownloadError && SIZE_OR_LENGTH.test(err.detail))) throw first;
+    throw err;
   }
+}
+
+/**
+ * The repost for an Instagram link. Instaloader reads the post (about a second) and its files are downloaded straight from the CDN;
+ * yt-dlp is only asked when Instaloader can't read the post, or when a single video is too big to upload as it is — yt-dlp can pick a
+ * smaller version of it, and if it can't either, the video stays on the card as a link.
+ */
+export async function instagramRepost(
+  link: string,
+  o: { maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner; download?: (url: string, maxBytes: number) => Promise<Buffer> },
+): Promise<RepostPost> {
+  let post: RepostPost;
+  try {
+    post = await fetchInstagramPost(link, o.scriptRun);
+  } catch (err) {
+    // Not installed: yt-dlp is all there is, and its errors are the ones to show. Otherwise Instaloader's answer is kept for the message.
+    return viaYtdlp(link, o, err instanceof InstaloaderMissing ? undefined : err);
+  }
+  const only = post.media.length === 1 && post.media[0]!.type === 'video' ? post.media[0]! : null;
+  if (only) {
+    // Fetched here, not left to the card, so one that doesn't fit can be swapped for a smaller version.
+    try { only.data = await (o.download ?? downloadFile)(only.url, o.maxBytes); only.ext = 'mp4'; }
+    catch { return viaYtdlp(link, o).catch(() => post); }
+  }
+  return post;
 }

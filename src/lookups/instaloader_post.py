@@ -29,8 +29,10 @@ def media_of(post):
 
 
 def main(shortcode):
+    # sleep=False: by default Instaloader waits a random second or two (sometimes ten) before every request to look less like a
+    # bot, which is most of the time a single post takes. One request per command needs no disguise; its rate limits still apply.
     loader = instaloader.Instaloader(
-        quiet=True, max_connection_attempts=1, request_timeout=25, download_pictures=False, download_videos=False,
+        quiet=True, sleep=False, max_connection_attempts=1, request_timeout=25, download_pictures=False, download_videos=False,
         download_video_thumbnails=False, download_geotags=False, download_comments=False, save_metadata=False,
     )
     user, session = os.environ.get("INSTALOADER_USER"), os.environ.get("INSTALOADER_SESSIONFILE")

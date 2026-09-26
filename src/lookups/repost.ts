@@ -48,19 +48,34 @@ export function statsLine(stats: RepostPost['stats']): string {
 
 const extOf = (m: RepostMedia, url: string) => m.type === 'image' ? (/\.(png|webp|gif)(\?|$)/i.exec(url)?.[1]?.toLowerCase() ?? 'jpg') : m.type === 'gif' ? 'mp4' : 'mp4';
 
-/** Downloads up to 10 items within the upload limit; anything that doesn't fit stays a link. */
+/** How many files are fetched at the same time: enough that a carousel isn't slow, few enough not to hold many large files in memory. */
+const PARALLEL_DOWNLOADS = 4;
+
+/**
+ * Downloads up to 10 items within the upload limit; anything that doesn't fit stays a link. The files come down a few at a time, and
+ * are then taken in order for as long as the total fits, so the result is the same as fetching them one by one, only faster.
+ */
 export async function fetchMedia(media: RepostMedia[], limit: number, headers?: Record<string, string>): Promise<{ files: AttachmentBuilder[]; items: string[]; skipped: RepostMedia[] }> {
+  const wanted = media.slice(0, 10);
+  const bufs: (Buffer | null)[] = new Array(wanted.length).fill(null);
+  let next = 0;
+  const worker = async () => {
+    for (let n = next++; n < wanted.length; n = next++) {
+      const m = wanted[n]!;
+      try { bufs[n] = m.data ?? await getBufferPublic(m.url, { maxBytes: Math.max(1, limit), timeoutMs: 45_000, headers }); } catch { /* left null: it stays a link */ }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PARALLEL_DOWNLOADS, wanted.length) }, worker));
+
   const files: AttachmentBuilder[] = [], items: string[] = [], skipped: RepostMedia[] = [];
   let used = 0;
-  for (const [n, m] of media.slice(0, 10).entries()) {
-    try {
-      const buf = m.data ?? await getBufferPublic(m.url, { maxBytes: Math.max(1, limit - used), timeoutMs: 45_000, headers });
-      if (used + buf.length > limit) throw new Error('too big');
-      used += buf.length;
-      const name = `${m.type === 'image' ? 'photo' : 'video'}${n + 1}.${m.ext ?? extOf(m, m.url)}`;
-      files.push(new AttachmentBuilder(buf, { name }));
-      items.push(`attachment://${name}`);
-    } catch { skipped.push(m); }
+  for (const [n, m] of wanted.entries()) {
+    const buf = bufs[n];
+    if (!buf || used + buf.length > limit) { skipped.push(m); continue; }
+    used += buf.length;
+    const name = `${m.type === 'image' ? 'photo' : 'video'}${n + 1}.${m.ext ?? extOf(m, m.url)}`;
+    files.push(new AttachmentBuilder(buf, { name }));
+    items.push(`attachment://${name}`);
   }
   return { files, items, skipped };
 }
