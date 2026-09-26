@@ -16,7 +16,7 @@ services:
     ports:
       - "${WEB_PORT:-3000}:3000"      # web dashboard (set WEB_PORT if 3000 is taken; remove this line if you don't use it)
 
-  # Optional: your own search engine for `/tools search` (then set SEARXNG_URL=http://searxng:8080 in .env).
+  # Optional: your own search engine for `/search` (then set SEARXNG_URL=http://searxng:8080 in .env).
   # searxng:
   #   image: searxng/searxng
   #   restart: unless-stopped
