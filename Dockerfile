@@ -3,13 +3,14 @@ FROM oven/bun:1-debian
 WORKDIR /app
 
 # ffmpeg: all media effects, voice messages, transcription audio prep and safe image decoding.
-# yt-dlp: /download and /soundcloud.  libvips/fontconfig/cmake/build-essential: the optional native image addon (`bun run build:native`).
+# yt-dlp: /download and /soundcloud.  instaloader: /instagram repost for photo posts and carousels, which yt-dlp can't read.
+# libvips/fontconfig/cmake/build-essential: the optional native image addon (`bun run build:native`).
 # fonts-noto-color-emoji: emoji in generated images.  chromium: /website screenshot (click/delay), scroll and full-page captures.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates openssl ffmpeg python3 python3-pip \
       libvips-dev libfontconfig1-dev cmake build-essential pkg-config \
       fonts-noto-color-emoji chromium fonts-liberation \
-    && pip3 install -q --break-system-packages yt-dlp \
+    && pip3 install -q --break-system-packages yt-dlp instaloader \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json bun.lock ./

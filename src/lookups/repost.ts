@@ -4,6 +4,7 @@ import {
 } from 'discord.js';
 import { getBufferPublic } from '../framework/http.js';
 import { uploadLimit } from '../framework/media.js';
+import type { PostInfo } from '../media/download.js';
 import { trunc } from './card.js';
 
 /**
@@ -91,4 +92,16 @@ export function repostCard(p: RepostPost, attached: { files: AttachmentBuilder[]
 export async function sendRepost(i: ChatInputCommandInteraction, p: RepostPost, links: { open: string; authorUrl?: string }, headers?: Record<string, string>) {
   const attached = await fetchMedia(p.media, Math.floor(uploadLimit(i) * 0.95), headers);
   await i.editReply(repostCard(p, attached, links));
+}
+
+/** A post yt-dlp fetched (Instagram, Medal): its metadata and the downloaded file as one repost. */
+export function ytdlpPost(site: string, color: number, info: PostInfo, media: { data: Buffer; ext: string }, fallbackUrl: string): RepostPost {
+  const handle = info.uploader_id ?? undefined;
+  return {
+    site, color, url: info.webpage_url ?? fallbackUrl,
+    author: { name: info.uploader ?? info.channel ?? handle ?? site, handle, url: info.uploader_url ?? info.channel_url },
+    text: info.description ?? info.title, createdAt: info.timestamp ? info.timestamp * 1000 : undefined,
+    stats: [{ icon: '♡', value: info.like_count }, { icon: '💬', value: info.comment_count }, { icon: '', value: info.view_count, suffix: ' views' }],
+    media: [{ type: /^(jpe?g|png|webp)$/.test(media.ext) ? 'image' : 'video', url: fallbackUrl, data: media.data, ext: media.ext }],
+  };
 }

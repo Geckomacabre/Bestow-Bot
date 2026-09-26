@@ -62,6 +62,14 @@ const defaultRun: Runner = async (cmd, args, { cwd, timeoutMs }) => {
   } finally { clearTimeout(timer); }
 };
 
+/** A download that failed: `message` is for the user, `detail` is what yt-dlp itself said (so a caller can tell why, and try something else). */
+export class DownloadError extends MediaError {
+  constructor(message: string, readonly detail: string) { super(message); }
+}
+
+/** Failures another tool can't fix: the video is too long, live or too big. Anything else may be worth a second try elsewhere. */
+export const SIZE_OR_LENGTH = /does not pass filter|is_live|live event|duration|larger than max-filesize|file is larger/i;
+
 /** Turns yt-dlp's stderr into something a person can act on. */
 export function explainFailure(stderr: string): string {
   const s = stderr.toLowerCase();
@@ -69,6 +77,7 @@ export function explainFailure(stderr: string): string {
   if (/larger than max-filesize|file is larger/.test(s)) return 'That file is too big to upload here, even at low quality.';
   if (/sign in to confirm|not a bot|login required|log in|cookies|private video|members-only|age-restricted|confirm your age/.test(s)) return 'That site wants a login or a bot check for this video, so I can\'t fetch it.';
   if (/unsupported url/.test(s)) return 'That link isn\'t a video I can download.';
+  if (/no video formats found/.test(s)) return 'That post has no video in it, so there\'s nothing for me to download.'; // a photo post
   if (/video unavailable|has been removed|does not exist|404|not available|deleted/.test(s)) return 'That video isn\'t available (removed, private or region-locked).';
   if (/http error 429|too many requests/.test(s)) return 'The site is rate-limiting me right now — try again in a few minutes.';
   if (/copyright|blocked/.test(s)) return 'That video is blocked and can\'t be downloaded.';
@@ -118,7 +127,7 @@ export async function downloadPost(input: string, o: { maxBytes: number; mode?: 
       lastErr = r.stderr;
       if (!/larger than max-filesize|file is larger/i.test(r.stderr)) break;
     }
-    throw new MediaError(explainFailure(lastErr));
+    throw new DownloadError(explainFailure(lastErr), lastErr);
   });
 }
 

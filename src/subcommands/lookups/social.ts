@@ -6,7 +6,8 @@ import { uploadLimit } from '../../framework/media.js';
 import { sendPages } from '../../framework/pages.js';
 import { card, compact, listCard, num, trunc, when } from '../../lookups/card.js';
 import { lookup, LookupError } from '../../lookups/handler.js';
-import { sendRepost, shortCount, VERIFIED, type RepostPost } from '../../lookups/repost.js';
+import { sendRepost, shortCount, VERIFIED, ytdlpPost, type RepostPost } from '../../lookups/repost.js';
+import { instagramRepost, instagramShortcode } from '../../lookups/instaloader.js';
 import * as x from '../../lookups/x.js';
 import * as tt from '../../lookups/tiktok.js';
 import * as so from '../../lookups/social.js';
@@ -79,17 +80,6 @@ export const tiktokSubs: Sub[] = [
 
 // ─── Instagram (✨) and Medal: yt-dlp does the fetching ─────────────────────
 
-function ytdlpPost(site: string, color: number, info: Awaited<ReturnType<typeof downloadPost>>['info'], media: { data: Buffer; ext: string }, fallbackUrl: string): RepostPost {
-  const handle = info.uploader_id ?? undefined;
-  return {
-    site, color, url: info.webpage_url ?? fallbackUrl,
-    author: { name: info.uploader ?? info.channel ?? handle ?? site, handle, url: info.uploader_url ?? info.channel_url },
-    text: info.description ?? info.title, createdAt: info.timestamp ? info.timestamp * 1000 : undefined,
-    stats: [{ icon: '♡', value: info.like_count }, { icon: '💬', value: info.comment_count }, { icon: '', value: info.view_count, suffix: ' views' }],
-    media: [{ type: /^(jpe?g|png|webp)$/.test(media.ext) ? 'image' : 'video', url: fallbackUrl, data: media.data, ext: media.ext }],
-  };
-}
-
 export const instagramSubs: Sub[] = [
   hsub('instagram user', lookup(async i => {
     const u = await so.instagramUser(i.options.getString('username', true));
@@ -102,9 +92,9 @@ export const instagramSubs: Sub[] = [
   }), { tweaks: user60 }),
   hsub('instagram repost', lookup(async i => {
     const link = i.options.getString('url', true);
-    if (!/^https:\/\/(www\.)?instagram\.com\/(p|reel|reels|tv)\//i.test(link.trim())) throw new LookupError('Send an Instagram post or reel link like `https://www.instagram.com/reel/…`.');
-    const r = await downloadPost(link, { maxBytes: Math.floor(uploadLimit(i) * 0.95) });
-    await sendRepost(i, ytdlpPost('Instagram', 0xe1306c, r.info, r, link), { open: 'Open on Instagram', authorUrl: r.info.uploader_id ? `https://www.instagram.com/${r.info.uploader_id}/` : undefined });
+    if (!instagramShortcode(link)) throw new LookupError('Send an Instagram post or reel link like `https://www.instagram.com/reel/…`.');
+    const post = await instagramRepost(link, { maxBytes: Math.floor(uploadLimit(i) * 0.95) });
+    await sendRepost(i, post, { open: 'Open on Instagram', authorUrl: post.author.url });
   }), { tweaks: url500 }),
 ];
 
