@@ -58,7 +58,14 @@ export interface GameState {
    * Guesses come from a pop-up box, the round message is edited through the command's own webhook, and it ends by itself before
    * that webhook's 15 minutes run out.
    */
-  interactive?: { ownerId: string; edit: (payload: RoundEdit) => Promise<unknown>; timer: ReturnType<typeof setTimeout> };
+  interactive?: { ownerId: string; edit: (payload: RoundEdit) => Promise<unknown>; timer: ReturnType<typeof setTimeout>; tidy?: TidyJob[] };
+}
+
+/** A message a person's own press put into a round (their guess and how it went, a hint, a skip vote), and how to take it away again. */
+export interface TidyJob {
+  /** The interaction that posted it — see InteractiveHost.via. */
+  key: string;
+  remove: () => Promise<unknown>;
 }
 
 /** How a finished interactive round rewrites its message. */
@@ -1005,8 +1012,8 @@ function scheduleNext(channelId: string, delay: number, run: () => Promise<unkno
   cancelPendingNext(channelId);
   const timer = setTimeout(() => {
     pendingNext.delete(channelId);
-    if (activeGames.has(channelId) || starting.has(channelId)) return;
-    void run().catch(() => {});
+    if (activeGames.has(channelId) || starting.has(channelId)) { void removeHeld(channelId); return; }
+    void run().catch(() => {}).finally(() => removeHeld(channelId));
   }, delay);
   timer.unref?.(); // never keep the process alive for a round that hasn't started
   pendingNext.set(channelId, timer);
@@ -1017,7 +1024,44 @@ export function cancelPendingNext(channelId: string): boolean {
   const t = pendingNext.get(channelId);
   if (t === undefined) return false;
   clearTimeout(t); pendingNext.delete(channelId);
+  void removeHeld(channelId);
   return true;
+}
+
+// ─── Tidying up after a round ────────────────────────────────────────────────
+
+/**
+ * Everything people post into a group-chat round through their own presses — each guess with its "❌ not quite", the hints, the skip
+ * votes — is public, so a long round leaves a trail of them. They are all taken away when the round ends, and the round's own message
+ * (rewritten as the result) is left as the record.
+ *
+ * The one exception is the reply of the interaction that ended the round *and* will post the next one: a follow-up needs its
+ * interaction's response to stand, so that reply is kept until the next round is up (or the game has been stopped), then removed.
+ */
+const held = new Map<string, TidyJob[]>();
+
+/** Registers a message for removal when the live group-chat round in `channelId` ends. Does nothing where there is no such round. */
+export function tidyAtEnd(channelId: string, key: string, remove: () => Promise<unknown>): void {
+  const it = activeGames.get(channelId)?.interactive;
+  if (it) (it.tidy ??= []).push({ key, remove });
+}
+
+const runJobs = (jobs: TidyJob[]) => Promise.allSettled(jobs.map(async j => j.remove())); // a job that throws or rejects never gets in anyone's way
+
+async function removeHeld(channelId: string): Promise<void> {
+  const jobs = held.get(channelId);
+  if (!jobs) return;
+  held.delete(channelId);
+  await runJobs(jobs);
+}
+
+/** Round over: remove what people posted into it now, except what the next round still depends on (see above). */
+async function tidyRound(state: GameState, nextVia?: string): Promise<void> {
+  const jobs = state.interactive?.tidy?.splice(0) ?? [];
+  if (!jobs.length) return;
+  const keep = nextVia ? jobs.filter(j => j.key === nextVia) : [];
+  if (keep.length) held.set(state.channelId, [...(held.get(state.channelId) ?? []), ...keep]);
+  await runJobs(jobs.filter(j => !keep.includes(j)));
 }
 
 /** Custom ids of the interactive round's Guess button and its pop-up box. */
@@ -1339,6 +1383,8 @@ export interface InteractiveHost {
   send: (payload: RoundPayload) => Promise<{ id: string } | null>;
   /** Edits that message later, through the same interaction's webhook. */
   edit: (messageId: string, payload: RoundEdit) => Promise<unknown>;
+  /** The id of the interaction this host posts through, so its own reply is not removed before the round it posts (see tidyAtEnd). */
+  via?: string;
 }
 
 /** Starts an interactive round. Resolves false when nothing could be posted, or a round is already going in the channel. */
@@ -1408,6 +1454,7 @@ async function finishInteractive(state: GameState, winner: { id: string; name: s
     edit = { content: `${lead} The ${typeNoun(type)} was **${media.title}**.${tail}`, embeds: [], attachments: [], components };
   }
   await state.interactive!.edit(edit).catch(() => {});
+  void tidyRound(state, goOn ? nextHost!.via : undefined); // not awaited: many deletions must not hold up the next round
   if (goOn) {
     scheduleNext(state.channelId, nextDelay(), async () => {
       // If the next round can't be loaded, swap Stop for Next round so someone can try again.

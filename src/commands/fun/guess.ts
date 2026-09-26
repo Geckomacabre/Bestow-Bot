@@ -1,5 +1,5 @@
 import { defineLeaf, type Sub } from '../../framework/group.js';
-import { followHost, guessLine } from '../../features/mediaguess/index.js';
+import { followHost, guessLine, tidyReply } from '../../features/mediaguess/index.js';
 import { activeGames, submitGuess } from '../../utils/mediagame.js';
 
 /**
@@ -21,9 +21,10 @@ const guessSub: Sub = {
     }
     const answer = i.options.getString('answer', true);
     await i.deferReply();
+    tidyReply(i);
     const name = i.member && 'displayName' in i.member ? (i.member.displayName as string) : i.user.globalName ?? i.user.username;
     const result = await submitGuess(i.channelId, answer, { id: i.user.id, name }, i.client, live?.interactive ? followHost(i) : undefined);
-    await i.editReply({ content: guessLine(name, answer, result), allowedMentions: { parse: [] } });
+    await i.editReply({ content: guessLine(name, answer, result), allowedMentions: { parse: [] } }).catch(() => {}); // already tidied away if it ended the round
   },
 };
 

@@ -5,7 +5,7 @@ import {
 import { EventModule } from '../feature';
 import {
   activeGames, castVoteSkip, checkGuess, GUESS_BUTTON, GUESS_INPUT, GUESS_MODAL, INTERACTIVE_NEXT_PREFIX, interactiveNextButton, NEXT_ROUND_PREFIX, nextRoundButton,
-  requestHint, resolveGame, restoreActiveGames, roundBusy, safeName, startGame, startInteractiveRound, STOP_PREFIX, stopGame, submitGuess, type InteractiveHost, type MediaType,
+  requestHint, resolveGame, restoreActiveGames, roundBusy, safeName, startGame, startInteractiveRound, STOP_PREFIX, stopGame, submitGuess, tidyAtEnd, type InteractiveHost, type MediaType,
 } from '../../utils/mediagame';
 import { awardBonusXp } from '../../utils/xpBonus';
 import * as db from '../../utils/db';
@@ -115,12 +115,13 @@ const mediaguessModule: EventModule = {
         // and trims audio, which can take longer than Discord's 3-second
         // interaction window.
         await btn.deferReply();
+        tidyReply(btn);
         const payload = await requestHint(btn.channelId, btn.user.id);
         if (!payload) {
           await btn.editReply({ content: '❌ There is no active guessing game in this channel.' });
           return;
         }
-        await btn.editReply(payload as any);
+        await btn.editReply(payload as any).catch(() => {}); // already tidied away if the round ended meanwhile
         return;
       }
 
@@ -130,9 +131,9 @@ const mediaguessModule: EventModule = {
       // A solo round (DM, or run through interactions) may be skipped on the spot, and the game goes on; acknowledge first, since revealing
       // a song downloads its full clip. A server round is a public vote.
       const solo = !!live && !live.guildId && !live.answered;
-      if (solo) await btn.deferReply();
+      if (solo) { await btn.deferReply(); tidyReply(btn); }
       const { content } = await castVoteSkip(btn.channelId, btn.user.id, btn.client, live?.interactive ? followHost(btn) : undefined);
-      if (solo) await btn.editReply({ content: content === '⏭️ Round skipped.' ? `⏭️ **${safeName(displayName(btn))}** skipped the round.` : content, allowedMentions: { parse: [] } });
+      if (solo) await btn.editReply({ content: content === '⏭️ Round skipped.' ? `⏭️ **${safeName(displayName(btn))}** skipped the round.` : content, allowedMentions: { parse: [] } }).catch(() => {});
       else await btn.reply({ content });
     },
   },
@@ -155,8 +156,17 @@ async function guessFromModal(modal: ModalSubmitInteraction): Promise<void> {
   const name = modal.member && 'displayName' in modal.member ? (modal.member.displayName as string) : modal.user.globalName ?? modal.user.username;
   const text = modal.fields.getTextInputValue(GUESS_INPUT);
   await modal.deferReply(); // a right answer rewrites the round (and may fetch a song's full clip): acknowledge first
+  tidyReply(modal);
   const result = await submitGuess(modal.channelId ?? '', text, { id: modal.user.id, name }, modal.client, followHost(modal));
-  await modal.editReply({ content: guessLine(name, text, result), allowedMentions: { parse: [] } });
+  await modal.editReply({ content: guessLine(name, text, result), allowedMentions: { parse: [] } }).catch(() => {}); // already tidied away if it ended the round
+}
+
+/**
+ * Marks this interaction's public reply to be removed when the round it belongs to ends, so guesses, hints and skip votes don't pile
+ * up in the chat (see tidyAtEnd). Does nothing outside a group-chat round.
+ */
+export function tidyReply(i: ButtonInteraction | ModalSubmitInteraction | ChatInputCommandInteraction): void {
+  tidyAtEnd(i.channelId ?? '', i.id, () => i.deleteReply());
 }
 
 const VERDICT = { correct: '✅ correct!', very_close: '‼️ very close!', close: '❗ close!', wrong: '❌ not quite.' } as const;
@@ -172,7 +182,7 @@ export function guessLine(name: string, text: string, result: keyof typeof VERDI
  */
 export function followHost(i: ButtonInteraction | ModalSubmitInteraction | ChatInputCommandInteraction): InteractiveHost {
   return {
-    client: i.client, channelId: i.channelId ?? '', userId: i.user.id,
+    client: i.client, channelId: i.channelId ?? '', userId: i.user.id, via: i.id,
     send: payload => i.followUp(payload).then(m => ({ id: m.id })),
     edit: (id, payload) => i.webhook.editMessage(id, payload),
   };

@@ -3,7 +3,7 @@ import {
   InteractionContextType, SlashCommandBuilder,
 } from 'discord.js';
 import { Command } from '../../interfaces/command';
-import { followHost } from '../../features/mediaguess';
+import { followHost, tidyReply } from '../../features/mediaguess';
 import { activeGames, castVoteSkip } from '../../utils/mediagame';
 
 const VoteSkip: Command = {
@@ -17,8 +17,9 @@ const VoteSkip: Command = {
     const live = activeGames.get(interaction.channelId);
     // Revealing a song fetches its full clip, so acknowledge first; a game run through interactions goes on through this reply.
     await interaction.deferReply();
+    tidyReply(interaction);
     const { content } = await castVoteSkip(interaction.channelId, interaction.user.id, interaction.client, live?.interactive ? followHost(interaction) : undefined);
-    await interaction.editReply({ content });
+    await interaction.editReply({ content }).catch(() => {}); // already tidied away if this vote ended the round
   },
 };
 

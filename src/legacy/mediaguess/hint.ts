@@ -3,6 +3,7 @@ import {
   InteractionContextType, SlashCommandBuilder,
 } from 'discord.js';
 import { Command } from '../../interfaces/command';
+import { tidyReply } from '../../features/mediaguess';
 import { requestHint } from '../../utils/mediagame';
 
 const Hint: Command = {
@@ -17,12 +18,13 @@ const Hint: Command = {
     // defer is needed because music's "Extended Snippet" hint downloads and
     // trims audio, which can take longer than Discord's 3-second interaction window.
     await interaction.deferReply();
+    tidyReply(interaction);
     const payload = await requestHint(interaction.channelId, interaction.user.id);
     if (!payload) {
       await interaction.editReply({ content: '❌ There is no active guessing game in this channel.' });
       return;
     }
-    await interaction.editReply(payload as any);
+    await interaction.editReply(payload as any).catch(() => {}); // already tidied away if the round ended meanwhile
   },
 };
 
