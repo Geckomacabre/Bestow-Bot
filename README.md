@@ -91,7 +91,7 @@ The image includes ffmpeg and yt-dlp, runs as an unprivileged user in production
 | **AI singers** | Run an [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) API server and set `ACESTEP_URL`. Needs a capable GPU; the bundled singing voices work without it. |
 | **Web search** | Set `SEARXNG_URL` to your own SearXNG instance; otherwise `/search` falls back to Wikipedia. |
 | **/download**, **/soundcloud** | Needs `yt-dlp` on `PATH` (included in Docker). Some sites demand a login or bot check from datacenter IPs; set `YTDLP_COOKIES` to a cookies file if so. |
-| **/instagram repost** | Posts are read with [Instaloader](https://github.com/instaloader/instaloader) (included in Docker): photos, carousels and videos come back as a full repost card. A video over the upload limit is shrunk with ffmpeg to fit. Public posts need no login; if Instagram asks for one, point `INSTALOADER_USER` and `INSTALOADER_SESSIONFILE` at a session made with `instaloader --login`. |
+| **/instagram repost** | Posts are read with [Instaloader](https://github.com/instaloader/instaloader) (included in Docker): photos, carousels and videos come back as a full repost card that goes out as soon as the post is read, with the media shown straight from Instagram and then swapped for uploaded copies of whatever fits the upload limit. Public posts need no login; if Instagram asks for one, point `INSTALOADER_USER` and `INSTALOADER_SESSIONFILE` at a session made with `instaloader --login`. |
 | **Lookups** | API keys are optional; see `.env.example`. |
 | **Web dashboard** | `WEB_PORT`, `WEB_URL`, `DISCORD_CLIENT_SECRET`. Use https in production. |
 

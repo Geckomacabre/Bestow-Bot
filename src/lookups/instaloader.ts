@@ -1,15 +1,12 @@
 import path from 'node:path';
-import { getBufferPublic } from '../framework/http.js';
 import { DownloadError, SIZE_OR_LENGTH, downloadPost, type Runner } from '../media/download.js';
-import { shrinkVideo } from '../media/shrink.js';
 import { LookupError } from './handler.js';
 import { ytdlpPost, type RepostPost } from './repost.js';
 
 /**
  * /instagram repost. Instaloader (https://github.com/instaloader/instaloader) reads the post itself — every photo or video in it, the
- * caption, the counts — in about a second, and the media files then download straight from Instagram's CDN. That is the fast path
- * and it handles photos, carousels, reels and videos alike. yt-dlp is the second opinion: it takes over when Instaloader can't read the
- * post, and when a single video is too big to upload as it is (it can pick a smaller version, which Instaloader can't).
+ * caption, the counts — and gives links to the media on Instagram's CDN, which Discord can show directly. That is the fast path and it
+ * handles photos, carousels, reels and videos alike. yt-dlp is the second opinion: it takes over when Instaloader can't read the post.
  * The helper is src/lookups/instaloader_post.py (Python and `pip install instaloader` are in the Docker image). Env: INSTALOADER_PYTHON
  * (default python3); INSTALOADER_USER + INSTALOADER_SESSIONFILE (optional: a session from `instaloader --login`, for posts Instagram
  * only shows to signed-in visitors).
@@ -88,11 +85,7 @@ export async function fetchInstagramPost(link: string, run: ScriptRunner = defau
   return instaPost(j, link);
 }
 
-const downloadFile = (url: string, maxBytes: number) => getBufferPublic(url, { maxBytes, timeoutMs: 45_000 });
-/** The biggest original that is worth downloading to shrink. */
-const MAX_SHRINKABLE = 80_000_000;
-
-/** yt-dlp's take on a post: the video, sized to fit. `first` is what Instaloader said if it had already failed. */
+/** yt-dlp's take on a post: the video, downloaded and sized to fit. `first` is what Instaloader said if it had already failed. */
 async function viaYtdlp(link: string, o: { maxBytes: number; ytdlpRun?: Runner }, first?: unknown): Promise<RepostPost> {
   try {
     const r = await downloadPost(link, { maxBytes: o.maxBytes, run: o.ytdlpRun });
@@ -108,33 +101,15 @@ async function viaYtdlp(link: string, o: { maxBytes: number; ytdlpRun?: Runner }
 }
 
 /**
- * The repost for an Instagram link. Instaloader reads the post (about a second) and its files are downloaded straight from the CDN;
- * yt-dlp is only asked when Instaloader can't read the post, or when a single video is too big to upload as it is — yt-dlp can pick a
- * smaller version of it, and if it can't either, the video stays on the card as a link.
+ * The post for an Instagram link, ready to send: Instaloader reads it (a second or two — Instagram's own answer time) and nothing is
+ * downloaded here, so the card can go out at once with the media as links (see sendRepostFast). yt-dlp is only asked when Instaloader
+ * can't read the post; its result comes with the video already downloaded.
  */
-export async function instagramRepost(
-  link: string,
-  o: {
-    maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner;
-    download?: (url: string, maxBytes: number) => Promise<Buffer>; shrink?: (data: Buffer, maxBytes: number) => Promise<Buffer>;
-  },
-): Promise<RepostPost> {
-  let post: RepostPost;
+export async function instagramRepost(link: string, o: { maxBytes: number; ytdlpRun?: Runner; scriptRun?: ScriptRunner }): Promise<RepostPost> {
   try {
-    post = await fetchInstagramPost(link, o.scriptRun);
+    return await fetchInstagramPost(link, o.scriptRun);
   } catch (err) {
     // Not installed: yt-dlp is all there is, and its errors are the ones to show. Otherwise Instaloader's answer is kept for the message.
     return viaYtdlp(link, o, err instanceof InstaloaderMissing ? undefined : err);
   }
-  const only = post.media.length === 1 && post.media[0]!.type === 'video' ? post.media[0]! : null;
-  if (only) {
-    // Fetched here, not left to the card, so a video that is a little over the limit can be shrunk to fit instead of becoming a link.
-    // Reels are usually 12–13 MB against a 10 MB limit; anything far beyond what could be shrunk is not fetched at all.
-    try {
-      const data = await (o.download ?? downloadFile)(only.url, Math.min(o.maxBytes * 8, MAX_SHRINKABLE));
-      only.data = data.length <= o.maxBytes ? data : await (o.shrink ?? shrinkVideo)(data, o.maxBytes);
-      only.ext = 'mp4';
-    } catch { return viaYtdlp(link, o).catch(() => post); } // one more chance with yt-dlp; failing that, the video stays a link on the card
-  }
-  return post;
 }

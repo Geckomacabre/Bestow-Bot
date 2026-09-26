@@ -1,11 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { AttachmentBuilder } from 'discord.js';
 import { DownloadError, SIZE_OR_LENGTH, explainFailure, type Runner } from '../src/media/download';
 import { MediaError } from '../src/framework/media';
 import { LookupError } from '../src/lookups/handler';
-import { fetchMedia } from '../src/lookups/repost';
+import { attachWhatFits, fetchMedia, sendRepostFast } from '../src/lookups/repost';
 import { InstaloaderMissing, fetchInstagramPost, instaPost, instagramRepost, instagramShortcode, type InstaJson, type ScriptRunner } from '../src/lookups/instaloader';
+import { fakeInteraction, textOf } from './fakeInteraction';
 
 const REEL = 'https://www.instagram.com/reel/CxAbCdEfGhI/';
 const PHOTOS = 'https://www.instagram.com/p/DW1nTDiDvnF/';
@@ -30,11 +32,6 @@ const carousel: InstaJson = {
 const reel: InstaJson = { ...carousel, shortcode: 'CxAbCdEfGhI', username: 'britneyspears', full_name: 'Britney Spears', media: [{ type: 'video', url: 'https://scontent.cdninstagram.com/reel.mp4' }] } as InstaJson;
 const script = (j: InstaJson | string, seen: string[] = []): ScriptRunner => async code => { seen.push(code); return typeof j === 'string' ? j : `${JSON.stringify(j)}\n`; };
 const missing: ScriptRunner = async () => { throw new InstaloaderMissing('nope'); };
-/** A stand-in for downloading a file from the CDN: records what was asked for, and can refuse (too big). */
-const cdn = (o: { tooBig?: boolean; bytes?: number } = {}) => {
-  const asked: { url: string; max: number }[] = [];
-  return { asked, download: async (url: string, max: number) => { asked.push({ url, max }); if (o.tooBig) throw new Error('over the limit'); return o.bytes ? Buffer.alloc(o.bytes, 1) : Buffer.from('reel-bytes'); } };
-};
 
 describe('Instagram links', () => {
   test('posts, reels and IGTV are recognised, with or without a username in the path', () => {
@@ -51,55 +48,81 @@ describe('Instagram links', () => {
 });
 
 describe('Instaloader reads the post first, so a repost is quick', () => {
-  test('a carousel is read once; yt-dlp is never started and no media is fetched here (the card fetches the photos in parallel)', async () => {
-    const seen: string[] = [], y = noVideo(), c = cdn();
-    const post = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(carousel, seen), download: c.download });
-    expect(seen).toEqual(['DW1nTDiDvnF']); expect(y.calls).toBe(0); expect(c.asked).toEqual([]);
+  test('a carousel is read once; yt-dlp is never started and nothing is downloaded on the way', async () => {
+    const seen: string[] = [], y = noVideo();
+    const post = await instagramRepost(PHOTOS, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(carousel, seen) });
+    expect(seen).toEqual(['DW1nTDiDvnF']); expect(y.calls).toBe(0);
     expect(post.media.map(m => m.type)).toEqual(['image', 'image', 'video']);
+    expect(post.media.every(m => m.data === undefined)).toBe(true); // just the links: the card goes out before any file is fetched
     expect(post.media[0]!.url).toBe('https://scontent.cdninstagram.com/a.jpg');
     expect(post.author).toMatchObject({ name: 'NASA', handle: 'nasa', url: 'https://www.instagram.com/nasa/' });
     expect(post.text).toBe('Hello, Moon.'); expect(post.createdAt).toBe(1775580510 * 1000); expect(post.url).toBe('https://www.instagram.com/p/DW1nTDiDvnF/');
     expect(post.stats.map(s => s.value)).toEqual([11101714, 46439, null]);
   });
 
-  test('a video that fits is downloaded straight from its link — no yt-dlp, no re-encoding', async () => {
-    const seen: string[] = [], y = goodVideo(), c = cdn(), shrunk: number[] = [];
-    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(reel, seen), download: c.download, shrink: async d => { shrunk.push(d.length); return d; } });
-    expect(y.calls).toBe(0); expect(shrunk).toEqual([]);
-    expect(c.asked).toEqual([{ url: 'https://scontent.cdninstagram.com/reel.mp4', max: 72_000_000 }]); // room to fetch one that needs shrinking, in the one request
-    expect(post.media[0]).toMatchObject({ type: 'video', ext: 'mp4' }); expect(post.media[0]!.data?.toString()).toBe('reel-bytes');
+  test('a reel is the same: one read, a link to the video, no yt-dlp — however big the video is', async () => {
+    const seen: string[] = [], y = goodVideo();
+    const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script(reel, seen) });
+    expect(seen).toEqual(['CxAbCdEfGhI']); expect(y.calls).toBe(0);
+    expect(post.media).toEqual([{ type: 'video', url: 'https://scontent.cdninstagram.com/reel.mp4' }]);
     expect(post.author.handle).toBe('britneyspears');
   });
+});
 
-  test('a reel a little over the limit is shrunk to fit — the usual 12 MB reel against a 10 MB limit', async () => {
-    const y = goodVideo(), c = cdn({ bytes: 12_000 }), asked: { size: number; max: number }[] = [];
-    const post = await instagramRepost(REEL, {
-      maxBytes: 10_000, ytdlpRun: y.run, scriptRun: script(reel), download: c.download,
-      shrink: async (d, max) => { asked.push({ size: d.length, max }); return Buffer.alloc(9_000, 1); },
-    });
-    expect(asked).toEqual([{ size: 12_000, max: 10_000 }]); expect(y.calls).toBe(0); // one download, one encode, and no detour through yt-dlp
-    expect(post.media[0]!.data).toHaveLength(9_000); expect(post.media[0]).toMatchObject({ ext: 'mp4' });
+describe('the card goes out at once, and the files follow', () => {
+  const links = { open: 'Open on Instagram' };
+  /** The URLs in a card's media gallery. */
+  const galleryOf = (payload: any): string[] => {
+    const walk = (c: any): string[] => (c.data?.type === 12 ? (c.items ?? c.data.items ?? []).map((x: any) => x.data?.media?.url ?? x.media?.url) : (c.components ?? []).flatMap(walk));
+    return payload.components.flatMap(walk);
+  };
+  const post = () => instaPost(carousel, PHOTOS);
+
+  test('the first reply has the caption, the counts and the media as links — and no files', async () => {
+    const fi = fakeInteraction({ guildId: null });
+    let attachCalls = 0; const gate = Promise.withResolvers<void>();
+    const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, async () => { attachCalls++; await gate.promise; return { files: [], items: [], attached: 0 }; });
+    expect(fi.sent).toHaveLength(1); // the reply is out while the upgrade is still waiting on its downloads
+    expect(fi.sent[0].files).toEqual([]);
+    expect(galleryOf(fi.sent[0])).toEqual(['https://scontent.cdninstagram.com/a.jpg', 'https://scontent.cdninstagram.com/b.jpg', 'https://scontent.cdninstagram.com/c.mp4']);
+    expect(textOf(fi.sent[0])).toContain('Hello, Moon.'); expect(textOf(fi.sent[0])).toContain('11.1m');
+    gate.resolve(); await persisted; expect(attachCalls).toBe(1);
   });
 
-  test('the original is only fetched up to what could be shrunk: 8 times the limit, never more than 80 MB', async () => {
-    const c = cdn({ bytes: 1 });
-    await instagramRepost(REEL, { maxBytes: 100_000_000, scriptRun: script(reel), download: c.download });
-    await instagramRepost(REEL, { maxBytes: 2_000_000, scriptRun: script(reel), download: c.download });
-    expect(c.asked.map(a => a.max)).toEqual([80_000_000, 16_000_000]);
+  test('then what fits is swapped in as files, and what does not stays a link', async () => {
+    const fi = fakeInteraction({ guildId: null });
+    const a = new AttachmentBuilder(Buffer.from('a'), { name: 'photo1.jpg' }), b = new AttachmentBuilder(Buffer.from('b'), { name: 'photo2.jpg' });
+    const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, async () => ({ files: [a, b], items: ['attachment://photo1.jpg', 'attachment://photo2.jpg', 'https://scontent.cdninstagram.com/c.mp4'], attached: 2 }));
+    await persisted;
+    expect(fi.sent).toHaveLength(2);
+    expect(galleryOf(fi.sent[1])).toEqual(['attachment://photo1.jpg', 'attachment://photo2.jpg', 'https://scontent.cdninstagram.com/c.mp4']);
+    expect(fi.sent[1].files).toHaveLength(2);
   });
 
-  test('when it cannot be shrunk, yt-dlp gets one try at a smaller version', async () => {
-    const y = goodVideo(), c = cdn({ bytes: 12_000 });
-    const post = await instagramRepost(REEL, { maxBytes: 10_000, ytdlpRun: y.run, scriptRun: script(reel), download: c.download, shrink: async () => { throw new MediaError('too long'); } });
-    expect(y.calls).toBe(1); expect(post.media[0]!.data?.toString()).toBe('small-video');
-    expect(post.author.handle).toBe('britneyspears'); expect(post.author.url).toBe('https://www.instagram.com/britneyspears/'); // the name, not the numeric id yt-dlp reports
-  });
-
-  test('and if that fails as well, the card still comes out — the video stays a link', async () => {
-    for (const c of [cdn({ bytes: 12_000 }), cdn({ tooBig: true })]) {
-      const post = await instagramRepost(REEL, { maxBytes: 10_000, ytdlpRun: failing('HTTP Error 429').run, scriptRun: script(reel), download: c.download, shrink: async () => { throw new MediaError('too long'); } });
-      expect(post.media).toHaveLength(1); expect(post.media[0]!.data).toBeUndefined(); expect(post.author.handle).toBe('britneyspears');
+  test('if nothing could be fetched, or the upgrade fails, the first card simply stays', async () => {
+    for (const attach of [async () => ({ files: [], items: [], attached: 0 }), async () => { throw new Error('network down'); }]) {
+      const fi = fakeInteraction({ guildId: null });
+      const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, attach);
+      await expect(persisted).resolves.toBeUndefined();
+      expect(fi.sent).toHaveLength(1);
     }
+  });
+
+  test('the upload limit passed on is the invoker\'s, less a margin', async () => {
+    const fi = fakeInteraction({ guildId: null, limit: 8 * 1024 * 1024 });
+    let limit = 0;
+    const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, async (_m, l) => { limit = l; return { files: [], items: [], attached: 0 }; });
+    await persisted; expect(limit).toBe(Math.floor(8 * 1024 * 1024 * 0.95));
+  });
+
+  test('a post whose file is already downloaded (yt-dlp\'s) is sent as it is, once, with the file attached', async () => {
+    const fi = fakeInteraction({ guildId: null });
+    let attachCalls = 0;
+    const p = instaPost(reel, REEL); p.media = [{ type: 'video', url: REEL, data: Buffer.from('bytes'), ext: 'mp4' }];
+    const { persisted } = await sendRepostFast(fi.interaction, p, links, undefined, async () => { attachCalls++; return { files: [], items: [], attached: 0 }; });
+    await persisted;
+    expect(fi.sent).toHaveLength(1); expect(fi.sent[0].files).toHaveLength(1); expect(attachCalls).toBe(0);
+    expect(galleryOf(fi.sent[0])).toEqual(['attachment://video1.mp4']);
   });
 });
 
@@ -108,6 +131,7 @@ describe('when Instaloader cannot read the post, yt-dlp gets its turn', () => {
     const y = goodVideo();
     const post = await instagramRepost(REEL, { maxBytes: 9_000_000, ytdlpRun: y.run, scriptRun: script({ ok: false, kind: 'login' }) });
     expect(y.calls).toBe(1); expect(post.media[0]!.data?.toString()).toBe('small-video');
+    expect(post.author.handle).toBe('britneyspears'); expect(post.author.url).toBe('https://www.instagram.com/britneyspears/'); // the name, not the numeric id yt-dlp reports
   });
 
   test('when both are turned away, Instagram\'s reason is stated plainly', async () => {
@@ -168,6 +192,27 @@ describe('reading the helper\'s answer', () => {
     const seen: string[] = [];
     await expect(fetchInstagramPost('https://www.instagram.com/nasa/', script(carousel, seen))).rejects.toBeInstanceOf(LookupError);
     expect(seen).toEqual([]);
+  });
+});
+
+describe('attaching what fits', () => {
+  const item = (label: string, bytes: number) => ({ type: 'image' as const, url: `https://x.example/${label}.jpg`, data: Buffer.alloc(bytes), ext: 'jpg' });
+
+  test('files come first-come within the limit, in order; the rest keep their own link, and nothing is dropped', async () => {
+    const got = await attachWhatFits([item('a', 5), item('b', 5), item('c', 5), item('d', 2)], 12);
+    expect(got.items).toEqual(['attachment://photo1.jpg', 'attachment://photo2.jpg', 'https://x.example/c.jpg', 'attachment://photo4.jpg']);
+    expect(got.attached).toBe(3); expect(got.files).toHaveLength(3);
+  });
+
+  test('one that cannot be fetched stays a link and does not spoil the others', async () => {
+    const bad = { type: 'video' as const, url: 'https://127.0.0.1/private.mp4' }; // refused by the public-address guard
+    const got = await attachWhatFits([item('a', 1), bad, item('c', 1)], 100);
+    expect(got.items).toEqual(['attachment://photo1.jpg', 'https://127.0.0.1/private.mp4', 'attachment://photo3.jpg']); expect(got.attached).toBe(2);
+  });
+
+  test('nothing is attached when nothing can be', async () => {
+    const got = await attachWhatFits([{ type: 'image', url: 'https://127.0.0.1/a.jpg' }], 100);
+    expect(got.attached).toBe(0); expect(got.items).toEqual(['https://127.0.0.1/a.jpg']);
   });
 });
 
