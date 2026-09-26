@@ -18,9 +18,28 @@ export const INSTAGRAM_COLOR = 0xe1306c;
 const SCRIPT = path.resolve(import.meta.dir, 'instaloader_post.py');
 const TIMEOUT_MS = 60_000;
 
-/** The shortcode of a post, reel or IGTV link — null for anything else (a profile, another site, a look-alike host). */
-export function instagramShortcode(link: string): string | null {
-  return /^https:\/\/(?:www\.)?instagram\.com\/(?:[\w.]+\/)?(?:p|reel|reels|tv)\/([\w-]+)/i.exec(link.trim())?.[1] ?? null;
+/** What kind of post a link points at, and its shortcode — null for anything else (a profile, another site, a look-alike host). */
+export function instagramRef(link: string): { kind: 'p' | 'reel' | 'tv'; code: string } | null {
+  const m = /^https:\/\/(?:www\.)?instagram\.com\/(?:[\w.]+\/)?(p|reel|reels|tv)\/([\w-]+)/i.exec(link.trim());
+  if (!m) return null;
+  const kind = m[1]!.toLowerCase();
+  return { kind: kind === 'reels' ? 'reel' : (kind as 'p' | 'reel' | 'tv'), code: m[2]! };
+}
+
+/** The shortcode of a post, reel or IGTV link. */
+export const instagramShortcode = (link: string) => instagramRef(link)?.code ?? null;
+
+/**
+ * The default way /instagram repost answers: a link to an embed service, which Discord turns into the video or photos itself. The bot
+ * downloads and uploads nothing, so the reply is instant (the service can't be called by a program — it puts a browser check in front
+ * of everything but Discord's own link preview — so a link is the only way to use it). INSTAGRAM_REPOST=card switches to the repost card
+ * built from Instaloader and yt-dlp instead; INSTAGRAM_EMBED_HOST changes the service.
+ */
+export const DEFAULT_EMBED_HOST = 'www.d.oginstagram.com';
+export const embedMode = () => (Bun.env.INSTAGRAM_REPOST ?? 'embed').trim().toLowerCase() !== 'card';
+export function embedLink(ref: { kind: string; code: string }): string {
+  const host = Bun.env.INSTAGRAM_EMBED_HOST?.trim().toLowerCase();
+  return `https://${host && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(host) ? host : DEFAULT_EMBED_HOST}/${ref.kind}/${ref.code}`;
 }
 
 /** What instaloader_post.py prints. */

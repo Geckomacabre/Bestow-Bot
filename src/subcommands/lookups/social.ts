@@ -7,7 +7,7 @@ import { sendPages } from '../../framework/pages.js';
 import { card, compact, listCard, num, trunc, when } from '../../lookups/card.js';
 import { lookup, LookupError } from '../../lookups/handler.js';
 import { sendRepost, shortCount, VERIFIED, ytdlpPost, type RepostPost } from '../../lookups/repost.js';
-import { instagramRepost, instagramShortcode } from '../../lookups/instaloader.js';
+import { embedLink, embedMode, instagramRef, instagramRepost } from '../../lookups/instaloader.js';
 import * as x from '../../lookups/x.js';
 import * as tt from '../../lookups/tiktok.js';
 import * as so from '../../lookups/social.js';
@@ -92,7 +92,10 @@ export const instagramSubs: Sub[] = [
   }), { tweaks: user60 }),
   hsub('instagram repost', lookup(async i => {
     const link = i.options.getString('url', true);
-    if (!instagramShortcode(link)) throw new LookupError('Send an Instagram post or reel link like `https://www.instagram.com/reel/…`.');
+    const ref = instagramRef(link);
+    if (!ref) throw new LookupError('Send an Instagram post or reel link like `https://www.instagram.com/reel/…`.');
+    // Just the link: Discord's own preview turns it into the video or photos, so there is nothing to download or upload here.
+    if (embedMode()) { await i.editReply({ content: embedLink(ref), allowedMentions: { parse: [] } }); return; }
     const post = await instagramRepost(link, { maxBytes: Math.floor(uploadLimit(i) * 0.95) });
     await sendRepost(i, post, { open: 'Open on Instagram', authorUrl: post.author.url });
   }), { tweaks: url500 }),
