@@ -13,7 +13,7 @@ export interface FxTweetRaw {
   code?: number;
   tweet?: {
     url: string; text: string; author: FxAuthor; replies?: number; retweets?: number; likes?: number; bookmarks?: number; views?: number | null;
-    created_timestamp?: number; possibly_sensitive?: boolean; media?: { all?: FxMedia[] } | null;
+    created_timestamp?: number; possibly_sensitive?: boolean; media?: { all?: FxMedia[] } | null; lang?: string | null;
   };
 }
 
@@ -29,7 +29,7 @@ export function parseFxTweet(raw: FxTweetRaw): RepostPost | null {
     author: { name: t.author.name, handle: t.author.screen_name, avatar: t.author.avatar_url?.replace('_normal.', '_400x400.'), url: `https://x.com/${t.author.screen_name}`, verified: !!t.author.verification?.verified },
     text: stripMediaLinks(t.text ?? '', media.length > 0), createdAt: t.created_timestamp ? t.created_timestamp * 1000 : undefined,
     stats: [{ icon: '♡', value: t.likes }, { icon: '💬', value: t.replies }, { icon: '🔖', value: t.bookmarks }, { icon: '🔁', value: t.retweets }, { icon: '', value: t.views ?? null, suffix: ' views' }],
-    media, sensitive: !!t.possibly_sensitive,
+    media, sensitive: !!t.possibly_sensitive, lang: t.lang || undefined,
   };
 }
 

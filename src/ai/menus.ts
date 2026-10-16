@@ -5,7 +5,7 @@ import { onComponent } from '../framework/router.js';
 import { card, trunc } from '../lookups/card.js';
 import { friendlyError } from '../lookups/handler.js';
 import { gtranslate } from '../lookups/textfun.js';
-import { languageName } from '../lookups/languages.js';
+import { languageName, localeLang } from '../lookups/languages.js';
 import { ask, chat, llmConfigured, sanitizeReply } from '../services/llm.js';
 import { premiumOf } from '../premium/index.js';
 import { checkLimit, limitMessage, refund } from './limits.js';
@@ -108,15 +108,8 @@ export async function transcribeMenu(i: MessageContextMenuCommandInteraction) {
 
 // ─── Translate Message ───────────────────────────────────────────────────────
 
-/** Discord locale ("en-US", "pt-BR", "zh-CN") → a Google Translate code. */
-export function localeLang(locale: string | null | undefined): string {
-  const l = (locale ?? 'en').toLowerCase();
-  if (l === 'zh-cn') return 'zh-CN';
-  if (l === 'zh-tw') return 'zh-TW';
-  if (l === 'pt-br') return 'pt';
-  if (l === 'es-es' || l === 'es-419') return 'es';
-  return l.split('-')[0]!;
-}
+// localeLang (a Discord locale as a Google Translate code) lives with the other language helpers now; kept here for older imports.
+export { localeLang };
 
 export async function translateMenu(i: MessageContextMenuCommandInteraction) {
   const text = i.targetMessage.content?.trim();

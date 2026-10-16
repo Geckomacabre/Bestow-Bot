@@ -160,6 +160,12 @@ export async function getBufferPublic(raw: string, opts: HttpOptions & { maxByte
   throw new Error('That link redirected too many times.');
 }
 
+/** getJson for a URL that came from a user: like getBufferPublic, the host and every redirect must be public, and the body is capped. */
+export async function getJsonPublic<T = unknown>(raw: string, opts: HttpOptions & { maxBytes?: number } = {}): Promise<T> {
+  const buf = await getBufferPublic(raw, { ...opts, maxBytes: opts.maxBytes ?? 2 * 1024 * 1024, headers: { Accept: 'application/json', ...opts.headers } });
+  return JSON.parse(buf.toString('utf8')) as T;
+}
+
 /** Only allow public http(s) URLs — blocks localhost/private ranges so user-supplied URLs can't probe the host network. */
 export function assertPublicUrl(raw: string): URL {
   let u: URL;

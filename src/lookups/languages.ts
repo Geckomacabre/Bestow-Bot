@@ -30,3 +30,13 @@ export function searchLanguages(q: string): { name: string; value: string }[] {
     .filter(x => !s || x.name.toLowerCase().includes(s))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
+
+/** A Discord locale ("en-US", "pt-BR", "zh-TW"…) as a Google Translate code: the language a person reads Discord in. */
+export function localeLang(locale: string | null | undefined): string {
+  const l = (locale ?? 'en').toLowerCase();
+  if (l === 'zh-cn') return 'zh-CN';
+  if (l === 'zh-tw') return 'zh-TW';
+  if (l === 'pt-br') return 'pt';
+  if (l === 'es-es' || l === 'es-419') return 'es';
+  return l.split('-')[0]!;
+}

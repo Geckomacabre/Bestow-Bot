@@ -6,7 +6,7 @@ import { DownloadError, SIZE_OR_LENGTH, explainFailure, type Runner } from '../s
 import { MediaError } from '../src/framework/media';
 import { LookupError } from '../src/lookups/handler';
 import type { StatusGet } from '../src/lookups/fixembed';
-import { attachWhatFits, fetchMedia, sendRepostFast } from '../src/lookups/repost';
+import { attachWhatFits, fetchMedia, noTranslation, sendRepostFast } from '../src/lookups/repost';
 import { InstaloaderMissing, fetchInstagramPost, instaPost, instagramRepost, instagramShortcode, type InstaJson, type ScriptRunner } from '../src/lookups/instaloader';
 import { fakeInteraction, textOf } from './fakeInteraction';
 
@@ -84,7 +84,7 @@ describe('the card goes out at once, and the files follow', () => {
   test('the first reply has the caption, the counts and the media as links — and no files', async () => {
     const fi = fakeInteraction({ guildId: null });
     let attachCalls = 0; const gate = Promise.withResolvers<void>();
-    const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, async () => { attachCalls++; await gate.promise; return { files: [], items: [], attached: 0 }; });
+    const { persisted } = await sendRepostFast(fi.interaction, post(), links, { translate: noTranslation, attach: async () => { attachCalls++; await gate.promise; return { files: [], items: [], attached: 0 }; } });
     expect(fi.sent).toHaveLength(1); // the reply is out while the upgrade is still waiting on its downloads
     expect(fi.sent[0].files).toEqual([]);
     expect(galleryOf(fi.sent[0])).toEqual(['https://scontent.cdninstagram.com/a.jpg', 'https://scontent.cdninstagram.com/b.jpg', 'https://scontent.cdninstagram.com/c.mp4']);
@@ -95,7 +95,7 @@ describe('the card goes out at once, and the files follow', () => {
   test('then what fits is swapped in as files, and what does not stays a link', async () => {
     const fi = fakeInteraction({ guildId: null });
     const a = new AttachmentBuilder(Buffer.from('a'), { name: 'photo1.jpg' }), b = new AttachmentBuilder(Buffer.from('b'), { name: 'photo2.jpg' });
-    const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, async () => ({ files: [a, b], items: ['attachment://photo1.jpg', 'attachment://photo2.jpg', 'https://scontent.cdninstagram.com/c.mp4'], attached: 2 }));
+    const { persisted } = await sendRepostFast(fi.interaction, post(), links, { translate: noTranslation, attach: async () => ({ files: [a, b], items: ['attachment://photo1.jpg', 'attachment://photo2.jpg', 'https://scontent.cdninstagram.com/c.mp4'], attached: 2 }) });
     await persisted;
     expect(fi.sent).toHaveLength(2);
     expect(galleryOf(fi.sent[1])).toEqual(['attachment://photo1.jpg', 'attachment://photo2.jpg', 'https://scontent.cdninstagram.com/c.mp4']);
@@ -105,7 +105,7 @@ describe('the card goes out at once, and the files follow', () => {
   test('if nothing could be fetched, or the upgrade fails, the first card simply stays', async () => {
     for (const attach of [async () => ({ files: [], items: [], attached: 0 }), async () => { throw new Error('network down'); }]) {
       const fi = fakeInteraction({ guildId: null });
-      const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, attach);
+      const { persisted } = await sendRepostFast(fi.interaction, post(), links, { translate: noTranslation, attach });
       await expect(persisted).resolves.toBeUndefined();
       expect(fi.sent).toHaveLength(1);
     }
@@ -114,7 +114,7 @@ describe('the card goes out at once, and the files follow', () => {
   test('the upload limit passed on is the invoker\'s, less a margin', async () => {
     const fi = fakeInteraction({ guildId: null, limit: 8 * 1024 * 1024 });
     let limit = 0;
-    const { persisted } = await sendRepostFast(fi.interaction, post(), links, undefined, async (_m, l) => { limit = l; return { files: [], items: [], attached: 0 }; });
+    const { persisted } = await sendRepostFast(fi.interaction, post(), links, { translate: noTranslation, attach: async (_m, l) => { limit = l; return { files: [], items: [], attached: 0 }; } });
     await persisted; expect(limit).toBe(Math.floor(8 * 1024 * 1024 * 0.95));
   });
 
@@ -122,7 +122,7 @@ describe('the card goes out at once, and the files follow', () => {
     const fi = fakeInteraction({ guildId: null });
     let attachCalls = 0;
     const p = instaPost(reel, REEL); p.media = [{ type: 'video', url: REEL, data: Buffer.from('bytes'), ext: 'mp4' }];
-    const { persisted } = await sendRepostFast(fi.interaction, p, links, undefined, async () => { attachCalls++; return { files: [], items: [], attached: 0 }; });
+    const { persisted } = await sendRepostFast(fi.interaction, p, links, { translate: noTranslation, attach: async () => { attachCalls++; return { files: [], items: [], attached: 0 }; } });
     await persisted;
     expect(fi.sent).toHaveLength(1); expect(fi.sent[0].files).toHaveLength(1); expect(attachCalls).toBe(0);
     expect(galleryOf(fi.sent[0])).toEqual(['attachment://video1.mp4']);
