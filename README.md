@@ -325,6 +325,8 @@ docker compose up -d --build
 
 To update later: `git pull && docker compose up -d --build`. Commands are registered on every start (Discord can take a little while to show new ones).
 
+**Let it update itself (Windows):** `powershell -ExecutionPolicy Bypass -File .\scripts\install-auto-update.ps1` adds a hidden scheduled task that checks GitHub every 5 minutes and, when `main` has new commits, pulls them and rebuilds. It never overwrites your own changes, logs to `logs\auto-update.log`, and `-Uninstall` removes it.
+
 ### 1. Create the Discord application
 
 1. Open <https://discord.com/developers/applications> → **New Application**.
