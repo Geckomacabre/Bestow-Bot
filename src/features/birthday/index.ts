@@ -1,5 +1,6 @@
 import { Client, EmbedBuilder, Colors, TextChannel } from 'discord.js';
 import * as db from '../../utils/db';
+import { refreshAllBirthdayPanels } from '../../groupchat/boards.js';
 
 let lastCheckedDay = -1;
 
@@ -41,4 +42,9 @@ export function startBirthdayChecker(bot: Client) {
   setInterval(check, 60 * 60 * 1000);
   // Also check shortly after startup
   setTimeout(check, 10_000);
+
+  // Live birthday panels (/server birthdays panel): each is only edited when what it shows has changed, so this is cheap.
+  const panels = () => refreshAllBirthdayPanels(bot).catch(err => console.error(`[birthday panel] ${err}`));
+  setInterval(panels, 15 * 60 * 1000);
+  setTimeout(panels, 15_000);
 }

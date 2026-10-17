@@ -128,7 +128,7 @@ Paste a link from **X, Instagram, TikTok, Bluesky, Threads, Facebook, Reddit or 
 Made for group chats and DMs. There Discord lets Bestow answer commands and buttons but not read or post on its own, so each of these is a panel everyone presses:
 
 - 🕒 **Time board** (`/group times`): everyone's local time, grouped by clock. **Add me** asks for your timezone once
-- 🎂 **Birthday board** (`/group birthdays`): who's next and who's today. Save yours once, then add it to each chat with one press
+- 🎂 **Birthday board** (`/group birthdays`): who's next and who's today. Save yours once, then add it to each chat with one press. In a server, `/server birthdays panel` posts one that keeps itself up to date
 - 📅 **Plans** (`/group plan`): type `friday 8pm` and everyone sees it in their own timezone, answers Going / Maybe / Can't, and can get a reminder 15 minutes before
 - 📝 **Shared lists** (`/group list`): groceries, movies, packing. Anyone adds and ticks things off
 - 🎉 **Party games**: truth or dare, never have I ever and would you rather with button votes, plus `/group pick` for "where should we eat?"

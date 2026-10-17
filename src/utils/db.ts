@@ -953,7 +953,7 @@ export async function removeGuild(guild_id: string) {
     'streaming_config', 'rsvp_events', 'economy_config', 'xp', 'xp_config', 'level_roles',
     'free_game_config', 'free_game_posted', 'birthdays', 'birthday_config', 'timezone_user', 'timezone_message',
     'stat_channels', 'reaction_roles', 'topic_channels', 'topics', 'starboard_config', 'starboard_posts',
-    'tags', 'news_config', 'mediaguess_rounds', 'mediaguess_config', 'economy_drought',
+    'tags', 'news_config', 'mediaguess_rounds', 'mediaguess_config', 'economy_drought', 'birthday_panels',
   ]) {
     await db`DELETE FROM ${db(table)} WHERE guild_id = ${guild_id}`.catch(() => {});
   }
