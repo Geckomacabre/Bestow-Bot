@@ -5,15 +5,17 @@ import {
 import * as db from '../../utils/db';
 import { awardBonusXp } from '../../utils/xpBonus.js';
 import { Command } from '../../interfaces/command';
+import { placeName, placeOf, scopeOf } from '../../groupchat/scope.js';
 
 const REP_XP = 75;
 
+/** Reputation is kept per server, and per chat in DMs and group chats (see groupchat/scope.ts). XP only exists in servers. */
 const Rep: Command = {
   data: new SlashCommandBuilder()
     .setName('rep')
     .setDescription('Give or check reputation points')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addSubcommand(sub => sub
       .setName('give')
       .setDescription('Give a reputation point to a user')
@@ -31,6 +33,7 @@ const Rep: Command = {
 
   async run(interaction: ChatInputCommandInteraction) {
     const sub = interaction.options.getSubcommand();
+    const scope = scopeOf(interaction);
     await interaction.deferReply();
 
     if (sub === 'give') {
@@ -38,8 +41,8 @@ const Rep: Command = {
       if (target.id === interaction.user.id) { await interaction.editReply('You cannot rep yourself.'); return; }
       if (target.bot) { await interaction.editReply('You cannot rep a bot.'); return; }
 
-      const cfg = await db.getRepConfig(interaction.guildId!);
-      const lastRep = await db.checkRepCooldown(interaction.guildId!, interaction.user.id, target.id);
+      const cfg = await db.getRepConfig(scope);
+      const lastRep = await db.checkRepCooldown(scope, interaction.user.id, target.id);
       const cooldownMs = cfg.cooldown_seconds * 1000;
       if (lastRep && Date.now() - lastRep < cooldownMs) {
         const remaining = Math.ceil((cooldownMs - (Date.now() - lastRep)) / 60000);
@@ -47,30 +50,31 @@ const Rep: Command = {
         return;
       }
 
-      const newPoints = await db.adjustReputation(interaction.guildId!, target.id, 1);
-      await db.setRepCooldown(interaction.guildId!, interaction.user.id, target.id);
-      const xpGiven = await awardBonusXp({
-        guildId: interaction.guildId!, userId: target.id, baseAmount: REP_XP,
+      const newPoints = await db.adjustReputation(scope, target.id, 1);
+      await db.setRepCooldown(scope, interaction.user.id, target.id);
+      const xpGiven = interaction.guildId ? await awardBonusXp({
+        guildId: interaction.guildId, userId: target.id, baseAmount: REP_XP,
         client: interaction.client, channelId: interaction.channelId,
-      });
+      }) : 0;
       const xpNote = xpGiven > 0 ? ` (+${xpGiven} XP to ${target.username})` : '';
       await interaction.editReply(`✅ Gave +1 rep to **${target.username}**! They now have **${newPoints}** rep.${xpNote}`);
 
     } else if (sub === 'view') {
       const target = interaction.options.getUser('user') ?? interaction.user;
-      const rep = await db.getReputation(interaction.guildId!, target.id);
+      const rep = await db.getReputation(scope, target.id);
       const embed = new EmbedBuilder()
         .setColor(Colors.Gold)
         .setThumbnail(target.displayAvatarURL())
         .setTitle(`${target.username}'s Reputation`)
-        .setDescription(`**${rep?.points ?? 0}** reputation point(s)`);
+        .setDescription(`**${rep?.points ?? 0}** reputation point(s) in ${placeName(placeOf(interaction))}`);
       await interaction.editReply({ embeds: [embed] });
 
     } else {
-      const board = await db.getRepLeaderboard(interaction.guildId!, 10);
+      const board = await db.getRepLeaderboard(scope, 10);
       const embed = new EmbedBuilder()
         .setColor(Colors.Gold)
         .setTitle('Reputation Leaderboard')
+        .setFooter({ text: `Counted separately in each server and chat · this is ${placeName(placeOf(interaction))}` })
         .setDescription(
           board.map(r => `**#${r.rank}** <@${r.user_id}> — **${r.points}** rep`).join('\n') || 'No reputation data yet.'
         );

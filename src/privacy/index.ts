@@ -114,7 +114,7 @@ export async function deleteData(userId: string): Promise<DeleteResult> {
 export const POLICY = {
   stores: [
     'Your Discord user ID, so your balance, level, reputation and settings stay yours across sessions.',
-    'Things you deliberately give it: birthday, timezone, reminders, wallet style, juul flavour, trading cards and other game progress.',
+    'Things you deliberately give it: birthday, timezone, reminders, wallet style, juul flavour, trading cards and other game progress, and in group chats the plans, shared-list items and button votes you add.',
     'Counters like how many messages you\'ve sent for levels — **never the text of your messages**.',
   ],
   neverStores: [

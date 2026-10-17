@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import * as db from '../../utils/db';
 import { Command } from '../../interfaces/command';
+import { botCanPost } from '../../groupchat/scope.js';
 
 function parseDuration(s: string): number | null {
   const re = /^(\d+)(s|m|h|d|w)$/i;
@@ -19,8 +20,8 @@ const Reminder: Command = {
   data: new SlashCommandBuilder()
     .setName('reminder')
     .setDescription('Set and manage reminders')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addSubcommand(sub => sub
       .setName('set')
       .setDescription('Set a reminder')
@@ -48,7 +49,9 @@ const Reminder: Command = {
       if (!ms) { await interaction.editReply('Invalid time format. Use e.g. `10m`, `2h`, `1d`.'); return; }
       const firesAt = Date.now() + ms;
       const reminder = await db.createReminder(interaction.user.id, interaction.channelId, interaction.guildId, message, firesAt);
-      await interaction.editReply(`✅ Reminder #${reminder.id} set! I'll remind you <t:${Math.floor(firesAt / 1000)}:R>.\n> ${message}`);
+      // Where the bot can't post by itself (a group chat, a server it's only on someone's account for), the reminder comes by DM.
+      const where = botCanPost(interaction) ? '' : ' in your DMs (I can\'t post in this chat on my own)';
+      await interaction.editReply(`✅ Reminder #${reminder.id} set! I'll remind you <t:${Math.floor(firesAt / 1000)}:R>${where}.\n> ${message}`);
 
     } else if (sub === 'list') {
       const reminders = await db.getReminders(interaction.user.id);

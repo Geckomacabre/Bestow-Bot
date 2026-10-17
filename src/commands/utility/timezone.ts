@@ -24,7 +24,9 @@ export function describeTime(zone: string, now = new Date()): { time: string; da
   const time = new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', minute: '2-digit', hour12: true }).format(now);
   const date = new Intl.DateTimeFormat('en-US', { timeZone: zone, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(now);
   const offset = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'shortOffset' }).formatToParts(now).find(p => p.type === 'timeZoneName')?.value ?? '';
-  return { time, date, offset: offset.replace('GMT', 'UTC') || 'UTC' };
+  // Some ICU builds print UTC itself as "GMT+0".
+  const utc = offset.replace('GMT', 'UTC');
+  return { time, date, offset: !utc || utc === 'UTC+0' ? 'UTC' : utc };
 }
 
 async function zoneAutocomplete(i: AutocompleteInteraction) {
@@ -43,7 +45,7 @@ export default hgroup({
       if (!zone) throw new LookupError('I don\'t know that timezone. Pick one from the list, or type a city like "Tokyo".');
       await db.setTimezone(i.user.id, zone);
       const t = describeTime(zone);
-      await i.editReply(card({ title: '🕒 Timezone saved', color: CLOCK, description: `Your timezone is now **${zone.replace(/_/g, ' ')}** (${t.offset}).\nIt's **${t.time}** on ${t.date} there.`, footer: 'Others can see your time with /timezone view. Remove it any time with /privacy delete.' }));
+      await i.editReply(card({ title: '🕒 Timezone saved', color: CLOCK, description: `Your timezone is now **${zone.replace(/_/g, ' ')}** (${t.offset}).\nIt's **${t.time}** on ${t.date} there.`, footer: 'Others can see your time with /timezone view, and /group times shows everyone in a chat. Remove it any time with /privacy delete.' }));
     }), { autocomplete: zoneAutocomplete, tweaks: { timezone: { autocomplete: true, maxLength: 64 } } }),
     hsub('timezone view', lookup(async i => {
       const typed = i.options.getString('timezone');

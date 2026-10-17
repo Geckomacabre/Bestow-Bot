@@ -280,16 +280,33 @@ async function pollTwitch(bot: Client) {
 
 // ─── Reminder poller ──────────────────────────────────────────────────────────
 
+/**
+ * Sends a due reminder where it was set, or — when the bot can't post there (a group chat, a server it's only installed on someone's
+ * account for, a deleted channel) — to the person's DMs. Returns where it went, or null when neither worked.
+ */
+export async function deliverReminder(bot: Client, reminder: db.IReminder): Promise<'channel' | 'dm' | null> {
+  const text = `⏰ <@${reminder.user_id}> Reminder: ${reminder.message}`;
+  const ch = await bot.channels.fetch(reminder.channel_id).catch(() => null);
+  if (ch?.isSendable() && await ch.send({ content: text, allowedMentions: { users: [reminder.user_id] } }).then(() => true, () => false)) return 'channel';
+  const user = await bot.users.fetch(reminder.user_id).catch(() => null);
+  if (user && await user.send({ content: text, allowedMentions: { users: [reminder.user_id] } }).then(() => true, () => false)) return 'dm';
+  return null;
+}
+
+let pollingReminders = false;
+
 async function pollReminders(bot: Client) {
-  const due = await db.getPendingReminders(Date.now());
-  for (const reminder of due) {
-    try {
-      const ch = await bot.channels.fetch(reminder.channel_id).catch(() => null);
-      if (ch && 'send' in ch) {
-        await (ch as TextChannel).send(`⏰ <@${reminder.user_id}> Reminder: ${reminder.message}`).catch(() => {});
-      }
-    } catch {}
-    await db.fireReminder(reminder.id);
+  if (pollingReminders) return; // a slow run must not send the same reminder twice
+  pollingReminders = true;
+  try {
+    const due = await db.getPendingReminders(Date.now());
+    for (const reminder of due) {
+      const sent = await deliverReminder(bot, reminder).catch(() => null);
+      if (!sent) logger.debug(`Reminder ${reminder.id} could not be delivered`);
+      await db.fireReminder(reminder.id);
+    }
+  } finally {
+    pollingReminders = false;
   }
 }
 
@@ -380,9 +397,12 @@ export function startFeedsPollers(bot: Client) {
       pollReddit(bot),
       pollYoutube(bot),
       pollTwitch(bot),
-      pollReminders(bot),
     ]);
   };
   poll();
   setInterval(poll, 5 * 60 * 1000); // every 5 minutes
+  // Reminders on their own, faster loop: a plan's "remind me 15 minutes before" shouldn't arrive 5 minutes late.
+  const reminders = () => pollReminders(bot).catch(err => logger.error(`Reminder poll error: ${err}`));
+  reminders();
+  setInterval(reminders, 30_000);
 }

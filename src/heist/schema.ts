@@ -6,6 +6,7 @@ import { initProfileSchema } from '../profile/store.js';
 import { initTrackerSchema } from '../crypto/tracker.js';
 import { initLastfmSchema } from '../music/lastfm.js';
 import { initQuoteSchema } from '../quotes/presets.js';
+import { initGroupSchema } from '../groupchat/store.js';
 
 /** Schemas for the Heist-parity features. Each module owns its tables; this is the one place they are started. */
 export async function initHeistSchemas(): Promise<void> {
@@ -17,4 +18,5 @@ export async function initHeistSchemas(): Promise<void> {
   await initTrackerSchema();
   await initLastfmSchema();
   await initQuoteSchema();
+  await initGroupSchema();
 }

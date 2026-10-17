@@ -48,8 +48,8 @@ const FreeGames: Command = {
   data: new SlashCommandBuilder()
     .setName('freegames')
     .setDescription('Check free games')
-    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall])
-    .setContexts([InteractionContextType.Guild])
+    .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+    .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
     .addSubcommand(s => s.setName('now').setDescription('Games that are free right now (Epic, Steam, GOG)'))
     .addSubcommand(s => s.setName('upcoming').setDescription('Upcoming free games on Epic Games Store')) as any,
 
