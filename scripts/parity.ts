@@ -5,7 +5,8 @@
  *
  * docs/heist-commands.json  = snapshot of Heist's public commands (paths).
  * docs/heist-spec.json      = Heist's full definitions (descriptions, options, choices) from https://status.heist.lol/api/commands.
- * docs/heist-parity.json    = { declined: { "<path>": "<reason>" }, declinedChoices: { "<path> <option>": { "<choice>": "<reason>" } }, notYet: ["<path>"] }
+ * docs/heist-parity.json    = { declined: { "<path>": "<reason>" }, declinedChoices: { "<path> <option>": { "<choice>": "<reason>" } },
+ *                             addedChoices: { "<path> <option>": { "<choice>": "<reason>" } } (Bestow-only, after Heist's), notYet: ["<path>"] }
  * tests/parity.test.ts fails if a Heist command is neither built, declined (with a reason), nor listed in notYet, if notYet has stale
  * entries, or if a built command's options/description differ from Heist's.
  */
@@ -13,7 +14,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 interface HeistCmd { path: string; type: 'slash' | 'user' | 'message'; cog: string; premium: boolean }
-export interface Parity { declined: Record<string, string>; declinedChoices?: Record<string, Record<string, string>>; notYet: string[] }
+export interface Parity { declined: Record<string, string>; declinedChoices?: Record<string, Record<string, string>>; addedChoices?: Record<string, Record<string, string>>; notYet: string[] }
 interface SpecArg { name: string; description: string; type: string; required: boolean; choices: string[] }
 interface Spec { path: string; description: string; premium: boolean; args: SpecArg[] }
 interface Opt { type: number; name: string; description: string; required?: boolean; choices?: { name: string }[]; options?: Opt[] }
@@ -58,8 +59,10 @@ export async function missing(): Promise<HeistCmd[]> {
 }
 
 const rebrand = (s: string) => s.replace(/\bHeist\b/g, 'Bestow');
-const shapeOfSpec = (a: SpecArg, skip: Record<string, string>) =>
-  `${a.name}${a.required ? '' : '?'}:${a.type}${a.choices.length ? `[${a.choices.filter(c => !skip[c]).join('|')}]` : ''}`;
+const shapeOfSpec = (a: SpecArg, skip: Record<string, string>, add: Record<string, string> = {}) => {
+  const choices = [...a.choices.filter(c => !skip[c]), ...Object.keys(add)];
+  return `${a.name}${a.required ? '' : '?'}:${a.type}${choices.length ? `[${choices.join('|')}]` : ''}`;
+};
 const shapeOfOpt = (o: Opt) => `${o.name}${o.required ? '' : '?'}:${TYPE[o.type]}${o.choices?.length ? `[${o.choices.map(c => c.name).join('|')}]` : ''}`;
 const descOf = (s: Spec) => { const d = rebrand(s.description).trim(); return s.premium ? `✨ ${d.replace(/^✨\s?/, '')}` : d; };
 
@@ -73,7 +76,7 @@ export async function drift(): Promise<{ path: string; problems: string[] }[]> {
     if (!mine || p.declined[s.path]) continue;
     const problems: string[] = [];
     if (mine.description !== descOf(s)) problems.push(`description: heist "${descOf(s)}" · ours "${mine.description}"`);
-    const want = s.args.map(a => shapeOfSpec(a, p.declinedChoices?.[`${s.path} ${a.name}`] ?? {})).join(' ');
+    const want = s.args.map(a => shapeOfSpec(a, p.declinedChoices?.[`${s.path} ${a.name}`] ?? {}, p.addedChoices?.[`${s.path} ${a.name}`])).join(' ');
     const got = mine.options.map(shapeOfOpt).join(' ');
     if (want !== got) problems.push(`options: heist ${want || '(none)'} · ours ${got || '(none)'}`);
     if (problems.length) out.push({ path: s.path, problems });

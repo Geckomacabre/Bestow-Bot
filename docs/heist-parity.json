@@ -26,5 +26,10 @@
    "Fuck (NSFW)": "A sexual act aimed at another person; declined like /rating ppsize."
   }
  },
+ "addedChoices": {
+  "action do": {
+   "Touch": "Bestow-only extra. nekos.best has no touch category, so it borrows the poke GIFs; with no target it reads \"touches grass\"."
+  }
+ },
  "notYet": []
 }

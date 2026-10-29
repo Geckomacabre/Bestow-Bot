@@ -62,6 +62,8 @@ export interface OptTweak {
   channelTypes?: ChannelType[];
   /** Heist choices Bestow deliberately doesn't offer (each must be listed with a reason in docs/heist-parity.json → declinedChoices). */
   skipChoices?: string[];
+  /** Bestow-only choices added after Heist's, string options only (each listed with a reason in docs/heist-parity.json → addedChoices). */
+  extraChoices?: string[];
 }
 
 /** Adds the options of a Heist command, in Heist's order, to a subcommand (or leaf command) builder. */
@@ -71,7 +73,8 @@ export function applySpecArgs(b: SlashCommandSubcommandBuilder, args: SpecArg[],
     const desc = t.description ?? argDescription(a);
     const base = <T extends { setName(n: string): T; setDescription(d: string): T; setRequired(r: boolean): T }>(o: T) => o.setName(a.name).setDescription(desc).setRequired(a.required);
     const choices = a.choices.map((c, n) => ({ name: String(c).slice(0, 100), value: choiceValue(a.type, String(c), n) }))
-      .filter(c => !t.skipChoices?.includes(c.name));
+      .filter(c => !t.skipChoices?.includes(c.name))
+      .concat(a.type === 'string' ? (t.extraChoices ?? []).map(c => ({ name: c, value: c })) : []);
     switch (a.type) {
       case 'string':
         b.addStringOption(o => {

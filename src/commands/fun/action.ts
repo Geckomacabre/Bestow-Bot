@@ -15,4 +15,4 @@ export default hleaf('action', lookup(async i => {
     title: w.actionText(kind, name(i.user), target ? name(target) : undefined), color: 0xeb459e, image: gif.url,
     description: target && target.id !== i.user.id ? `<@${target.id}>` : undefined, footer: gif.anime ? `Anime: ${gif.anime} · nekos.best` : 'nekos.best',
   }));
-}), { tweaks: { do: { skipChoices: ['Fuck (NSFW)'] } } });
+}), { tweaks: { do: { skipChoices: ['Fuck (NSFW)'], extraChoices: ['Touch'] } } });

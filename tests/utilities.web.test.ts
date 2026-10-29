@@ -88,7 +88,7 @@ describe('web parsers', () => {
   });
   test('actions: every verb has text for solo and targeted use', () => {
     for (const k of Object.keys(ACTIONS)) { expect(actionText(k, 'A', 'B')).toContain('B'); expect(actionText(k, 'A')).toContain('A'); expect(actionText(k, 'A')).not.toContain('{'); }
-    expect(actionText('hug', 'Ann', 'Bob')).toBe('Ann hugs Bob'); expect(() => actionText('constructor', 'a')).toThrow(/Unknown/); expect(() => actionText('__proto__', 'a')).toThrow(/Unknown/);
+    expect(actionText('hug', 'Ann', 'Bob')).toBe('Ann hugs Bob'); expect(actionText('touch', 'Ann', 'Bob')).toBe('Ann touches Bob'); expect(actionText('touch', 'Ann')).toBe('Ann touches grass'); expect(() => actionText('constructor', 'a')).toThrow(/Unknown/); expect(() => actionText('__proto__', 'a')).toThrow(/Unknown/);
   });
   test('bad inputs fail before any request', async () => {
     await expect(urban('')).rejects.toThrow(/word/); await expect(urban('x'.repeat(200))).rejects.toThrow(/100/);

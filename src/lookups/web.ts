@@ -111,8 +111,8 @@ export async function search(query: string, limit = 5): Promise<{ hits: SearchHi
 
 // ─── Anime action GIFs ───────────────────────────────────────────────────────
 
-/** verb template: `{a}` is the sender, `{b}` the target. */
-export const ACTIONS: Record<string, { text: string; solo: string }> = {
+/** verb template: `{a}` is the sender, `{b}` the target. `gif` borrows another nekos.best category when the verb has none of its own. */
+export const ACTIONS: Record<string, { text: string; solo: string; gif?: string }> = {
   hug: { text: '{a} hugs {b}', solo: '{a} needs a hug' }, pat: { text: '{a} pats {b}', solo: '{a} pats themselves' }, kiss: { text: '{a} kisses {b}', solo: '{a} blows a kiss' },
   slap: { text: '{a} slaps {b}', solo: '{a} slaps the air' }, cuddle: { text: '{a} cuddles {b}', solo: '{a} cuddles up' }, poke: { text: '{a} pokes {b}', solo: '{a} pokes around' },
   bite: { text: '{a} bites {b}', solo: '{a} bites down' }, punch: { text: '{a} punches {b}', solo: '{a} throws a punch' }, kick: { text: '{a} kicks {b}', solo: '{a} kicks the air' },
@@ -123,6 +123,7 @@ export const ACTIONS: Record<string, { text: string; solo: string }> = {
   tickle: { text: '{a} tickles {b}', solo: '{a} giggles' }, feed: { text: '{a} feeds {b}', solo: '{a} eats' }, stare: { text: '{a} stares at {b}', solo: '{a} stares into the void' },
   baka: { text: '{a} calls {b} a baka', solo: '{a} shouts BAKA' }, handshake: { text: '{a} shakes hands with {b}', solo: '{a} offers a handshake' },
   peck: { text: '{a} gives {b} a peck', solo: '{a} blows a little kiss' }, shoot: { text: '{a} shoots {b}', solo: '{a} fires into the air' },
+  touch: { text: '{a} touches {b}', solo: '{a} touches grass', gif: 'poke' },
 };
 
 export function actionText(kind: string, a: string, b?: string): string {
@@ -133,7 +134,7 @@ export function actionText(kind: string, a: string, b?: string): string {
 
 export async function actionGif(kind: string): Promise<{ url: string; anime?: string }> {
   if (!Object.hasOwn(ACTIONS, kind)) throw new LookupError('Unknown action.');
-  const r = await getJson<{ results: { url: string; anime_name?: string }[] }>(`https://nekos.best/api/v2/${kind}`, { timeoutMs: 10_000 });
+  const r = await getJson<{ results: { url: string; anime_name?: string }[] }>(`https://nekos.best/api/v2/${ACTIONS[kind]!.gif ?? kind}`, { timeoutMs: 10_000 });
   const g = r.results?.[0];
   if (!g?.url || !/^https:\/\/nekos\.best\//.test(g.url)) throw new LookupError('The GIF service returned nothing. Try again.');
   return { url: g.url, anime: g.anime_name };
