@@ -1,4 +1,5 @@
 import { ButtonStyle } from 'discord.js';
+import { GAME_CLICKS, GAME_POSTS, slowDown } from '../framework/flood.js';
 import { onComponent } from '../framework/router.js';
 import { trunc } from '../lookups/card.js';
 import { button, oops, panel, row } from './panel.js';
@@ -222,6 +223,7 @@ onComponent('gc:tod:', async i => {
   const choice = i.customId.slice('gc:tod:'.length);
   const kind = choice === 'random' ? (Math.random() < 0.5 ? 'truth' : 'dare') : choice;
   if (kind !== 'truth' && kind !== 'dare') return;
+  if (await slowDown(i, [GAME_CLICKS, i.user.id], [GAME_POSTS, i.channelId ?? ''])) return; // each press is a new message
   await i.reply(truthOrDarePrompt(kind, i.user.id));
 });
 
@@ -251,7 +253,7 @@ onComponent('gc:nhie:', async i => {
   const [, , raw, action] = i.customId.split(':');
   const n = at(NEVER, raw);
   if (n === null) return oops(i, 'That prompt is gone. Start a new round with `/group neverhaveiever`.');
-  if (action === 'next') { await i.reply(await neverPanel(randomNever(n))); return; }
+  if (action === 'next') { if (!(await slowDown(i, [GAME_CLICKS, i.user.id], [GAME_POSTS, i.channelId ?? '']))) await i.reply(await neverPanel(randomNever(n))); return; }
   if (action !== 'have' && action !== 'never') return;
   await toggleVote(i.message.id, i.user.id, action);
   await i.update(await neverPanel(n, i.message.id));
@@ -284,7 +286,7 @@ onComponent('wyr:', async i => {
   const [, raw, action] = i.customId.split(':');
   const n = at(WOULD_YOU_RATHER, raw);
   if (n === null) return oops(i, 'That question is gone. Ask a new one with `/community wouldyourather`.');
-  if (action === 'next') { await i.reply(await wouldYouRatherPanel(randomWouldYouRather(n))); return; }
+  if (action === 'next') { if (!(await slowDown(i, [GAME_CLICKS, i.user.id], [GAME_POSTS, i.channelId ?? '']))) await i.reply(await wouldYouRatherPanel(randomWouldYouRather(n))); return; }
   if (action !== 'a' && action !== 'b') return;
   await toggleVote(i.message.id, i.user.id, action);
   await i.update(await wouldYouRatherPanel(n, i.message.id));

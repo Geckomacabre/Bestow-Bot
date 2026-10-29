@@ -77,7 +77,7 @@ describe('solo guessing rounds in DMs', () => {
 
   test('Next round refuses while a round is live', async () => {
     const state = round(), replies: any[] = [];
-    const btn: any = { isModalSubmit: () => false, isButton: () => true, customId: 'mg_next:movie', guildId: null, channelId: state.channelId, reply: async (p: any) => { replies.push(p); } };
+    const btn: any = { isModalSubmit: () => false, isButton: () => true, customId: 'mg_next:movie', guildId: null, channelId: state.channelId, user: { id: 'u1' }, reply: async (p: any) => { replies.push(p); } };
     await mediaguessModule.handlers.interactionCreate!({ data: [btn] } as any);
     expect(replies[0].content).toContain('already a round going');
     activeGames.delete(state.channelId);

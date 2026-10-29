@@ -9,6 +9,7 @@ import { useAccent } from '../customize/accent';
 import { routeFor } from '../framework/router';
 import { staffCommand, staffGuildId } from '../staff/index';
 import { countCommand } from '../profile/store';
+import { COMMANDS, slowDown } from '../framework/flood';
 
 export const onInteraction = async (interaction: Interaction) => {
   if (interaction.isAutocomplete()) {
@@ -99,7 +100,8 @@ export const onInteraction = async (interaction: Interaction) => {
   const command = commands.get(interaction.commandName) ?? (interaction.commandName === 'staff' && interaction.guildId === staffGuildId() ? staffCommand : undefined);
   if (!command) return;
 
-
+  // A stream of commands from one person would flood the channel: a burst is fine, more waits a few seconds.
+  if (await slowDown(interaction, [COMMANDS, interaction.user.id])) return;
 
   countCommand(interaction.user.id).catch(() => {}); // /me's command counter (a number only)
   try {

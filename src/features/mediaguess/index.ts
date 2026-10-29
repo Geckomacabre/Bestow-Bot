@@ -2,6 +2,7 @@ import {
   ActionRowBuilder, ButtonInteraction, Client, InteractionContextType, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle,
   type ChatInputCommandInteraction, type ModalSubmitInteraction,
 } from 'discord.js';
+import { GAME_CLICKS, GAME_POSTS, ROUND_STARTS, slowDown } from '../../framework/flood.js';
 import { EventModule } from '../feature';
 import {
   activeGames, castVoteSkip, checkGuess, GUESS_BUTTON, GUESS_INPUT, GUESS_MODAL, INTERACTIVE_NEXT_PREFIX, interactiveNextButton, NEXT_ROUND_PREFIX, nextRoundButton,
@@ -97,17 +98,24 @@ const mediaguessModule: EventModule = {
     },
 
     interactionCreate: async ({ data: [interaction] }) => {
+      // Every guess, hint, skip and new round is a message in the chat, so pressing fast can't turn into a flood (see framework/flood.ts).
       if (interaction.isModalSubmit()) {
-        if (interaction.customId === GUESS_MODAL) await guessFromModal(interaction);
+        if (interaction.customId !== GUESS_MODAL) return;
+        if (await slowDown(interaction, [GAME_POSTS, interaction.channelId ?? ''])) return;
+        await guessFromModal(interaction);
         return;
       }
       if (!interaction.isButton()) return;
       const btn = interaction as ButtonInteraction;
-      if (btn.customId === GUESS_BUTTON) return openGuessBox(btn);
-      if (btn.customId.startsWith(INTERACTIVE_NEXT_PREFIX)) return nextInteractiveRound(btn);
-      if (btn.customId.startsWith(NEXT_ROUND_PREFIX)) return nextRound(btn);
-      if (btn.customId.startsWith(STOP_PREFIX)) return stopFromButton(btn);
+      if (btn.customId === GUESS_BUTTON) return openGuessBox(btn); // only opens the box
+      const who: [typeof GAME_CLICKS, string] = [GAME_CLICKS, btn.user.id], posts: [typeof GAME_POSTS, string] = [GAME_POSTS, btn.channelId];
+      if (btn.customId.startsWith(INTERACTIVE_NEXT_PREFIX) || btn.customId.startsWith(NEXT_ROUND_PREFIX)) {
+        if (await slowDown(btn, who, [ROUND_STARTS, btn.channelId], posts)) return;
+        return btn.customId.startsWith(INTERACTIVE_NEXT_PREFIX) ? nextInteractiveRound(btn) : nextRound(btn);
+      }
+      if (btn.customId.startsWith(STOP_PREFIX)) { if (await slowDown(btn, who)) return; return stopFromButton(btn); }
       if (btn.customId !== 'mg_hint' && btn.customId !== 'mg_voteskip') return;
+      if (await slowDown(btn, who, posts)) return;
 
       if (btn.customId === 'mg_hint') {
         // Deferred and public — hints are shared with the whole channel. The

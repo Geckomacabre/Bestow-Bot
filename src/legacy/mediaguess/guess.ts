@@ -1,4 +1,5 @@
 import { InteractionContextType, MessageFlags } from 'discord.js';
+import { ROUND_STARTS, slowDown } from '../../framework/flood.js';
 import type { Sub } from '../../framework/group';
 import { keyMissing } from '../../features/mediaguess';
 import { roundBusy, startGame, startInteractiveRound, type MediaType } from '../../utils/mediagame';
@@ -37,6 +38,7 @@ const guess: Sub = {
       await interaction.reply({ content: '❌ There\'s already a round going — make a guess, or use **Skip**.' });
       return;
     }
+    if (await slowDown(interaction, [ROUND_STARTS, interaction.channelId])) return; // stop, start, stop, start… can't flood the chat
 
     if (interaction.context !== InteractionContextType.BotDM) {
       // The bot can't read this channel, so the round lives in this reply and is played with buttons and a pop-up box.

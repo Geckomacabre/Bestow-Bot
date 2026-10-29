@@ -16,3 +16,7 @@ Bun.env.DB_PATH = ':memory:';
 Bun.env.TOKEN = 'test-token';
 Bun.env.CLIENT_ID = '1';
 Bun.env.NODE_ENV = 'test';
+
+// Tests press buttons milliseconds apart, far faster than a person; the anti-flood limits are tested on their own (tests/flood.test.ts).
+const { floodLimits } = await import('../src/framework/flood');
+floodLimits.enabled = false;
