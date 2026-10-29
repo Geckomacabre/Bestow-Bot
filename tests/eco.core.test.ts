@@ -255,3 +255,17 @@ describe('wallet, history, leaderboard', () => {
     expect(s[2]!.total).toBe(1200);
   });
 });
+
+describe('the unclaimed ("drought") bonus is small and capped', () => {
+  test('nothing before the threshold, then up evenly to the cap, and never more — however long it sat', async () => {
+    const { droughtPayout, droughtNote } = await import('../src/utils/droughtBonus');
+    const H = 3_600_000, work = { thresholdMs: 6 * H, rampMs: 24 * H, maxBonus: 1 };
+    expect(droughtPayout(200, 5 * H, work)).toEqual({ amount: 200, multiplier: 1, boosted: false });
+    expect(droughtPayout(200, 18 * H, work).amount).toBe(300); // halfway up the ramp: +50%
+    expect(droughtPayout(200, 30 * H, work).amount).toBe(400);
+    expect(droughtPayout(200, 365 * 24 * H, work).amount).toBe(400); // a year idle used to hit the $1,000,000 jackpot
+    expect(droughtPayout(1000, 30 * 24 * H, { thresholdMs: 4 * 24 * H, rampMs: 3 * 24 * H, maxBonus: 0.5 }).amount).toBe(1500);
+    expect(droughtNote(droughtPayout(200, 18 * H, work))).toContain('+50%');
+    expect(droughtNote(droughtPayout(200, 1 * H, work))).toBe('');
+  });
+});

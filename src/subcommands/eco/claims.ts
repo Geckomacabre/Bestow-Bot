@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, Colors, ContainerBuilder, MessageFlags, Te
 import type { Sub } from '../../framework/group.js';
 import { adjustBalance, db, getActiveBoost, getEconomyConfig, type IEconomyConfig } from '../../utils/db.js';
 import { cv2Err } from '../../utils/components.js';
-import { applyDroughtBonus, droughtNote } from '../../utils/droughtBonus.js';
+import { applyDroughtBonus, droughtNote, type DroughtTuning } from '../../utils/droughtBonus.js';
 import { claimCooldown, fmtDuration, getEco, nextStreak, releaseCooldown, saveStreak, streakBonus } from '../../eco/core.js';
 import { moneyBold } from '../../eco/cashEmoji.js';
 import { careerMultiplier, pct } from '../../eco/effects.js';
@@ -23,8 +23,8 @@ interface ClaimDef {
   streak?: boolean;
   /** Shop Coin Magnet applies (work/daily/beg only). */
   magnet?: boolean;
-  /** Guild-wide "nobody has claimed in a while" bonus. */
-  drought?: { type: string; thresholdMs: number; doublingMs: number };
+  /** Guild-wide "nobody has claimed in a while" bonus (small and capped: see droughtBonus.ts). */
+  drought?: DroughtTuning;
   /** A ✨ Premium command. */
   premium?: boolean;
   /** Called after a successful claim. */
@@ -62,8 +62,8 @@ const CLAIMS: ClaimDef[] = [
   {
     name: 'daily', description: 'Claim your daily reward', streak: true,
     cooldownMs: 20 * HOUR, roll: c => randInt(c.daily_min, c.daily_max), magnet: true,
-    // No daily claimed in this server for 4+ days? The reward climbs, doubling every 24h after that.
-    drought: { type: 'daily', thresholdMs: 4 * DAY, doublingMs: DAY },
+    // No daily claimed in this server for 4+ days? The reward climbs a little, up to +50% after 3 more days.
+    drought: { type: 'daily', thresholdMs: 4 * DAY, rampMs: 3 * DAY, maxBonus: 0.5 },
     line: (r, s) => `Claimed your daily reward - **Day ${s!.day}** streak (+${Math.round(s!.bonus * 100)}% bonus) - earned ${r}`,
   },
   {
@@ -83,7 +83,7 @@ const CLAIMS: ClaimDef[] = [
     // Overtime Permit (shop) halves the cooldown while active.
     cooldownMs: async (g, u) => ((await getActiveBoost(g, u, 'workcd')) ? HOUR / 2 : HOUR),
     roll: c => randInt(c.work_min, c.work_max), magnet: true,
-    drought: { type: 'work', thresholdMs: 6 * HOUR, doublingMs: 12 * HOUR },
+    drought: { type: 'work', thresholdMs: 6 * HOUR, rampMs: DAY, maxBonus: 1 },
     line: r => `You ${pick(WORK_JOBS)} and earned ${r}.`,
     after(i, cfg, cooldownMs) {
       const userId = i.user.id;
@@ -107,7 +107,7 @@ const CLAIMS: ClaimDef[] = [
   {
     name: 'beg', description: 'Beg a stranger for money (15-minute cooldown)',
     cooldownMs: 15 * MIN, roll: () => randInt(10, 100), magnet: true,
-    drought: { type: 'beg', thresholdMs: 3 * HOUR, doublingMs: 6 * HOUR },
+    drought: { type: 'beg', thresholdMs: 3 * HOUR, rampMs: 12 * HOUR, maxBonus: 1 },
     line: r => pick(BEG_RESPONSES)(r),
   },
 ];

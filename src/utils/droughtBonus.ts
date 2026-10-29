@@ -1,11 +1,10 @@
 import { getGuildDroughtClaim, setGuildDroughtClaim } from './db.js';
 
-export const DROUGHT_MAX_PAYOUT = 1_000_000;
-
 export interface DroughtTuning {
   type: string;
   thresholdMs: number; // idle time (since anyone in the guild last claimed) before any bonus kicks in
-  doublingMs: number;  // idle time beyond the threshold for the payout to double again
+  rampMs: number;      // idle time beyond the threshold for the bonus to reach its cap
+  maxBonus: number;    // the most the bonus adds, as a fraction of the payout (1 = up to double)
 }
 
 export interface DroughtResult {
@@ -14,29 +13,26 @@ export interface DroughtResult {
   boosted: boolean;
 }
 
-// The longer NOBODY in the guild has claimed this command, the bigger the
-// payout — it doubles every `doublingMs` of idle time past `thresholdMs`,
-// capped at DROUGHT_MAX_PAYOUT so the jackpot stays rare rather than
-// game-breaking. A guild's very first-ever claim of a type gets no bonus —
-// there's no real drought to measure yet, just an empty history.
+// The longer NOBODY in the guild has claimed this command, the bigger the payout — a small nudge to come back, not a jackpot: the
+// bonus grows evenly from the threshold and stops at `maxBonus` (at most double the payout), however long the command sat. A guild's
+// very first-ever claim of a type gets no bonus — there's no real drought to measure yet, just an empty history.
 export async function applyDroughtBonus(guildId: string, base: number, tuning: DroughtTuning): Promise<DroughtResult> {
   const lastClaim = await getGuildDroughtClaim(guildId, tuning.type);
   const idleMs = lastClaim > 0 ? Date.now() - lastClaim : 0;
   await setGuildDroughtClaim(guildId, tuning.type);
+  return droughtPayout(base, idleMs, tuning);
+}
 
+/** The payout for `base` after `idleMs` with nobody claiming. */
+export function droughtPayout(base: number, idleMs: number, tuning: Omit<DroughtTuning, 'type'>): DroughtResult {
   if (idleMs <= tuning.thresholdMs) return { amount: base, multiplier: 1, boosted: false };
-
-  const excessMs = idleMs - tuning.thresholdMs;
-  const multiplier = Math.pow(2, excessMs / tuning.doublingMs);
-  const amount = Math.min(DROUGHT_MAX_PAYOUT, Math.round(base * multiplier));
+  const multiplier = 1 + tuning.maxBonus * Math.min(1, (idleMs - tuning.thresholdMs) / tuning.rampMs);
+  const amount = Math.round(base * multiplier);
   return { amount, multiplier, boosted: amount > base };
 }
 
 /** A message line to append when a drought bonus applied — empty string otherwise. */
 export function droughtNote(result: DroughtResult): string {
   if (!result.boosted) return '';
-  if (result.amount >= DROUGHT_MAX_PAYOUT) return '\n🎰 **JACKPOT!!** Nobody claimed this in ages — you hit the max payout!';
-  if (result.multiplier >= 100) return '\n🎰 **MASSIVE DROUGHT BONUS!** This one sat unclaimed for a long time!';
-  if (result.multiplier >= 10) return '\n💰 **Drought Bonus!** No one\'s claimed this in a while — nice boost!';
-  return '\n🔥 *Idle bonus — this one sat unclaimed for a bit.*';
+  return `\n🔥 *Idle bonus +${Math.round((result.multiplier - 1) * 100)}% — nobody had claimed this in a while.*`;
 }
