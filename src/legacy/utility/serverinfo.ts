@@ -1,5 +1,6 @@
-import { ApplicationIntegrationType, ChatInputCommandInteraction, Colors, EmbedBuilder, InteractionContextType, SlashCommandBuilder } from 'discord.js';
+import { ApplicationIntegrationType, ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder } from 'discord.js';
 import { Command } from '../../interfaces/command';
+import { card, num, when } from '../../lookups/card.js';
 
 const Serverinfo: Command = {
   data: new SlashCommandBuilder()
@@ -12,24 +13,15 @@ const Serverinfo: Command = {
     const guild = interaction.guild!;
     const owner = await guild.fetchOwner().catch(() => null);
 
-    const embed = new EmbedBuilder()
-      .setColor(Colors.Blue)
-      .setTitle(guild.name)
-      .setThumbnail(guild.iconURL({ size: 256 }))
-      .addFields(
-        { name: 'ID', value: guild.id, inline: true },
-        { name: 'Owner', value: owner ? `${owner.user.tag}` : 'Unknown', inline: true },
-        { name: 'Created', value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:D>`, inline: true },
-        { name: 'Members', value: guild.memberCount.toLocaleString(), inline: true },
-        { name: 'Channels', value: guild.channels.cache.size.toLocaleString(), inline: true },
-        { name: 'Roles', value: guild.roles.cache.size.toLocaleString(), inline: true },
-        { name: 'Boost Level', value: `Level ${guild.premiumTier} (${guild.premiumSubscriptionCount ?? 0} boosts)`, inline: true },
-        { name: 'Verification', value: ['None', 'Low', 'Medium', 'High', 'Very High'][guild.verificationLevel], inline: true },
-      )
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
-      .setTimestamp();
-
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply(card({
+      title: guild.name, description: guild.description, thumbnail: guild.iconURL({ size: 256 }),
+      fields: [
+        ['Owner', owner ? `<@${owner.id}>` : null], ['Created', when(guild.createdTimestamp)],
+        ['Members', num(guild.memberCount)], ['Channels and roles', `${num(guild.channels.cache.size)} channels · ${num(guild.roles.cache.size)} roles`],
+        ['Boosts', `Level ${guild.premiumTier} · ${guild.premiumSubscriptionCount ?? 0} boosts`],
+      ],
+      footer: `ID ${guild.id}`,
+    }));
   },
 };
 

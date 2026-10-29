@@ -190,7 +190,7 @@ describe('tools commands (offline paths)', () => {
   });
   test('color / palette / gradient attach a swatch PNG and report values', async () => {
     let fi = await run('color', { color: 'coral' }); let t = textOf(fi.last());
-    expect(t).toContain('#FF7F50'); expect(t).toContain('RGB:** 255, 127, 80'); expect(fi.last().files).toHaveLength(1);
+    expect(t).toContain('#FF7F50'); expect(t).toContain('**RGB**\n255, 127, 80'); expect(fi.last().files).toHaveLength(1);
     const png = fi.last().files[0].attachment as Buffer; expect(png.subarray(1, 4).toString()).toBe('PNG');
     fi = await run('palette', { color: '#ff0000', scheme: 'triadic' }); t = textOf(fi.last()); expect(t).toContain('#FF0000'); expect(t).toContain('#00FF00'); expect(t).toContain('#0000FF');
     fi = await run('gradient', { from: '#000', to: '#fff', steps: 3 }); expect(textOf(fi.last())).toContain('#808080');

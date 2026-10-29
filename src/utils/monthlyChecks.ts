@@ -1,4 +1,5 @@
-import { Client, EmbedBuilder, TextChannel } from 'discord.js';
+import { Client, TextChannel } from 'discord.js';
+import { card } from '../lookups/card.js';
 import * as db from './db.js';
 import { activeGames, resolveGame, startGame, type MediaType } from './mediagame.js';
 
@@ -24,15 +25,8 @@ async function postGuessLeaderboard(channel: TextChannel, guildId: string, label
   const rows = await db.getGameLeaderboard(guildId, statKey, 10);
   if (!rows.length) return;
 
-  const lines = rows.map((r, i) => `**${i + 1}.** <@${r.user_id}> — ${r.wins} win${r.wins === 1 ? '' : 's'}`);
-  const embed = new EmbedBuilder()
-    .setColor(0xFFD700)
-    .setTitle(`🏆 ${label} — Monthly Leaderboard`)
-    .setDescription(lines.join('\n'))
-    .setFooter({ text: 'A fresh round starts now!' })
-    .setTimestamp();
-
-  await channel.send({ embeds: [embed] }).catch(() => {});
+  const lines = rows.map((r, i) => `${['🥇', '🥈', '🥉'][i] ?? `**${i + 1}.**`} <@${r.user_id}> · ${r.wins} win${r.wins === 1 ? '' : 's'}`);
+  await channel.send(card({ title: `🏆 ${label} — this month's best`, description: lines.join('\n'), footer: 'A fresh round starts now!' })).catch(() => {});
 }
 
 async function forceNewRound(channelId: string, guildId: string, type: MediaType, bot: Client): Promise<void> {

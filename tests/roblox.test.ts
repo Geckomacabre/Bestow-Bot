@@ -59,10 +59,10 @@ describe('card helpers', () => {
     const c = card({ title: 'T', url: 'https://x.test', fields: [['A', 1], ['B', null], false, ['C', ''], ['D', 'ok']], footer: 'foot', links: [{ label: 'Go', url: 'https://x.test' }, { label: 'Bad', url: 'javascript:alert(1)' }] });
     const t = textOf(c);
     expect(t).toContain('[T](https://x.test)');
-    expect(t).toContain('**A:** 1');
-    expect(t).toContain('**D:** ok');
-    expect(t).not.toContain('**B:**');
-    expect(t).not.toContain('**C:**');
+    expect(t).toContain('**A**\n1'); // each field: its label in bold over its value
+    expect(t).toContain('**D**\nok');
+    expect(t).not.toContain('**B**');
+    expect(t).not.toContain('**C**');
     const container = c.components[0].toJSON();
     const row = container.components.find((x: any) => x.type === 1);
     expect(row.components).toHaveLength(1);           // the javascript: link was dropped

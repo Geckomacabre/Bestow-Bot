@@ -1,6 +1,6 @@
 import {
-  ActionRowBuilder, ButtonInteraction, Client, InteractionContextType, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle,
-  type ChatInputCommandInteraction, type ModalSubmitInteraction,
+  ActionRowBuilder, ButtonInteraction, Client, ComponentType, InteractionContextType, MessageFlags, ModalBuilder, TextDisplayBuilder, TextInputBuilder,
+  TextInputStyle, type ButtonBuilder, type ChatInputCommandInteraction, type ModalSubmitInteraction,
 } from 'discord.js';
 import { GAME_CLICKS, GAME_POSTS, ROUND_STARTS, slowDown } from '../../framework/flood.js';
 import { EventModule } from '../feature';
@@ -197,6 +197,19 @@ export function followHost(i: ButtonInteraction | ModalSubmitInteraction | ChatI
   };
 }
 
+/**
+ * A finished round's message with its buttons swapped for `rows`, and `note` added under it. A card (cv2) keeps its card — its components
+ * are the whole message, so sending only buttons would wipe it; a plain text result keeps its text.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function swapRows(message: ButtonInteraction['message'], rows: ActionRowBuilder<ButtonBuilder>[], note?: string): any {
+  if (message.flags?.has?.(MessageFlags.IsComponentsV2)) {
+    const card = message.components.filter(c => c.type !== ComponentType.ActionRow);
+    return { components: [...card, ...(note ? [new TextDisplayBuilder().setContent(note)] : []), ...rows] };
+  }
+  return { ...(note ? { content: `${message.content}\n${note}` } : {}), components: rows };
+}
+
 /** The Stop game button: ends the game, whether a round is live or the next one is about to start. */
 async function stopFromButton(btn: ButtonInteraction): Promise<void> {
   const type = btn.customId.slice(STOP_PREFIX.length) as MediaType;
@@ -206,7 +219,7 @@ async function stopFromButton(btn: ButtonInteraction): Promise<void> {
   if (stopped === 'pending') {
     // Stopped in the gap between rounds: this message is the result of the last one, so turn its Stop button into a way to play again.
     const again = btn.context === InteractionContextType.BotDM ? nextRoundButton(type) : interactiveNextButton(type);
-    await btn.editReply({ content: `${btn.message.content}\n⏹️ Game stopped.`, components: [again] }).catch(() => {});
+    await btn.editReply(swapRows(btn.message, [again], '⏹️ Game stopped.')).catch(() => {});
   }
   const note = await btn.followUp({ content: `⏹️ **${safeName(displayName(btn))}** stopped the game.`, allowedMentions: { parse: [] } }).catch(() => null);
   if (note) deleteLater(() => btn.webhook.deleteMessage(note.id)); // the last thing the game says goes too, like its results
@@ -224,9 +237,9 @@ async function nextInteractiveRound(btn: ButtonInteraction): Promise<void> {
   if (roundBusy(btn.channelId)) { await btn.reply({ content: '❌ There\'s already a round going — make a guess, or use **Skip**.' }); return; }
   const missing = keyMissing(type);
   if (missing) { await btn.reply({ content: missing }); return; }
-  await btn.update({ components: [] });
+  await btn.update(swapRows(btn.message, []));
   if (!(await startInteractiveRound(followHost(btn), type).catch(() => false))) {
-    await btn.editReply({ components: [interactiveNextButton(type)] }).catch(() => {}); // put the button back so they can retry
+    await btn.editReply(swapRows(btn.message, [interactiveNextButton(type)])).catch(() => {}); // put the button back so they can retry
     await btn.followUp({ content: '😵 I couldn\'t load a new round just now — try again in a moment.' }).catch(() => {});
   }
 }
@@ -244,9 +257,9 @@ async function nextRound(btn: ButtonInteraction): Promise<void> {
     await btn.reply({ content: missing });
     return;
   }
-  await btn.update({ components: [] });
+  await btn.update(swapRows(btn.message, []));
   if (!(await startGame(null, btn.channelId, type, btn.client).catch(() => false))) {
-    await btn.editReply({ components: [nextRoundButton(type)] }).catch(() => {}); // put the button back so they can retry
+    await btn.editReply(swapRows(btn.message, [nextRoundButton(type)])).catch(() => {}); // put the button back so they can retry
     await btn.followUp({ content: '😵 I couldn\'t load a new round just now — try again in a moment.' }).catch(() => {});
   }
 }

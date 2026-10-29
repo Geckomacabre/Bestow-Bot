@@ -1,7 +1,8 @@
 import {
-  ApplicationIntegrationType, ChatInputCommandInteraction, Colors, EmbedBuilder,
+  ApplicationIntegrationType, ChatInputCommandInteraction,
   InteractionContextType, SlashCommandBuilder,
 } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import * as db from '../../utils/db';
 import { awardBonusXp } from '../../utils/xpBonus.js';
 import { Command } from '../../interfaces/command';
@@ -62,23 +63,19 @@ const Rep: Command = {
     } else if (sub === 'view') {
       const target = interaction.options.getUser('user') ?? interaction.user;
       const rep = await db.getReputation(scope, target.id);
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Gold)
-        .setThumbnail(target.displayAvatarURL())
-        .setTitle(`${target.username}'s Reputation`)
-        .setDescription(`**${rep?.points ?? 0}** reputation point(s) in ${placeName(placeOf(interaction))}`);
-      await interaction.editReply({ embeds: [embed] });
+      const points = rep?.points ?? 0;
+      await interaction.editReply(card({
+        title: `${target.username}'s reputation`, thumbnail: target.displayAvatarURL(),
+        description: `⭐ **${points}** rep point${points === 1 ? '' : 's'} in ${placeName(placeOf(interaction))}`,
+      }));
 
     } else {
       const board = await db.getRepLeaderboard(scope, 10);
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Gold)
-        .setTitle('Reputation Leaderboard')
-        .setFooter({ text: `Counted separately in each server and chat · this is ${placeName(placeOf(interaction))}` })
-        .setDescription(
-          board.map(r => `**#${r.rank}** <@${r.user_id}> — **${r.points}** rep`).join('\n') || 'No reputation data yet.'
-        );
-      await interaction.editReply({ embeds: [embed] });
+      const medal = (rank: number) => ['🥇', '🥈', '🥉'][rank - 1] ?? `**#${rank}**`;
+      await interaction.editReply(card({
+        title: 'Reputation leaderboard', footer: `Counted separately in each server and chat · this is ${placeName(placeOf(interaction))}`,
+        description: board.map(r => `${medal(r.rank)} <@${r.user_id}> · **${r.points}** rep`).join('\n') || 'No reputation data yet.',
+      }));
     }
   },
 };

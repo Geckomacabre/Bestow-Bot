@@ -1,4 +1,5 @@
-import { Client, EmbedBuilder, TextChannel } from 'discord.js';
+import { Client, TextChannel } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import * as db from '../../utils/db';
 import Config from '../../config';
 import logger from '../../utils/logger';
@@ -125,12 +126,7 @@ async function pollRss(bot: Client) {
       for (const item of newItems.reverse()) {
         const ch = await getChannel(bot, feed.channel_id);
         if (!ch) continue;
-        const embed = new EmbedBuilder()
-          .setTitle(item.title.slice(0, 256))
-          .setURL(item.link)
-          .setColor(0xff6600)
-          .setTimestamp(item.published ? new Date(item.published) : new Date());
-        await ch.send({ embeds: [embed] }).catch(() => {});
+        await ch.send(card({ author: { name: '📰 New post' }, title: item.title.slice(0, 256), url: item.link, image: item.image, color: 0xff6600, timestamp: item.published ? new Date(item.published) : true })).catch(() => {});
       }
 
       if (items[0]) await db.updateRssLastItem(feed.id, items[0].id);
@@ -164,15 +160,10 @@ async function pollReddit(bot: Client) {
         if (post.over_18 && !feed.nsfw) continue;
         const ch = await getChannel(bot, feed.channel_id);
         if (!ch) continue;
-        const embed = new EmbedBuilder()
-          .setTitle(post.title.slice(0, 256))
-          .setURL(`https://reddit.com${post.permalink}`)
-          .setColor(0xff4500)
-          .setAuthor({ name: `r/${feed.subreddit}` })
-          .setDescription((post.selftext || '').slice(0, 400) || null)
-          .setTimestamp(new Date(post.created_utc * 1000));
-        if (post.thumbnail && post.thumbnail.startsWith('http')) embed.setImage(post.thumbnail);
-        await ch.send({ embeds: [embed] }).catch(() => {});
+        await ch.send(card({
+          author: { name: `r/${feed.subreddit}`, url: `https://www.reddit.com/r/${feed.subreddit}` }, title: post.title.slice(0, 256), url: `https://reddit.com${post.permalink}`,
+          description: (post.selftext || '').slice(0, 400) || null, image: post.thumbnail?.startsWith('http') ? post.thumbnail : null, color: 0xff4500, timestamp: post.created_utc,
+        })).catch(() => {});
       }
 
       if (posts[0]) await db.updateRedditLastPost(feed.id, posts[0].id);
@@ -373,14 +364,7 @@ export async function pollNews(bot: Client) {
       const label = CATEGORY_LABELS[cfg.category] ?? cfg.category;
 
       for (const item of toPost.reverse()) {
-        const embed = new EmbedBuilder()
-          .setTitle(item.title.slice(0, 256))
-          .setURL(item.link)
-          .setColor(color)
-          .setAuthor({ name: `${label} • ${item.source}` })
-          .setTimestamp(item.published ? new Date(item.published) : new Date());
-        if (item.image) embed.setImage(item.image);
-        await ch.send({ embeds: [embed] }).catch(() => {});
+        await ch.send(card({ author: { name: `${label} · ${item.source}` }, title: item.title.slice(0, 256), url: item.link, image: item.image, color, timestamp: item.published ? new Date(item.published) : true })).catch(() => {});
         await db.markNewsPosted(guildId, item.link);
       }
     }

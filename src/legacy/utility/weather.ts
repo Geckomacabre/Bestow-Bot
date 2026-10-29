@@ -1,8 +1,9 @@
-import { ApplicationIntegrationType, ChatInputCommandInteraction, Colors, EmbedBuilder, InteractionContextType, SlashCommandBuilder,
+import { ApplicationIntegrationType, ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder,
   MessageFlags,
 } from 'discord.js';
 import Config from '../../config';
 import { Command } from '../../interfaces/command';
+import { card } from '../../lookups/card.js';
 
 const Weather: Command = {
   data: new SlashCommandBuilder()
@@ -27,20 +28,12 @@ const Weather: Command = {
       if (!res.ok) { await interaction.editReply('❌ Location not found.'); return; }
       const w: any = await res.json();
 
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Blue)
-        .setTitle(`🌤 Weather in ${w.name}, ${w.sys.country}`)
-        .setDescription(w.weather[0].description.charAt(0).toUpperCase() + w.weather[0].description.slice(1))
-        .setThumbnail(`https://openweathermap.org/img/wn/${w.weather[0].icon}@2x.png`)
-        .addFields(
-          { name: '🌡 Temperature', value: `${w.main.temp}°C (feels like ${w.main.feels_like}°C)`, inline: true },
-          { name: '💧 Humidity', value: `${w.main.humidity}%`, inline: true },
-          { name: '💨 Wind', value: `${w.wind.speed} m/s`, inline: true },
-          { name: '📊 Pressure', value: `${w.main.pressure} hPa`, inline: true },
-          { name: '👁 Visibility', value: `${(w.visibility / 1000).toFixed(1)} km`, inline: true },
-        )
-        .setTimestamp();
-      await interaction.editReply({ embeds: [embed] });
+      const temp = (c: number) => `${Math.round(c)}°C / ${Math.round(c * 9 / 5 + 32)}°F`;
+      await interaction.editReply(card({
+        title: `Weather in ${w.name}, ${w.sys.country}`, thumbnail: `https://openweathermap.org/img/wn/${w.weather[0].icon}@2x.png`,
+        description: w.weather[0].description.charAt(0).toUpperCase() + w.weather[0].description.slice(1),
+        fields: [['Temperature', `${temp(w.main.temp)} · feels like ${temp(w.main.feels_like)}`], ['Humidity', `${w.main.humidity}%`], ['Wind', `${w.wind.speed} m/s`]],
+      }));
     } catch {
       await interaction.editReply('❌ Could not fetch weather data.');
     }

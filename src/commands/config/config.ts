@@ -1,7 +1,7 @@
 import {
-  ActionRowBuilder, ApplicationIntegrationType, ButtonBuilder, ButtonStyle,
+  ApplicationIntegrationType,
   ChannelType, ChatInputCommandInteraction, Colors, ComponentType,
-  ContainerBuilder, EmbedBuilder, InteractionContextType, LabelBuilder,
+  ContainerBuilder, InteractionContextType, LabelBuilder,
   MessageFlags, ModalBuilder, PermissionFlagsBits, SlashCommandBuilder,
   TextChannel, TextDisplayBuilder, TextInputStyle,
 } from 'discord.js';
@@ -9,7 +9,9 @@ import * as db from '../../utils/db';
 import { Command } from '../../interfaces/command.js';
 import { cv2Text } from '../../utils/components.js';
 import { findTimezoneMatch, generateTimezoneMessage, offsetToString } from '../../features/timezone/index.js';
-import { fetchAllFreeGames } from '../../features/freegames/index.js';
+import { fetchAllFreeGames, freeGameCard } from '../../features/freegames/index.js';
+import { topicCard } from '../../features/topics/index.js';
+import { card } from '../../lookups/card.js';
 
 const IS_CV2 = MessageFlags.IsComponentsV2;
 
@@ -172,11 +174,11 @@ const ConfigCommand: Command = {
       } else {
         const cfg = await db.getStreamingConfig(interaction.guildId!);
         if (!cfg) { await interaction.editReply('Streaming not configured yet.'); return; }
-        await interaction.editReply({ embeds: [new EmbedBuilder().setColor(Colors.Purple).setTitle('Streaming Config').addFields(
-          { name: 'Announce Channel', value: cfg.announce_channel_id ? `<#${cfg.announce_channel_id}>` : 'Not set', inline: true },
-          { name: 'Streaming Role',  value: cfg.give_role_id ? `<@&${cfg.give_role_id}>` : 'Not set', inline: true },
-          { name: 'Message Template', value: cfg.message },
-        )] });
+        await interaction.editReply(card({ title: '📡 Streaming', fields: [
+          ['Announced in', cfg.announce_channel_id ? `<#${cfg.announce_channel_id}>` : 'Not set'],
+          ['Role while live', cfg.give_role_id ? `<@&${cfg.give_role_id}>` : 'Not set'],
+          ['Message', cfg.message],
+        ] }));
       }
       return;
     }
@@ -205,12 +207,11 @@ const ConfigCommand: Command = {
         return interaction.reply({ content: `✅ Starboard is now **${newState ? 'enabled' : 'disabled'}**.`, flags: MessageFlags.Ephemeral });
       }
       if (sub === 'view') {
-        return interaction.reply({ flags: MessageFlags.Ephemeral, embeds: [new EmbedBuilder().setColor(Colors.Yellow).setTitle('⭐ Starboard Config').addFields(
-          { name: 'Status',    value: config?.enabled ? '✅ Enabled' : '❌ Disabled', inline: true },
-          { name: 'Channel',   value: config?.channel_id ? `<#${config.channel_id}>` : 'Not set', inline: true },
-          { name: 'Emoji',     value: config?.emoji ?? '⭐', inline: true },
-          { name: 'Threshold', value: `${config?.threshold ?? 3} reactions`, inline: true },
-        )] });
+        return interaction.reply(card({ title: '⭐ Starboard', ephemeral: true, fields: [
+          ['Status', config?.enabled ? '✅ On' : '❌ Off'],
+          ['Channel', config?.channel_id ? `<#${config.channel_id}>` : 'Not set'],
+          ['Posts a message at', `${config?.threshold ?? 3} × ${config?.emoji ?? '⭐'}`],
+        ] }));
       }
       return;
     }
@@ -251,14 +252,11 @@ const ConfigCommand: Command = {
         const tc = await db.getTopicChannel(guild.id, channel.id);
         const topics = await db.getTopics(guild.id, channel.id);
         if (!tc) return interaction.reply({ content: `<#${channel.id}> has no topic rotation configured.`, flags: MessageFlags.Ephemeral });
-        const embed = new EmbedBuilder().setColor(Colors.Blurple).setTitle(`💬 Topics for #${(guild.channels.cache.get(channel.id) as any)?.name ?? channel.id}`)
-          .addFields(
-            { name: 'Interval', value: formatDuration(tc.interval_seconds), inline: true },
-            { name: 'Mode', value: tc.mode, inline: true },
-            { name: 'Last Posted', value: tc.last_posted ? `<t:${Math.floor(tc.last_posted / 1000)}:R>` : 'Never', inline: true },
-          )
-          .setDescription(topics.length ? topics.map(t => `**#${t.id}** ${t.text}`).join('\n') : 'No topics added yet.');
-        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        return interaction.reply(card({
+          title: `💬 Topics for #${(guild.channels.cache.get(channel.id) as any)?.name ?? channel.id}`, ephemeral: true,
+          description: topics.length ? topics.map(t => `**#${t.id}** ${t.text}`).join('\n') : 'No topics added yet.',
+          footer: [`every ${formatDuration(tc.interval_seconds)}`, tc.mode, tc.last_posted ? `last posted <t:${Math.floor(tc.last_posted / 1000)}:R>` : 'not posted yet'].join(' · '),
+        }));
       }
       if (sub === 'post') {
         const channel = interaction.options.getChannel('channel', true);
@@ -268,7 +266,7 @@ const ConfigCommand: Command = {
         if (!topic) return interaction.reply({ content: 'No topics added yet. Use `/config topics add`.', flags: MessageFlags.Ephemeral });
         const ch = guild.channels.cache.get(channel.id) as any;
         if (!ch?.isTextBased()) return interaction.reply({ content: 'Channel not found or not a text channel.', flags: MessageFlags.Ephemeral });
-        await ch.send({ embeds: [new EmbedBuilder().setColor(Colors.Blurple).setTitle('💬 Discussion Topic').setDescription(topic.text).setTimestamp()] });
+        await ch.send(topicCard(topic.text));
         await db.updateTopicLastPosted(tc.id);
         if (tc.mode === 'sequential') await db.rotateTopic(guild.id, channel.id);
         return interaction.reply({ content: `✅ Topic posted in <#${channel.id}>.`, flags: MessageFlags.Ephemeral });
@@ -361,12 +359,9 @@ const ConfigCommand: Command = {
         const config = await (db as any).getFreeGameConfig(guildId);
         if (!config?.channel_id) { return interaction.reply({ content: 'Not configured. Use `/config freegames setup` to get started.', flags: MessageFlags.Ephemeral }); }
         const platforms: Platform[] = JSON.parse(config.platforms);
-        return interaction.reply({ flags: MessageFlags.Ephemeral, embeds: [new EmbedBuilder().setColor(Colors.Gold).setTitle('🎮 Free Game Tracker')
-          .addFields(
-            { name: 'Channel',   value: `<#${config.channel_id}>`, inline: true },
-            { name: 'Ping Role', value: config.ping_role_id ? `<@&${config.ping_role_id}>` : 'None', inline: true },
-            { name: 'Platforms', value: platforms.map(p => PLATFORM_LABELS[p]).join(', '), inline: true },
-          ).setFooter({ text: 'Checks for new free games every hour.' })] });
+        return interaction.reply(card({ title: '🎮 Free games', ephemeral: true, footer: 'Checks for new free games every hour.', fields: [
+          ['Posted in', `<#${config.channel_id}>`], ['Pings', config.ping_role_id ? `<@&${config.ping_role_id}>` : 'Nobody'], ['From', platforms.map(p => PLATFORM_LABELS[p]).join(', ')],
+        ] }));
       }
       if (sub === 'check') {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -381,14 +376,7 @@ const ConfigCommand: Command = {
         let posted = 0, skipped = 0;
         for (const game of filtered) {
           if (await (db as any).hasFreeGameBeenPosted(guildId, game.id)) { skipped++; continue; }
-          const embed = new EmbedBuilder().setColor(Colors.Gold).setTitle(`🎮 Free on ${game.platform}: ${game.title}`).setURL(game.url).setDescription(game.description ?? `**${game.title}** is currently free on ${game.platform}!`).setFooter({ text: game.platform });
-          if (game.image) embed.setImage(game.image);
-          const fields: any[] = [];
-          if (game.originalPrice) fields.push({ name: 'Normal Price', value: `~~${game.originalPrice}~~  →  **FREE**`, inline: true });
-          if (game.endDate) fields.push({ name: 'Free Until', value: `<t:${Math.floor(new Date(game.endDate).getTime() / 1000)}:F>`, inline: true });
-          if (fields.length) embed.addFields(fields);
-          const row = new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setLabel('Claim Free Game').setStyle(ButtonStyle.Link).setURL(game.url).setEmoji('🎮'));
-          await channel.send({ content: config.ping_role_id ? `<@&${config.ping_role_id}>` : undefined, embeds: [embed], components: [row] }).catch(() => {});
+          await channel.send(freeGameCard(game, { pingRole: config.ping_role_id })).catch(() => {});
           await (db as any).markFreeGamePosted(guildId, game.id);
           posted++;
         }

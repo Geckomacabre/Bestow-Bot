@@ -1,5 +1,9 @@
-import { Client, EmbedBuilder, Colors, TextChannel } from 'discord.js';
+import { Client, TextChannel } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import * as db from '../../utils/db';
+
+/** A discussion topic as it is posted (by the rotation, or /config topics post). */
+export const topicCard = (text: string) => card({ author: { name: '💬 Discussion topic' }, description: `### ${text}` });
 
 export function startTopicPoller(bot: Client) {
   const check = async () => {
@@ -16,13 +20,7 @@ export function startTopicPoller(bot: Client) {
       const channel = guild?.channels.cache.get(tc.channel_id) as TextChannel | null;
       if (!channel?.isTextBased()) continue;
 
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Blurple)
-        .setTitle('💬 Discussion Topic')
-        .setDescription(topic.text)
-        .setTimestamp();
-
-      await (channel as TextChannel).send({ embeds: [embed] }).catch(() => {});
+      await (channel as TextChannel).send(topicCard(topic.text)).catch(() => {});
 
       await db.updateTopicLastPosted(tc.id);
       if (tc.mode === 'sequential') {

@@ -1,4 +1,5 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Colors, EmbedBuilder, TextChannel } from 'discord.js';
+import { Client, TextChannel } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import { getAllFreeGameConfigs, hasFreeGameBeenPosted, markFreeGamePosted } from '../../utils/db';
 
 export interface FreeGame {
@@ -10,6 +11,27 @@ export interface FreeGame {
   image: string | null;
   originalPrice: string | null;  // e.g. "$19.99"
   endDate: string | null;        // ISO date string
+}
+
+/** When a game's free period ends (or, for an upcoming one, starts), as Discord times in each reader's own timezone. */
+const freeWindow = (game: FreeGame) => {
+  const ts = game.endDate ? Math.floor(new Date(game.endDate).getTime() / 1000) : null;
+  return ts ? `<t:${ts}:f> (<t:${ts}:R>)` : null;
+};
+
+/**
+ * The card for one free game: where it's free, its picture, what it normally costs, until when, and a button to claim it. A server's
+ * free-game post pings its role in the card itself (cv2 messages carry no separate text), and only that role.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function freeGameCard(game: FreeGame, o: { upcoming?: boolean; pingRole?: string | null } = {}): any {
+  return card({
+    lead: o.pingRole ? `<@&${o.pingRole}>` : undefined, mentions: o.pingRole ? { roles: [o.pingRole] } : undefined,
+    author: { name: `🎮 ${o.upcoming ? 'Coming free' : 'Free'} on ${game.platform}` }, title: game.title, url: game.url,
+    description: game.description, image: game.image,
+    fields: [['Normally', game.originalPrice ? `~~${game.originalPrice}~~ → **Free**` : null], [o.upcoming ? 'Free from' : 'Free until', freeWindow(game)]],
+    links: [{ label: o.upcoming ? 'Store page' : 'Claim it', url: game.url, emoji: '🎮' }],
+  });
 }
 
 // ─── Platform fetchers ────────────────────────────────────────────────────────
@@ -199,33 +221,7 @@ async function pollFreeGames(bot: Client) {
 
       if (await hasFreeGameBeenPosted(config.guild_id, game.id)) continue;
 
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Gold)
-        .setTitle(`🎮 Free on ${game.platform}: ${game.title}`)
-        .setURL(game.url)
-        .setDescription(game.description ?? `**${game.title}** is currently free on ${game.platform}!`)
-        .setFooter({ text: game.platform });
-
-      if (game.image) embed.setImage(game.image);
-
-      const fields: { name: string; value: string; inline?: boolean }[] = [];
-      if (game.originalPrice) fields.push({ name: 'Normal Price', value: `~~${game.originalPrice}~~  →  **FREE**`, inline: true });
-      if (game.endDate) {
-        const ts = Math.floor(new Date(game.endDate).getTime() / 1000);
-        fields.push({ name: 'Free Until', value: `<t:${ts}:F>`, inline: true });
-      }
-      if (fields.length) embed.addFields(fields);
-
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setLabel('Claim Free Game')
-          .setStyle(ButtonStyle.Link)
-          .setURL(game.url)
-          .setEmoji('🎮')
-      );
-
-      const content = config.ping_role_id ? `<@&${config.ping_role_id}>` : undefined;
-      await channel.send({ content, embeds: [embed], components: [row] }).catch(() => {});
+      await channel.send(freeGameCard(game, { pingRole: config.ping_role_id })).catch(() => {});
       await markFreeGamePosted(config.guild_id, game.id);
     }
   }

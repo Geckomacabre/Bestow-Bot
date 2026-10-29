@@ -1,7 +1,8 @@
-import { ApplicationIntegrationType, ChatInputCommandInteraction, Colors, EmbedBuilder, InteractionContextType, PermissionsBitField, SlashCommandBuilder,
+import { ApplicationIntegrationType, ChatInputCommandInteraction, InteractionContextType, PermissionsBitField, SlashCommandBuilder,
   MessageFlags,
 } from 'discord.js';
 import { Command } from '../../interfaces/command';
+import { card } from '../../lookups/card.js';
 
 const PERM_NAMES: Record<string, string> = {
   AddReactions: 'Add Reactions', Administrator: 'Administrator', AttachFiles: 'Attach Files',
@@ -46,13 +47,10 @@ const Viewperms: Command = {
       .filter(([flag]) => perms.has(flag as any))
       .map(([, name]) => name);
 
-    const embed = new EmbedBuilder()
-      .setColor(Colors.Blue)
-      .setTitle(`${user.username}'s Permissions${channel ? ` in #${(channel as any).name}` : ''}`)
-      .setDescription(granted.length ? granted.map(p => `✅ ${p}`).join('\n') : 'No permissions')
-      .setThumbnail(user.displayAvatarURL());
-
-    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    await interaction.reply(card({
+      title: `${member.displayName}'s permissions${channel ? ` in #${(channel as any).name}` : ''}`, thumbnail: user.displayAvatarURL(),
+      description: granted.length ? granted.map(p => `✅ ${p}`).join('\n') : 'No permissions', ephemeral: true,
+    }));
   },
 };
 

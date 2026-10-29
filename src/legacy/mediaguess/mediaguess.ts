@@ -1,7 +1,8 @@
 import {
-  ApplicationIntegrationType, ChatInputCommandInteraction, Colors, EmbedBuilder,
+  ApplicationIntegrationType, ChatInputCommandInteraction,
   InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder, TextChannel,
 } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import { Command } from '../../interfaces/command';
 import { activeGames, resolveGame, startGame, cancelSkipTimer, type MediaType } from '../../utils/mediagame';
 import * as db from '../../utils/db';
@@ -127,25 +128,16 @@ const MediaGuess: Command = {
     else if (sub === 'info') {
       const cfg = await db.getMediaGuessConfig(guildId);
 
-      const fields = (['movie', 'tv', 'game', 'music'] as MediaType[]).flatMap(type => {
+      const fields = (['movie', 'tv', 'game', 'music'] as MediaType[]).map((type): [string, string] => {
         const channelId = configChannel(cfg, type);
         const state = channelId ? activeGames.get(channelId) : null;
         const status = state
-          ? `Active — ${state.hintsUsed}/${state.hintOrder.length} hints used, ${state.voteskips.size}/2 skip votes`
-          : (channelId ? 'Channel set but no active round' : 'Not configured');
-        return [
-          { name: `${TYPE_EMOJI[type]} ${TYPE_LABEL[type]} Channel`, value: channelId ? `<#${channelId}>` : 'Not set', inline: true },
-          { name: `${TYPE_LABEL[type]} Status`, value: status, inline: true },
-          { name: '​', value: '​', inline: true },
-        ];
+          ? `round on · ${state.hintsUsed}/${state.hintOrder.length} hints · ${state.voteskips.size}/2 skip votes`
+          : (channelId ? 'no round right now' : 'not set up');
+        return [`${TYPE_EMOJI[type]} ${TYPE_LABEL[type]}`, channelId ? `<#${channelId}> · ${status}` : status];
       });
 
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Blurple)
-        .setTitle('🎮 Guessing Game Config')
-        .addFields(fields);
-
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply(card({ title: 'Guessing game', fields }));
     }
   },
 };

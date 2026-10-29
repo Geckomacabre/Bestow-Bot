@@ -59,7 +59,7 @@ describe('/bot', () => {
       const fi = fakeInteraction(); (fi.interaction as unknown as { client: unknown }).client = client;
       await botSubs.find(s => s.name === name)!.run(fi.interaction);
       const t = textOf(fi.last());
-      expect(t, name).toContain(name === 'about' ? 'Servers:** 3' : 'Add me');
+      expect(t, name).toContain(name === 'about' ? '**Servers**\n3' : 'Add me');
     }
   });
 });

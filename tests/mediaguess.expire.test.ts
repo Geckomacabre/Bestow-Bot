@@ -5,6 +5,7 @@ import {
   type GameState, type InteractiveHost, type MediaEntry, type RoundEdit, type RoundPayload,
 } from '../src/utils/mediagame';
 import mediaguessModule from '../src/features/mediaguess';
+import { textOf } from './fakeInteraction';
 
 beforeAll(async () => { await initDb(); });
 
@@ -39,7 +40,7 @@ describe('a finished group-chat round is deleted after a few minutes', () => {
   test('the result stays for the wait, then the round\'s message is deleted once', async () => {
     hooks.resultMs = 60; stub(); const a = host(); await startInteractiveRound(a.h, 'movie');
     await submitGuess(a.h.channelId, 'heat', { id: 'u1', name: 'Sam' }, a.h.client);
-    expect(a.edits[0]!.payload.content).toContain('got it');
+    expect(textOf(a.edits[0]!.payload)).toContain('got it');
     await Bun.sleep(20); expect(a.removed).toEqual([]); // still on show
     await Bun.sleep(120); expect(a.removed).toEqual(['msg-1']);
   });

@@ -5,6 +5,7 @@ import {
   type InteractiveHost, type MediaEntry, type RoundEdit, type RoundPayload,
 } from '../src/utils/mediagame';
 import mediaguessModule from '../src/features/mediaguess';
+import { textOf } from './fakeInteraction';
 import guessCommand from '../src/commands/fun/guess';
 import hintCommand from '../src/legacy/mediaguess/hint';
 import voteskipCommand from '../src/legacy/mediaguess/voteskip';
@@ -45,7 +46,7 @@ describe('tidying up after a round', () => {
     await settle(); expect(t.gone).toEqual([]);
     await submitGuess(h.channelId, 'heat', { id: 'u1', name: 'Sam' }, h.client);
     await settle(); expect(t.gone.sort()).toEqual(['a', 'b', 'c']);
-    expect(edits[0]!.payload.content).toContain('got it'); // the round's own message is the record
+    expect(textOf(edits[0]!.payload)).toContain('got it'); // the round's own message is the record
   });
 
   test('a skip, a timeout and a stop tidy up the same way', async () => {

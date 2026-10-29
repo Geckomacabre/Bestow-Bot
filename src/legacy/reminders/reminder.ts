@@ -1,8 +1,9 @@
 import {
-  ApplicationIntegrationType, ChatInputCommandInteraction, Colors, EmbedBuilder,
+  ApplicationIntegrationType, ChatInputCommandInteraction,
   InteractionContextType, SlashCommandBuilder,
   MessageFlags,
 } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import * as db from '../../utils/db';
 import { Command } from '../../interfaces/command';
 import { botCanPost } from '../../groupchat/scope.js';
@@ -56,11 +57,10 @@ const Reminder: Command = {
     } else if (sub === 'list') {
       const reminders = await db.getReminders(interaction.user.id);
       if (!reminders.length) { await interaction.editReply('You have no active reminders.'); return; }
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Blue)
-        .setTitle('Your Reminders')
-        .setDescription(reminders.map(r => `**#${r.id}** — <t:${Math.floor(r.fires_at / 1000)}:R>\n> ${r.message}`).join('\n\n'));
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply(card({
+        title: 'Your reminders', footer: 'Cancel one with its number',
+        description: reminders.map(r => `**#${r.id}** · <t:${Math.floor(r.fires_at / 1000)}:R>\n> ${r.message}`).join('\n\n'),
+      }));
 
     } else {
       const id = interaction.options.getInteger('id', true);

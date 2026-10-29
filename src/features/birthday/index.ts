@@ -1,4 +1,5 @@
-import { Client, EmbedBuilder, Colors, TextChannel } from 'discord.js';
+import { Client, TextChannel } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import * as db from '../../utils/db';
 
 let lastCheckedDay = -1;
@@ -26,14 +27,11 @@ export function startBirthdayChecker(bot: Client) {
       const channel = guild.channels.cache.get(config.channel_id) as TextChannel | null;
       if (!channel?.isTextBased()) continue;
 
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Gold)
-        .setTitle('🎂 Happy Birthday!')
-        .setDescription(`Today is **${member.displayName}**'s birthday! Wish them a happy birthday! 🎉`)
-        .setThumbnail(member.user.displayAvatarURL())
-        .setTimestamp();
-
-      await (channel as TextChannel).send({ content: `<@${bday.user_id}>`, embeds: [embed] }).catch(() => {});
+      // The mention pings them (and only them), as the old message's text did.
+      await (channel as TextChannel).send(card({
+        lead: `<@${bday.user_id}>`, mentions: { users: [bday.user_id] }, title: '🎂 Happy birthday!',
+        description: `It's **${member.displayName}**'s birthday today — wish them a happy one! 🎉`, thumbnail: member.user.displayAvatarURL(),
+      })).catch(() => {});
     }
   };
 

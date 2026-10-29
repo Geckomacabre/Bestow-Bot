@@ -8,6 +8,7 @@ import { shouldRespond } from '../src/ai/chat';
 
 beforeAll(async () => { await initDb(); });
 
+import { textOf } from './fakeInteraction';
 const media: MediaEntry = { id: 1, type: 'movie', title: 'Heat', year: 1995, genre: 'Crime', director: 'Michael Mann', cast: 'Al Pacino', synopsis: 'A heist crew.', tagline: null, stills: ['https://img/1.jpg'] };
 let n = 0;
 function round(o: Partial<GameState> = {}): GameState {
@@ -21,7 +22,8 @@ function fakeClient() {
   const channel = { isSendable: () => true, send: async (p: any) => { sent.push(typeof p === 'string' ? { content: p } : p); return { id: `m${sent.length}` }; }, messages: { fetch: async () => ({ delete: async () => { deleted++; } }) } };
   return { client: { channels: { fetch: async () => channel }, user: { id: 'bot1' } } as any, sent, deleted: () => deleted };
 }
-const customIds = (p: any) => (p.components ?? []).flatMap((r: any) => r.toJSON().components.map((c: any) => c.custom_id));
+// The buttons are the rows under the card (a row type is 1); a card comes first.
+const customIds = (p: any) => (p.components ?? []).map((r: any) => r.toJSON()).filter((j: any) => j.type === 1).flatMap((j: any) => j.components.map((c: any) => c.custom_id));
 
 describe('solo guessing rounds in DMs', () => {
   test('skip is instant: no vote, no 5-minute wait — the answer shows, and the game goes on until someone presses Stop', async () => {
@@ -45,7 +47,7 @@ describe('solo guessing rounds in DMs', () => {
   test('hints have no cooldown in a DM, but keep it in servers', async () => {
     const dm = round({ hintsUsed: 1, lastHintAt: Date.now() });
     const hint = await requestHint(dm.channelId, 'u1');
-    expect(hint?.embeds?.[0]?.toJSON().title).toBe('💡 Movie Hint #2 (Title Letters)');
+    expect(textOf(hint)).toContain('### 💡 Movie Hint #2 (Title Letters)');
     const guild = round({ guildId: 'g1', hintsUsed: 1, lastHintAt: Date.now() });
     expect((await requestHint(guild.channelId, 'u1'))?.content).toContain('on cooldown');
     activeGames.delete(dm.channelId); activeGames.delete(guild.channelId);

@@ -1,7 +1,8 @@
 import {
-  ApplicationIntegrationType, ChatInputCommandInteraction, EmbedBuilder,
-  InteractionContextType, MessageFlags, SlashCommandBuilder, Colors,
+  ApplicationIntegrationType, ChatInputCommandInteraction,
+  InteractionContextType, MessageFlags, SlashCommandBuilder,
 } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import { Command } from '../../interfaces/command';
 import * as db from '../../utils/db';
 
@@ -66,16 +67,10 @@ const Tags: Command = {
       const name = interaction.options.getString('name', true).toLowerCase();
       const tag = await db.getTag(guildId, name);
       if (!tag) { await interaction.reply({ content: `❌ Tag \`${name}\` not found.`, flags: MessageFlags.Ephemeral }); return; }
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Blue)
-        .setTitle(`Tag: ${tag.name}`)
-        .addFields(
-          { name: 'Owner', value: `<@${tag.owner_id}>`, inline: true },
-          { name: 'Uses', value: String(tag.uses), inline: true },
-          { name: 'Created', value: `<t:${tag.created_at}:R>`, inline: true },
-        )
-        .setDescription(tag.content.slice(0, 300) + (tag.content.length > 300 ? '…' : ''));
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply(card({
+        title: `Tag: ${tag.name}`, description: tag.content.slice(0, 300) + (tag.content.length > 300 ? '…' : ''),
+        fields: [['Owner', `<@${tag.owner_id}>`], ['Uses', String(tag.uses)], ['Created', `<t:${tag.created_at}:R>`]],
+      }));
     }
 
     else if (sub === 'list') {
@@ -89,11 +84,7 @@ const Tags: Command = {
         chunk += entry;
       }
       if (chunk) chunks.push(chunk);
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Blue)
-        .setTitle(`Tags (${tags.length})`)
-        .setDescription(chunks[0] ?? 'None');
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply(card({ title: `Tags (${tags.length})`, description: chunks[0] ?? 'None' }));
     }
   },
 };

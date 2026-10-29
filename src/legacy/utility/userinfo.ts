@@ -1,5 +1,6 @@
-import { ApplicationIntegrationType, ChatInputCommandInteraction, Colors, EmbedBuilder, InteractionContextType, SlashCommandBuilder } from 'discord.js';
+import { ApplicationIntegrationType, ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder } from 'discord.js';
 import { Command } from '../../interfaces/command';
+import { card, when } from '../../lookups/card.js';
 
 const Userinfo: Command = {
   data: new SlashCommandBuilder()
@@ -13,24 +14,13 @@ const Userinfo: Command = {
     const user = interaction.options.getUser('user') ?? interaction.user;
     const member = await interaction.guild!.members.fetch(user.id).catch(() => null);
 
-    const embed = new EmbedBuilder()
-      .setColor(member?.displayColor ?? Colors.Blue)
-      .setTitle(user.tag)
-      .setThumbnail(user.displayAvatarURL({ size: 256 }))
-      .addFields(
-        { name: 'ID', value: user.id, inline: true },
-        { name: 'Bot', value: user.bot ? 'Yes' : 'No', inline: true },
-        { name: 'Account Created', value: `<t:${Math.floor(user.createdTimestamp / 1000)}:D>`, inline: true },
-        ...(member ? [
-          { name: 'Joined Server', value: `<t:${Math.floor(member.joinedTimestamp! / 1000)}:D>`, inline: true },
-          { name: 'Nickname', value: member.nickname ?? 'None', inline: true },
-          { name: 'Roles', value: member.roles.cache.filter(r => r.id !== interaction.guildId).map(r => `<@&${r.id}>`).join(', ') || 'None' },
-        ] : [])
-      )
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
-      .setTimestamp();
-
-    await interaction.reply({ embeds: [embed] });
+    const roles = member?.roles.cache.filter(r => r.id !== interaction.guildId).map(r => `<@&${r.id}>`).join(' ');
+    await interaction.reply(card({
+      title: member?.displayName ?? user.globalName ?? user.username, description: `@${user.username}${user.bot ? ' · 🤖 bot' : ''}`,
+      thumbnail: user.displayAvatarURL({ size: 256 }), color: member?.displayColor || undefined, // the colour of their top role, if it has one
+      fields: [['Account created', when(user.createdTimestamp)], ['Joined the server', member?.joinedTimestamp ? when(member.joinedTimestamp) : null], ['Roles', member ? roles || 'None' : null]],
+      footer: `ID ${user.id}`,
+    }));
   },
 };
 

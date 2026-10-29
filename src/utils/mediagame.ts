@@ -1,4 +1,5 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, Colors, EmbedBuilder, escapeMarkdown, type SendableChannels } from 'discord.js';
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, Client, Colors, escapeMarkdown, type SendableChannels } from 'discord.js';
+import { card } from '../lookups/card.js';
 import * as db from './db.js';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -68,14 +69,16 @@ export interface TidyJob {
   remove: () => Promise<unknown>;
 }
 
-/** How a finished interactive round rewrites its message. */
-export interface RoundEdit {
-  content?: string;
-  embeds?: EmbedBuilder[];
-  files?: AttachmentBuilder[];
-  attachments?: never[];
-  components?: ActionRowBuilder<ButtonBuilder>[];
-}
+/** How a finished interactive round rewrites its message: a cv2 card (see withRows), like the round it replaces. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RoundEdit = any;
+
+/**
+ * A game card with its buttons as their own rows under it, outside the card. A button-only change can then swap the rows and keep the
+ * card: on a cv2 message the components are the whole message, so sending only buttons would wipe it.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const withRows = (payload: any, rows: ActionRowBuilder<ButtonBuilder>[]): any => ({ ...payload, components: [...payload.components, ...rows] });
 
 export const activeGames = new Map<string, GameState>();
 /** Channels whose next round is being fetched/posted right now, so a double click can't post two rounds. */
@@ -126,11 +129,7 @@ function scheduleSkipAnnouncement(state: GameState, client: Client): void {
     if (activeGames.get(state.channelId) !== state || state.answered) return;
     const channel = await sendable(client, state.channelId);
     if (!channel) return;
-    const embed = new EmbedBuilder()
-      .setColor(HINT_COLOR)
-      .setTitle('⏰ Vote Skip Available')
-      .setDescription(`The skip delay has elapsed! Anyone can now vote to skip this ${typeNoun(state.type)} using \`/community voteskip\` *(2 votes needed)*.`);
-    await channel.send({ embeds: [embed] }).catch(() => {});
+    await channel.send(card({ title: '⏰ Vote skip available', color: HINT_COLOR, description: `Anyone can now vote to skip this ${typeNoun(state.type)} with \`/community voteskip\` *(2 votes needed)*.` })).catch(() => {});
   }, remaining);
   skipTimers.set(state.channelId, timer);
 }
@@ -841,11 +840,9 @@ const MUSIC_HINT_TYPES = [
   'Album Art',
 ];
 
-export interface HintPayload {
-  content?: string;
-  embeds?: EmbedBuilder[];
-  files?: AttachmentBuilder[];
-}
+/** A hint card (cv2), or a line saying why there's no hint. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type HintPayload = { content: string } | any;
 
 export const HINT_COOLDOWN_MS = 60_000;
 
@@ -884,10 +881,8 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
   const hintIdx = state.hintOrder[n - 1]!;
   const hintType = (type === 'music' ? MUSIC_HINT_TYPES : HINT_TYPES)[hintIdx]!;
 
-  const embed = new EmbedBuilder()
-    .setColor(HINT_COLOR)
-    .setTitle(`💡 ${label} Hint #${n} (${hintType})`)
-    .setFooter({ text: `Requested by <@${userId}> · ${n}/${maxHints} hints used` });
+  // The hint's text and picture (or sound clip), filled in below and made into a card at the end.
+  const hint = { description: '', image: undefined as string | undefined };
   let files: AttachmentBuilder[] | undefined;
 
   switch (hintIdx) {
@@ -905,19 +900,18 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
         if (media.cast)     lines.push(`**${type === 'game' ? 'Platforms' : 'Cast'}:** ${media.cast}`);
         if (media.director) lines.push(`**${directorLabel}:** ${media.director}`);
       }
-      embed.setDescription(lines.join('\n') || 'No information available.');
+      hint.description = lines.join('\n') || 'No information available.';
       break;
     }
     case 1: {
       const masked = maskTitle(media.title);
-      embed.setDescription(
-        `**Masked Title** *(first letter of each word revealed!)*:\n\n${masked}`
-      );
+      hint.description =
+        `**Masked Title** *(first letter of each word revealed!)*:\n\n${masked}`;
       break;
     }
     case 2: {
       const anagram = anagramTitle(media.title);
-      embed.setDescription(`**Anagram:** ${anagram}`);
+      hint.description = `**Anagram:** ${anagram}`;
       break;
     }
     case 3: {
@@ -927,29 +921,29 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
         const full = media.audioPreview ? await downloadPreview(media.audioPreview) : null;
         const clip = full ? await trimAudio(full, EXTENDED_CLIP_START_SEC, EXTENDED_CLIP_DURATION_SEC) : null;
         if (clip) {
-          embed.setDescription(`Here's another ${EXTENDED_CLIP_DURATION_SEC}-second snippet, later in the track!`);
+          hint.description = `Here's another ${EXTENDED_CLIP_DURATION_SEC}-second snippet, later in the track!`;
           files = [new AttachmentBuilder(clip, { name: 'extended.mp3' })];
         } else {
-          embed.setDescription('Could not grab an extended snippet for this one.');
+          hint.description = 'Could not grab an extended snippet for this one.';
         }
         break;
       }
       const extra = media.stills[1];
       if (extra) {
         const noun = type === 'game' ? 'the game' : type === 'movie' ? 'the movie' : 'the show';
-        embed.setDescription(`Here is another scene from ${noun}!`).setImage(extra);
+        { hint.description = `Here is another scene from ${noun}!`; hint.image = extra; }
       } else {
-        embed.setDescription('No additional scene available for this one.');
+        hint.description = 'No additional scene available for this one.';
       }
       break;
     }
     case 4: {
       if (type === 'music') {
-        embed.setDescription(`**Artist:** ${media.director ?? 'Unknown'}`);
+        hint.description = `**Artist:** ${media.director ?? 'Unknown'}`;
         break;
       }
       if (!media.synopsis) {
-        embed.setDescription('No description available for this one.');
+        hint.description = 'No description available for this one.';
         break;
       }
       // Redact every occurrence of the title (and any individual word >3 chars from it)
@@ -962,19 +956,22 @@ export async function requestHint(channelId: string, userId: string): Promise<Hi
           redacted = redacted.replace(new RegExp(`\\b${we}\\b`, 'gi'), '**[REDACTED]**');
         }
       }
-      embed.setDescription(redacted.length > 4000 ? redacted.slice(0, 4000) + '…' : redacted);
+      hint.description = redacted.length > 4000 ? redacted.slice(0, 4000) + '…' : redacted;
       break;
     }
     case 5: {
       // Only reachable for music — movie/tv/game never have a 6th hint.
       const art = media.stills[0];
-      if (art) embed.setDescription("Here's the album art!").setImage(art);
-      else embed.setDescription('No album art available for this one.');
+      if (art) { hint.description = "Here's the album art!"; hint.image = art; }
+      else hint.description = 'No album art available for this one.';
       break;
     }
   }
 
-  return { embeds: [embed], files };
+  return card({
+    title: `💡 ${label} Hint #${n} (${hintType})`, color: HINT_COLOR, description: hint.description, image: hint.image,
+    files, attach: files?.map(f => f.name!), footer: `Asked for by <@${userId}> · ${n}/${maxHints} hints used`,
+  });
 }
 
 // ─── Game lifecycle ───────────────────────────────────────────────────────────
@@ -1152,8 +1149,9 @@ export async function startGame(
   }
 }
 
-/** A round's message: the still (or the song clip), how to answer in this mode, and the buttons. Null when a song's clip can't be prepared. */
-export interface RoundPayload { embeds: EmbedBuilder[]; files?: AttachmentBuilder[]; components: ActionRowBuilder<ButtonBuilder>[] }
+/** A round's message (cv2): the still (or the song clip), how to answer in this mode, and the buttons. Null when a song's clip can't be prepared. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RoundPayload = any;
 
 export async function buildRound(type: MediaType, media: MediaEntry, mode: RoundMode): Promise<RoundPayload | null> {
   const typeStr = typeNoun(type);
@@ -1173,12 +1171,8 @@ export async function buildRound(type: MediaType, media: MediaEntry, mode: Round
       : `Type your answer in chat, or use the buttons below!\n` +
         `> 💡 **Hint** / \`/community hint\` — Reveal the next clue for everyone *(shared, 60s cooldown between hints)*\n` +
         `> ⏭️ **Vote Skip** / \`/community voteskip\` — Vote to skip *(2 votes needed, available after 5 min)*`;
-  const embed = new EmbedBuilder()
-    .setColor(TYPE_COLOR[type])
-    .setTitle(TYPE_LABEL[type])
-    .setDescription(`**Can you guess the ${typeStr} from this ${what}?**\n\n${how}`)
-    .setFooter({ text: `Good luck! ${type === 'music' ? '🎧' : type === 'game' ? '🎮' : '🍿'}` });
-  const components = [buildRoundButtons(mode, type)];
+  const round = { title: TYPE_LABEL[type], color: TYPE_COLOR[type], description: `**Can you guess the ${typeStr} from this ${what}?**\n\n${how}`, footer: `Good luck! ${type === 'music' ? '🎧' : type === 'game' ? '🎮' : '🍿'}` };
+  const rows = [buildRoundButtons(mode, type)];
 
   if (isMusic) {
     // No image upfront for music — the album art is a late hint, not a giveaway.
@@ -1191,10 +1185,9 @@ export async function buildRound(type: MediaType, media: MediaEntry, mode: Round
       console.warn('[mediaguess] Could not download/trim Deezer preview clip — skipping this pick');
       return null;
     }
-    return { embeds: [embed], files: [new AttachmentBuilder(buf, { name: 'preview.mp3' })], components };
+    return withRows(card({ ...round, files: [new AttachmentBuilder(buf, { name: 'preview.mp3' })], attach: ['preview.mp3'] }), rows);
   }
-  embed.setImage(media.stills[0]!);
-  return { embeds: [embed], components };
+  return withRows(card({ ...round, image: media.stills[0]! }), rows);
 }
 
 async function postRound(guildId: string | null, channelId: string, type: MediaType, client: Client): Promise<boolean> {
@@ -1271,28 +1264,22 @@ export async function resolveGame(
 
   if (reason === 'correct' && winner) {
     if (state.type === 'music') {
-      // Structured embed for music — Song/Artist/XP fields + album art
+      // A card for music — Song/Artist/XP fields + album art
       // thumbnail, matching the reference layout, plus the full clip
       // attached as a bonus reveal now that the round's over (the 5-second
       // public clip was only ever a snippet).
       const xpLine = winner.xpGained
         ? `+${winner.xpGained} XP`
         : '+0 XP *(Daily XP cap reached)*';
-      const embed = new EmbedBuilder()
-        .setColor(Colors.Green)
-        .setTitle('🎉 Correct Guess!')
-        .setDescription(dm ? '🏆 You guessed the song title!' : `🏆 **${winner.name}** guessed the song title!`)
-        .addFields(
-          { name: 'Song', value: state.media.title, inline: false },
-          { name: 'Artist', value: state.media.director ?? 'Unknown', inline: false },
-          ...(dm ? [] : [{ name: 'XP Awarded', value: xpLine, inline: false }]),
-        );
-      if (goOn) embed.setFooter({ text: dm ? `🎵 Next song in ${seconds} seconds… press ⏹️ Stop game to end it` : '🎵 Next song will start in 10 seconds…' });
-      if (state.media.stills[0]) embed.setThumbnail(state.media.stills[0]);
-
       const full = state.media.audioPreview ? await downloadPreview(state.media.audioPreview) : null;
       const files = full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [];
-      await post({ embeds: [embed], files, components });
+      await post(withRows(card({
+        title: '🎉 Correct guess!', color: Colors.Green, thumbnail: state.media.stills[0],
+        description: dm ? '🏆 You guessed the song title!' : `🏆 **${winner.name}** guessed the song title!`,
+        fields: [['Song', state.media.title], ['Artist', state.media.director ?? 'Unknown'], ['XP awarded', dm ? null : xpLine]],
+        footer: goOn ? (dm ? `🎵 Next song in ${seconds} seconds… press ⏹️ Stop game to end it` : '🎵 Next song will start in 10 seconds…') : undefined,
+        files, attach: files.map(f => f.name!),
+      }), components));
     } else {
       // Show the display name as plain text (not a <@id> mention) so it reads
       // correctly in mobile push notifications, which don't resolve raw mentions.
@@ -1457,20 +1444,20 @@ async function finishInteractive(state: GameState, winner: { id: string; name: s
   const lead = reason === 'correct' && winner ? `🎉 **${safeName(winner.name)}** got it!` : reason === 'timeout' ? '⌛ Time\'s up!' : reason === 'stop' ? '⏹️ Game stopped!' : '⏭️ Skipped!';
   const tail = goOn ? `\n-# Next round in ${Math.round(nextDelay() / 1000)} seconds — press ⏹️ Stop game to end it.` : reason === 'timeout' ? '\n-# Nobody answered for a while, so the game has ended.' : '';
   const components = [goOn ? stopRow(type) : interactiveNextButton(type)];
-  let edit: RoundEdit;
+  // The round's card becomes the result's (a cv2 message stays one): what happened, the answer, and the picture or the whole song.
+  let result: RoundEdit;
   if (type === 'music') {
-    const embed = new EmbedBuilder()
-      .setColor(reason === 'correct' ? Colors.Green : Colors.Greyple)
-      .setTitle(reason === 'correct' ? '🎉 Correct Guess!' : 'The answer')
-      .addFields({ name: 'Song', value: media.title, inline: false }, { name: 'Artist', value: media.director ?? 'Unknown', inline: false });
-    if (media.stills[0]) embed.setThumbnail(media.stills[0]);
     // The 5-second clip was only ever a snippet: the whole preview is the reveal.
     const full = media.audioPreview ? await downloadPreview(media.audioPreview) : null;
-    edit = { content: `${lead}${tail}`, embeds: [embed], files: full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [], attachments: [], components };
+    const files = full ? [new AttachmentBuilder(full, { name: 'full.mp3' })] : [];
+    result = card({
+      lead: `${lead}${tail}`, title: reason === 'correct' ? '🎉 Correct guess!' : 'The answer', color: reason === 'correct' ? Colors.Green : Colors.Greyple,
+      thumbnail: media.stills[0], fields: [['Song', media.title], ['Artist', media.director ?? 'Unknown']], files, attach: files.map(f => f.name!),
+    });
   } else {
-    edit = { content: `${lead} The ${typeNoun(type)} was **${media.title}**.${tail}`, embeds: [], attachments: [], components };
+    result = card({ description: `${lead} The ${typeNoun(type)} was **${media.title}**.${tail}`, thumbnail: media.stills[0], color: reason === 'correct' ? Colors.Green : Colors.Greyple });
   }
-  await state.interactive!.edit(edit).catch(() => {});
+  await state.interactive!.edit({ ...withRows(result, components), attachments: [] }).catch(() => {}); // attachments: [] drops the round's clip
   if (state.messageId) {
     // The round's own message, now its result: it goes after a few minutes. The interaction that started the round is the one that
     // posted it, so it is asked first; if its 15 minutes are up by then, the one that ended the round (fresher) gets a try.
@@ -1482,7 +1469,7 @@ async function finishInteractive(state: GameState, winner: { id: string; name: s
     scheduleNext(state.channelId, nextDelay(), async () => {
       // If the next round can't be loaded, swap Stop for Next round so someone can try again.
       // The person who started the game stays its owner (the only one who can skip), whoever answered last.
-      if (!(await startInteractiveRound({ ...nextHost!, userId: state.interactive!.ownerId }, type))) await state.interactive!.edit({ components: [interactiveNextButton(type)] }).catch(() => {});
+      if (!(await startInteractiveRound({ ...nextHost!, userId: state.interactive!.ownerId }, type))) await state.interactive!.edit({ components: withRows(result, [interactiveNextButton(type)]).components }).catch(() => {});
     });
   }
 }

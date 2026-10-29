@@ -1,4 +1,5 @@
-import { MessageReaction, PartialMessageReaction, User, PartialUser, EmbedBuilder, Colors, TextChannel } from 'discord.js';
+import { MessageFlags, MessageReaction, PartialMessageReaction, User, PartialUser, TextChannel } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import * as db from '../../utils/db';
 
 async function handleStarReaction(
@@ -31,28 +32,23 @@ async function handleStarReaction(
 
   const existing = await db.getStarboardPost(guild.id, msg.id);
 
-  const embed = new EmbedBuilder()
-    .setColor(Colors.Yellow)
-    .setAuthor({ name: msg.author?.username ?? 'Unknown', iconURL: msg.author?.displayAvatarURL() })
-    .setDescription(msg.content || null)
-    .addFields({ name: 'Source', value: `[Jump to message](${msg.url}) in <#${msg.channelId}>` })
-    .setTimestamp(msg.createdAt);
-
-  if (msg.attachments.size > 0) {
-    const img = [...msg.attachments.values()].find(a => a.contentType?.startsWith('image/'));
-    if (img) embed.setImage(img.url);
-  }
-
-  const content = `${configEmoji} **${starCount}** — <#${msg.channelId}>`;
+  const img = [...msg.attachments.values()].find(a => a.contentType?.startsWith('image/'));
+  const post = card({
+    lead: `${configEmoji} **${starCount}** · <#${msg.channelId}>`, color: 0xfee75c,
+    author: { name: msg.member?.displayName ?? msg.author?.username ?? 'Unknown', icon: msg.author?.displayAvatarURL() },
+    description: msg.content || null, image: img?.url, timestamp: msg.createdAt,
+    links: [{ label: 'Jump to message', url: msg.url }],
+  });
 
   if (existing) {
-    // Update star count on the existing starboard post
+    // Update star count on the existing starboard post. One posted before the cards were cv2 is an embed: the edit turns it into a
+    // card, clearing its old text and embed (Discord lets an edit add the cv2 flag, never take it away).
     await db.updateStarboardPostStars(guild.id, msg.id, starCount);
     const sbMsg = await starboardChannel.messages.fetch(existing.starboard_message_id).catch(() => null);
-    if (sbMsg) await sbMsg.edit({ content, embeds: [embed] }).catch(() => {});
+    if (sbMsg) await sbMsg.edit(sbMsg.flags.has(MessageFlags.IsComponentsV2) ? post : { ...post, content: null, embeds: [] }).catch(() => {});
   } else if (starCount >= config.threshold) {
     // Post for the first time
-    const sbMsg = await (starboardChannel as TextChannel).send({ content, embeds: [embed] }).catch(() => null);
+    const sbMsg = await (starboardChannel as TextChannel).send(post).catch(() => null);
     if (sbMsg) {
       await db.createStarboardPost(guild.id, msg.id, sbMsg.id, starCount);
     }

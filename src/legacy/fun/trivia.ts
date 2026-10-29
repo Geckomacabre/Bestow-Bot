@@ -1,9 +1,10 @@
 import {
   ActionRowBuilder, ApplicationIntegrationType, ButtonBuilder, ButtonStyle,
-  ChatInputCommandInteraction, ComponentType, ContainerBuilder, EmbedBuilder,
+  ChatInputCommandInteraction, ComponentType, ContainerBuilder,
   InteractionContextType, MessageFlags, SlashCommandBuilder, TextDisplayBuilder,
   time, TimestampStyles,
 } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import { Command } from '../../interfaces/command';
 import { awardBonusXp } from '../../utils/xpBonus.js';
 import he from 'he';
@@ -73,10 +74,12 @@ const Trivia: Command = {
       );
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
       const diff = question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1).toLowerCase();
-      const embed = new EmbedBuilder()
-        .setDescription(`**${he.decode(question.question)}**\n*You have ${Math.floor(timeLimit / 1000)} seconds to answer*`)
-        .addFields({ name: 'Difficulty', value: diff, inline: true }, { name: 'Category', value: category.name, inline: true });
-      const msg = await interaction.editReply({ embeds: [embed], components: [row] });
+      // The question card, with the outcome under it once there is one; its buttons are the answers (then how they went).
+      const board = (outcome: string | null, answerRow: ActionRowBuilder<ButtonBuilder>) => card({
+        author: { name: `🧠 Trivia · ${category.name} · ${diff}` }, title: he.decode(question.question),
+        description: outcome ?? `-# You have ${Math.floor(timeLimit / 1000)} seconds to answer`, rows: [answerRow],
+      });
+      const msg = await interaction.editReply(board(null, row));
       const collector = msg.createMessageComponentCollector({ componentType: ComponentType.Button, time: timeLimit });
       collector.on('collect', async (btn) => {
         if (btn.user.id !== interaction.user.id) { await btn.reply({ content: "This isn't your game.", flags: MessageFlags.Ephemeral }); return; }
@@ -93,17 +96,14 @@ const Trivia: Command = {
           });
           xpLine = xpGiven > 0 ? ` +**${xpGiven} XP**!` : '';
         }
-        await btn.update({
-          embeds: [embed, new EmbedBuilder().setDescription(isCorrect ? `✅ You got that right, ${nickname}!${xpLine}` : `❌ Nope, ${nickname}. The correct answer was **${correct}**`)],
-          components: [buildResultRow(answers, correct, pickedIndex)],
-        });
+        await btn.update(board(isCorrect ? `✅ You got that right, ${nickname}!${xpLine}` : `❌ Nope, ${nickname}. The correct answer was **${correct}**.`, buildResultRow(answers, correct, pickedIndex)));
         collector.stop();
       });
       collector.on('end', async (_c, reason) => {
         triviaActive.delete(interaction.user.id);
         triviaCooldowns.set(interaction.user.id, Date.now());
         if (reason !== 'time') return;
-        await interaction.editReply({ content: "> Guess you didn't want to play trivia after all?", components: [new ActionRowBuilder<ButtonBuilder>().addComponents(buttons.map(b => b.setDisabled(true)))] }).catch(() => {});
+        await interaction.editReply(board('⌛ Guess you didn\'t want to play trivia after all?', new ActionRowBuilder<ButtonBuilder>().addComponents(buttons.map(b => b.setDisabled(true))))).catch(() => {});
       });
     } catch { triviaActive.delete(interaction.user.id); await interaction.editReply('Failed to fetch trivia question.').catch(() => {}); }
   },

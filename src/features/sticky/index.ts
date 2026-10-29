@@ -1,4 +1,5 @@
-import { Client, Colors, EmbedBuilder, TextChannel } from 'discord.js';
+import { Client, TextChannel } from 'discord.js';
+import { card } from '../../lookups/card.js';
 import { EventModule } from '../feature';
 import logger from '../../utils/logger';
 
@@ -49,11 +50,10 @@ const MIN_REPOST_INTERVAL_MS = 30_000;
 // channel_id -> when we last reposted
 const lastRepostAt = new Map<string, number>();
 
+/** A sticky as plain text, or (the "embed" setting) as a card. Each repost is a new message, so old stickies need no converting. */
 function buildPayload(content: string, asEmbed: boolean, gold = false) {
   if (!asEmbed) return { content };
-  return {
-    embeds: [new EmbedBuilder().setColor(gold ? Colors.Gold : Colors.Blurple).setDescription(content)],
-  };
+  return card({ description: content, color: gold ? 0xf1c40f : undefined });
 }
 
 /**
