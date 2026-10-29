@@ -152,7 +152,7 @@ Levels, birthdays, plans, lists, party games and more, in servers and group chat
 - `/community advice` — Get a random piece of advice
 - `/community dadjoke` — Get a random dad joke
 - `/community topic` — Get a random conversation topic
-- `/community gif <query>` — Search for a GIF using Tenor
+- `/community gif <query>` — Search for a GIF
 - `/community guess <type>` — Play the movie, TV, game or song guessing game right here
 - `/community hint` — Reveal the next clue for the guessing game round in this channel
 - `/community voteskip` — Skip the guessing game round (the starter alone, or 2 votes; servers wait 5 min)

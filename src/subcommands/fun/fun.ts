@@ -18,7 +18,7 @@ const userOpt = (req = false, d = 'Who?') => (o: import('discord.js').SlashComma
 
 const socialSubs: Sub[] = [
   {
-    name: 'action', description: 'Send an anime GIF: hug, pat, slap and more',
+    name: 'action', description: 'Send a GIF: hug, pat, slap and more',
     options: sub => sub.addStringOption(o => o.setName('type').setDescription('What to do').setRequired(true).addChoices(...Object.keys(w.ACTIONS).map(k => ({ name: k, value: k }))))
       .addUserOption(userOpt(false, 'Who to do it to')),
     run: lookup(async i => {
@@ -27,7 +27,7 @@ const socialSubs: Sub[] = [
       const gif = await w.actionGif(kind);
       await i.editReply(card({
         title: w.actionText(kind, name(i.user), target ? name(target) : undefined), color: 0xeb459e, image: gif.url,
-        description: target && target.id !== i.user.id ? `<@${target.id}>` : undefined, footer: gif.anime ? `Anime: ${gif.anime} · nekos.best` : 'nekos.best',
+        description: target && target.id !== i.user.id ? `<@${target.id}>` : undefined, footer: gif.anime ? `Anime: ${gif.anime} · ${gif.source}` : gif.source,
       }));
     }),
   },

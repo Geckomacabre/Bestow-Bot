@@ -111,19 +111,20 @@ export async function search(query: string, limit = 5): Promise<{ hits: SearchHi
 
 // ─── Anime action GIFs ───────────────────────────────────────────────────────
 
-/** verb template: `{a}` is the sender, `{b}` the target. `gif` borrows another nekos.best category when the verb has none of its own. */
-export const ACTIONS: Record<string, { text: string; solo: string; gif?: string }> = {
+/** verb template: `{a}` is the sender, `{b}` the target. `q` is the Klipy search when the verb alone searches badly; `gif` borrows another
+ * nekos.best category (used only without a Klipy key) when the verb has none of its own. */
+export const ACTIONS: Record<string, { text: string; solo: string; q?: string; gif?: string }> = {
   hug: { text: '{a} hugs {b}', solo: '{a} needs a hug' }, pat: { text: '{a} pats {b}', solo: '{a} pats themselves' }, kiss: { text: '{a} kisses {b}', solo: '{a} blows a kiss' },
-  slap: { text: '{a} slaps {b}', solo: '{a} slaps the air' }, cuddle: { text: '{a} cuddles {b}', solo: '{a} cuddles up' }, poke: { text: '{a} pokes {b}', solo: '{a} pokes around' },
+  slap: { text: '{a} slaps {b}', solo: '{a} slaps the air' }, cuddle: { text: '{a} cuddles {b}', solo: '{a} cuddles up', q: 'cuddle' }, poke: { text: '{a} pokes {b}', solo: '{a} pokes around' },
   bite: { text: '{a} bites {b}', solo: '{a} bites down' }, punch: { text: '{a} punches {b}', solo: '{a} throws a punch' }, kick: { text: '{a} kicks {b}', solo: '{a} kicks the air' },
   wave: { text: '{a} waves at {b}', solo: '{a} waves' }, dance: { text: '{a} dances with {b}', solo: '{a} dances' }, cry: { text: '{a} cries on {b}', solo: '{a} cries' },
   laugh: { text: '{a} laughs at {b}', solo: '{a} laughs' }, blush: { text: '{a} blushes at {b}', solo: '{a} blushes' }, smile: { text: '{a} smiles at {b}', solo: '{a} smiles' },
-  highfive: { text: '{a} high-fives {b}', solo: '{a} high-fives the air' }, handhold: { text: '{a} holds hands with {b}', solo: '{a} reaches out a hand' }, facepalm: { text: '{a} facepalms at {b}', solo: '{a} facepalms' },
-  wink: { text: '{a} winks at {b}', solo: '{a} winks' }, yeet: { text: '{a} yeets {b}', solo: '{a} yeets themselves' }, bonk: { text: '{a} bonks {b}', solo: '{a} bonks themselves' },
-  tickle: { text: '{a} tickles {b}', solo: '{a} giggles' }, feed: { text: '{a} feeds {b}', solo: '{a} eats' }, stare: { text: '{a} stares at {b}', solo: '{a} stares into the void' },
-  baka: { text: '{a} calls {b} a baka', solo: '{a} shouts BAKA' }, handshake: { text: '{a} shakes hands with {b}', solo: '{a} offers a handshake' },
-  peck: { text: '{a} gives {b} a peck', solo: '{a} blows a little kiss' }, shoot: { text: '{a} shoots {b}', solo: '{a} fires into the air' },
-  touch: { text: '{a} touches {b}', solo: '{a} touches grass', gif: 'poke' },
+  highfive: { text: '{a} high-fives {b}', solo: '{a} high-fives the air', q: 'high five' }, handhold: { text: '{a} holds hands with {b}', solo: '{a} reaches out a hand', q: 'holding hands' }, facepalm: { text: '{a} facepalms at {b}', solo: '{a} facepalms', q: 'facepalm' },
+  wink: { text: '{a} winks at {b}', solo: '{a} winks' }, yeet: { text: '{a} yeets {b}', solo: '{a} yeets themselves' }, bonk: { text: '{a} bonks {b}', solo: '{a} bonks themselves', q: 'bonk' },
+  tickle: { text: '{a} tickles {b}', solo: '{a} giggles' }, feed: { text: '{a} feeds {b}', solo: '{a} eats', q: 'feeding' }, stare: { text: '{a} stares at {b}', solo: '{a} stares into the void' },
+  baka: { text: '{a} calls {b} a baka', solo: '{a} shouts BAKA', q: 'baka idiot' }, handshake: { text: '{a} shakes hands with {b}', solo: '{a} offers a handshake', q: 'handshake' },
+  peck: { text: '{a} gives {b} a peck', solo: '{a} blows a little kiss', q: 'kiss on the cheek' }, shoot: { text: '{a} shoots {b}', solo: '{a} fires into the air', q: 'finger guns' },
+  touch: { text: '{a} touches {b}', solo: '{a} touches grass', q: 'poke touch', gif: 'poke' },
 };
 
 export function actionText(kind: string, a: string, b?: string): string {
@@ -132,12 +133,33 @@ export function actionText(kind: string, a: string, b?: string): string {
   return (b ? t.text : t.solo).replace('{a}', a).replace('{b}', b ?? '');
 }
 
-export async function actionGif(kind: string): Promise<{ url: string; anime?: string }> {
+/** Random GIF for a search from Klipy (Tenor's replacement; Tenor's API shut down on 2026-06-30). Needs KLIPY_API_KEY. */
+export async function klipyGif(query: string): Promise<string> {
+  const key = Bun.env.KLIPY_API_KEY;
+  if (!key) throw new LookupError('`KLIPY_API_KEY` is not set in `.env`.');
+  let r: { results?: { media_formats?: Record<string, { url?: string }> }[] };
+  try {
+    r = await getJson(`https://api.klipy.com/v2/search?q=${encodeURIComponent(query)}&key=${encodeURIComponent(key)}&limit=20&media_filter=gif,mediumgif,tinygif&contentfilter=medium`, { timeoutMs: 10_000 });
+  } catch {
+    throw new LookupError('The GIF service did not answer. Try again.');   // the error carries the URL, which holds the key
+  }
+  const urls = (r.results ?? []).map(g => g.media_formats?.mediumgif?.url ?? g.media_formats?.gif?.url ?? g.media_formats?.tinygif?.url)
+    .filter((u): u is string => !!u && /^https:\/\/static\.klipy\.com\//.test(u));
+  if (!urls.length) throw new LookupError(`No GIFs found for **${query.slice(0, 60)}**.`);
+  return urls[Math.floor(Math.random() * urls.length)]!;
+}
+
+/** A GIF for an action: a regular one from Klipy when KLIPY_API_KEY is set, else (or if Klipy fails) an anime one from nekos.best. */
+export async function actionGif(kind: string): Promise<{ url: string; anime?: string; source: string }> {
   if (!Object.hasOwn(ACTIONS, kind)) throw new LookupError('Unknown action.');
-  const r = await getJson<{ results: { url: string; anime_name?: string }[] }>(`https://nekos.best/api/v2/${ACTIONS[kind]!.gif ?? kind}`, { timeoutMs: 10_000 });
+  const a = ACTIONS[kind]!;
+  if (Bun.env.KLIPY_API_KEY) {
+    try { return { url: await klipyGif(a.q ?? kind), source: 'KLIPY' }; } catch { /* fall back to nekos.best */ }
+  }
+  const r = await getJson<{ results: { url: string; anime_name?: string }[] }>(`https://nekos.best/api/v2/${a.gif ?? kind}`, { timeoutMs: 10_000 });
   const g = r.results?.[0];
   if (!g?.url || !/^https:\/\/nekos\.best\//.test(g.url)) throw new LookupError('The GIF service returned nothing. Try again.');
-  return { url: g.url, anime: g.anime_name };
+  return { url: g.url, anime: g.anime_name, source: 'nekos.best' };
 }
 
 // ─── Tweets (vxtwitter) ──────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { ACTIONS, actionGif, actionText, cleanUrban, lyrics, paginate, paste, parseSearx, parseTweet, parseTweetUrl, parseWikipedia, pickLyrics, search, stripTags, tweet, urban } from '../src/lookups/web';
+import { ACTIONS, actionGif, actionText, klipyGif, cleanUrban, lyrics, paginate, paste, parseSearx, parseTweet, parseTweetUrl, parseWikipedia, pickLyrics, search, stripTags, tweet, urban } from '../src/lookups/web';
 import { CATEGORIES, applyRate, convertAny, convertCurrency, convertUnits, findUnit, formatAmount, parseConversion, unitsOf } from '../src/lookups/convert';
 import { QR_MAX, makeQr, scanQrBuffer } from '../src/lookups/qr';
 import { createCanvas } from '@napi-rs/canvas';
@@ -94,6 +94,7 @@ describe('web parsers', () => {
     await expect(urban('')).rejects.toThrow(/word/); await expect(urban('x'.repeat(200))).rejects.toThrow(/100/);
     await expect(lyrics('a')).rejects.toThrow(/song title/); await expect(paste('  ')).rejects.toThrow(/nothing/); await expect(paste('x'.repeat(200_000))).rejects.toThrow(/too long/);
     await expect(search('')).rejects.toThrow(/search/); await expect(tweet('nope')).rejects.toThrow(/tweet link/); await expect(actionGif('constructor')).rejects.toThrow(/Unknown/);
+    const k = Bun.env.KLIPY_API_KEY; delete Bun.env.KLIPY_API_KEY; await expect(klipyGif('cat')).rejects.toThrow(/KLIPY_API_KEY/); if (k) Bun.env.KLIPY_API_KEY = k;
   });
   live('live: urban, lyrics, search, action, tweet', async () => {
     const u = await urban('rizz'); expect(u.def.definition.length).toBeGreaterThan(5);

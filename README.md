@@ -453,7 +453,7 @@ Everything here is optional, and each setting is also documented in [`.env.examp
 
 | Feature | What to set |
 |---|---|
-| **Lookup keys** | Most lookups work without a key. These need one: guessing-game movie/TV and video-game rounds (`TMDB_API_KEY`, `RAWG_API_KEY`), `/twitch` (`TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`), `/community weather` (`WEATHER_API_KEY`), `/community gif` (`TENOR_API_KEY`), Valorant stats (`HENRIK_API_KEY`), Fortnite stats (`FORTNITE_API_KEY`) and Roblox followers (`ROBLOX_COOKIE` from a spare account, never your main one). |
+| **Lookup keys** | Most lookups work without a key. These need one: guessing-game movie/TV and video-game rounds (`TMDB_API_KEY`, `RAWG_API_KEY`), `/twitch` (`TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`), `/community weather` (`WEATHER_API_KEY`), `/community gif` and regular (not anime) GIFs for `/action` (`KLIPY_API_KEY`; without it `/action` uses anime GIFs), Valorant stats (`HENRIK_API_KEY`), Fortnite stats (`FORTNITE_API_KEY`) and Roblox followers (`ROBLOX_COOKIE` from a spare account, never your main one). |
 | **Music** | `LASTFM_API_KEY` (and `LASTFM_API_SECRET` for login and love/unlove) for `/lastfm`; `SPOTIFY_CLIENT_ID`/`SPOTIFY_CLIENT_SECRET` for `/spotify` (Deezer is used without them); `AUDD_API_TOKEN` for `/shazam` and Identify Song. |
 | **Web search** | `SEARXNG_URL` for your own SearXNG; otherwise `/search` uses DuckDuckGo, then Wikipedia. |
 

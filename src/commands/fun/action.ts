@@ -13,6 +13,6 @@ export default hleaf('action', lookup(async i => {
   const gif = await w.actionGif(kind);
   await i.editReply(card({
     title: w.actionText(kind, name(i.user), target ? name(target) : undefined), color: 0xeb459e, image: gif.url,
-    description: target && target.id !== i.user.id ? `<@${target.id}>` : undefined, footer: gif.anime ? `Anime: ${gif.anime} · nekos.best` : 'nekos.best',
+    description: target && target.id !== i.user.id ? `<@${target.id}>` : undefined, footer: gif.anime ? `Anime: ${gif.anime} · ${gif.source}` : gif.source,
   }));
 }), { tweaks: { do: { skipChoices: ['Fuck (NSFW)'], extraChoices: ['Touch'] } } });
