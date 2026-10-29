@@ -252,7 +252,7 @@ onComponent('gc:nhie:', async i => {
   if (!i.isButton()) return;
   const [, , raw, action] = i.customId.split(':');
   const n = at(NEVER, raw);
-  if (n === null) return oops(i, 'That prompt is gone. Start a new round with `/group neverhaveiever`.');
+  if (n === null) return oops(i, 'That prompt is gone. Start a new round with `/community party neverhaveiever`.');
   if (action === 'next') { if (!(await slowDown(i, [GAME_CLICKS, i.user.id], [GAME_POSTS, i.channelId ?? '']))) await i.reply(await neverPanel(randomNever(n))); return; }
   if (action !== 'have' && action !== 'never') return;
   await toggleVote(i.message.id, i.user.id, action);
@@ -285,7 +285,7 @@ onComponent('wyr:', async i => {
   if (!i.isButton()) return;
   const [, raw, action] = i.customId.split(':');
   const n = at(WOULD_YOU_RATHER, raw);
-  if (n === null) return oops(i, 'That question is gone. Ask a new one with `/community wouldyourather`.');
+  if (n === null) return oops(i, 'That question is gone. Ask a new one with `/community party wouldyourather`.');
   if (action === 'next') { if (!(await slowDown(i, [GAME_CLICKS, i.user.id], [GAME_POSTS, i.channelId ?? '']))) await i.reply(await wouldYouRatherPanel(randomWouldYouRather(n))); return; }
   if (action !== 'a' && action !== 'b') return;
   await toggleVote(i.message.id, i.user.id, action);

@@ -4,6 +4,7 @@ import { card } from '../../lookups/card.js';
 import { lookup, LookupError } from '../../lookups/handler.js';
 import { findTimezoneMatch, offsetToString, searchTimezones } from '../../features/timezone/index.js';
 import * as db from '../../utils/db.js';
+import { timeBoardSub } from '../../groupchat/commands.js';
 
 /** A person's own timezone (the `timezones` table), usable anywhere — separate from a server's /config timezone board. */
 
@@ -45,7 +46,7 @@ export default hgroup({
       if (!zone) throw new LookupError('I don\'t know that timezone. Pick one from the list, or type a city like "Tokyo".');
       await db.setTimezone(i.user.id, zone);
       const t = describeTime(zone);
-      await i.editReply(card({ title: '🕒 Timezone saved', color: CLOCK, description: `Your timezone is now **${zone.replace(/_/g, ' ')}** (${t.offset}).\nIt's **${t.time}** on ${t.date} there.`, footer: 'Others can see your time with /timezone view, and /group times shows everyone in a chat. Remove it any time with /privacy delete.' }));
+      await i.editReply(card({ title: '🕒 Timezone saved', color: CLOCK, description: `Your timezone is now **${zone.replace(/_/g, ' ')}** (${t.offset}).\nIt's **${t.time}** on ${t.date} there.`, footer: 'Others can see your time with /timezone view, and /timezone everyone shows everyone in a chat. Remove it any time with /privacy delete.' }));
     }), { autocomplete: zoneAutocomplete, tweaks: { timezone: { autocomplete: true, maxLength: 64 } } }),
     hsub('timezone view', lookup(async i => {
       const typed = i.options.getString('timezone');
@@ -66,5 +67,6 @@ export default hgroup({
         description: `${who ? `${who === 'You' ? 'Your' : `**${who}**'s`} time · ` : ''}**${zone.replace(/_/g, ' ')}** (${t.offset})\n${t.date}`,
       }));
     }), { autocomplete: zoneAutocomplete, tweaks: { timezone: { autocomplete: true, maxLength: 64 } } }),
+    timeBoardSub,
   ],
 });

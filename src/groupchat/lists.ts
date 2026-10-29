@@ -11,7 +11,7 @@ import { scopeOf } from './scope.js';
 import * as store from './store.js';
 
 /**
- * /group list: a shared checklist for the chat — groceries, movies to watch, things to pack. Anyone in the chat can add to it
+ * /community list: a shared checklist for the chat — groceries, movies to watch, things to pack. Anyone in the chat can add to it
  * (➕ Add opens a pop-up, one item per line), tick things off from the menu on the panel, and clear the ticked ones.
  */
 
@@ -84,7 +84,7 @@ onComponent('gc:list:', async i => {
   const list = await store.getList(Number(rawId));
   if (!list) {
     if (i.isModalSubmit() && !i.isFromMessage()) return oops(i, 'That list was deleted.');
-    await repaint(i, panel({ title: '📝 List deleted', body: 'This list was deleted. Start a new one with `/group list`.', color: GREY }));
+    await repaint(i, panel({ title: '📝 List deleted', body: 'This list was deleted. Start a new one with `/community list`.', color: GREY }));
     return;
   }
   if (list.scope_id !== scopeOf(i)) return oops(i, 'That list belongs to another chat.');

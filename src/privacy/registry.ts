@@ -34,7 +34,7 @@ export const REGISTRY: PrivacyEntry[] = [
   del('xp', 'Levels and message counts (counts only — never message text)'), del('reputation', 'Reputation'), del('rep_cooldowns', 'Reputation cooldowns', 'from_user_id', 'to_user_id'),
   // Things you entered yourself
   del('birthdays', 'Birthday'), del('user_birthdays', 'Birthday shown on the chat boards you joined'), del('timezones', 'Timezone'), del('timezone_user', 'Per-server timezone'), del('reminders', 'Reminders'), del('scheduled_tasks', 'Scheduled tasks'), del('rsvp_responses', 'Event RSVPs'),
-  // Group chats (/group): the boards you added yourself to, plans you made or answered, and shared-list items you added
+  // Chat boards, plans and lists (/community, /timezone everyone): the boards you added yourself to, plans you made or answered, and shared-list items you added
   del('chat_members', 'Chat boards you added yourself to (birthdays, times)'), del('group_plans', 'Plans you made', 'created_by'), del('group_plan_rsvps', 'Your answers to plans'), del('chat_votes', 'Your button votes (would you rather, never have I ever)'),
   { table: 'group_lists', columns: ['created_by'], label: 'Shared lists you started', policy: 'anonymize', note: 'the list stays for the chat it belongs to; you are removed as the person who started it' },
   { table: 'group_list_items', columns: ['added_by'], label: 'Items you added to shared lists', policy: 'anonymize', note: 'the items stay on the chat\'s list; you are removed as the person who added them' },

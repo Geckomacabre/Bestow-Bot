@@ -127,7 +127,7 @@ describe('birthdays in a group chat', () => {
     const chat = gdm(), other = gdm(), u = uid();
     const fi = inGroup({ channelId: chat, userId: u, group: 'birthday', sub: 'set', options: { month: 5, day: 17 } });
     await commands.get('community')!.run!(fi.interaction);
-    expect(textOf(fi.last())).toContain('May 17th'); expect(textOf(fi.last())).toContain('/group birthdays');
+    expect(textOf(fi.last())).toContain('May 17th'); expect(textOf(fi.last())).toContain('/community birthday list');
     expect(await store.getPersonalBirthday(u)).toEqual({ month: 5, day: 17 });
     expect((await store.chatBirthdays(chat)).map(b => b.user_id)).toEqual([u]);
     expect(await store.chatBirthdays(other)).toEqual([]);
@@ -202,18 +202,18 @@ describe('the time board', () => {
     expect(textOf(bad.rec.replies[0])).toContain('don\'t know that timezone');
     const ok = press({ customId: 'gc:tz:modal', kind: 'modal', userId: u, channelId: chat, fields: { zone: 'Tokyo' } }); await ok.run();
     expect((await udb.getTimezone(u))?.timezone).toBe('Asia/Tokyo'); expect(textOf(ok.rec.updates[0])).toContain(`<@${u}>`);
-    const fi = inGroup({ channelId: chat, userId: u, sub: 'times' });
-    await commands.get('group')!.run!(fi.interaction);
+    const fi = inGroup({ channelId: chat, userId: u, sub: 'everyone' });
+    await commands.get('timezone')!.run!(fi.interaction);
     expect(textOf(fi.last())).toContain('Tokyo');
   });
 });
 
 describe('plans', () => {
-  test('/group plan posts a panel; RSVPs toggle; only the planner can cancel, after confirming', async () => {
+  test('/community plan new posts a panel; RSVPs toggle; only the planner can cancel, after confirming', async () => {
     const chat = gdm(), host = uid(), friend = uid();
     await udb.setTimezone(host, 'Europe/Paris');
-    const fi = inGroup({ channelId: chat, userId: host, sub: 'plan', options: { title: 'Movie night', when: 'in 3 hours', details: 'Bring snacks' } });
-    await commands.get('group')!.run!(fi.interaction);
+    const fi = inGroup({ channelId: chat, userId: host, group: 'plan', sub: 'new', options: { title: 'Movie night', when: 'in 3 hours', details: 'Bring snacks' } });
+    await commands.get('community')!.run!(fi.interaction);
     const panel = fi.sent[0];
     expect(textOf(panel)).toContain('📅 Movie night'); expect(textOf(panel)).toContain('Bring snacks');
     const plan = (await store.upcomingPlans(chat))[0]!;
@@ -254,20 +254,20 @@ describe('plans', () => {
   });
   test('times it can\'t read, past times and too many plans are refused', async () => {
     const chat = gdm(), u = uid();
-    const bad = inGroup({ channelId: chat, userId: u, sub: 'plan', options: { title: 'x', when: 'whenever' } });
-    await commands.get('group')!.run!(bad.interaction);
+    const bad = inGroup({ channelId: chat, userId: u, group: 'plan', sub: 'new', options: { title: 'x', when: 'whenever' } });
+    await commands.get('community')!.run!(bad.interaction);
     expect(textOf(bad.last())).toContain('couldn\'t read');
     await expect(store.createPlan({ scope: chat, channelId: chat, title: 'Old', startsAt: Date.now() - 3600_000, createdBy: u })).rejects.toThrow('already passed');
     for (let k = 0; k < store.MAX_PLANS; k++) await store.createPlan({ scope: chat, channelId: chat, title: `P${k}`, startsAt: Date.now() + 3600_000, createdBy: u });
     await expect(store.createPlan({ scope: chat, channelId: chat, title: 'One more', startsAt: Date.now() + 3600_000, createdBy: u })).rejects.toThrow('upcoming plans');
-    const list = inGroup({ channelId: chat, userId: u, sub: 'plans' });
-    await commands.get('group')!.run!(list.interaction);
+    const list = inGroup({ channelId: chat, userId: u, group: 'plan', sub: 'list' });
+    await commands.get('community')!.run!(list.interaction);
     expect(textOf(list.last())).toContain('P0');
   });
   test('a time read without a saved timezone says it used UTC', async () => {
     const chat = gdm(), u = uid();
-    const fi = inGroup({ channelId: chat, userId: u, sub: 'plan', options: { title: 'Call', when: 'tomorrow 8pm' } });
-    await commands.get('group')!.run!(fi.interaction);
+    const fi = inGroup({ channelId: chat, userId: u, group: 'plan', sub: 'new', options: { title: 'Call', when: 'tomorrow 8pm' } });
+    await commands.get('community')!.run!(fi.interaction);
     expect(textOf(fi.last())).toContain('as UTC');
   });
 });
@@ -276,7 +276,7 @@ describe('shared lists', () => {
   test('add with the pop-up, tick from the menu, clear the ticked ones, then delete the empty list', async () => {
     const chat = gdm(), a = uid(), b = uid();
     const fi = inGroup({ channelId: chat, userId: a, sub: 'list', options: { name: 'Groceries' } });
-    await commands.get('group')!.run!(fi.interaction);
+    await commands.get('community')!.run!(fi.interaction);
     const list = (await store.findList(chat, 'groceries'))!;
     expect(textOf(fi.last())).toContain('📝 Groceries'); expect(ids(fi.last())).toEqual([`gc:list:${list.id}:add`, `gc:list:${list.id}:clear`, `gc:list:${list.id}:refresh`]);
 
@@ -315,8 +315,8 @@ describe('shared lists', () => {
 describe('party games and picking', () => {
   test('never have I ever: answers toggle and show who; Next posts a new prompt', async () => {
     const chat = gdm(), a = uid(), b = uid();
-    const fi = inGroup({ channelId: chat, userId: a, sub: 'neverhaveiever' });
-    await commands.get('group')!.run!(fi.interaction);
+    const fi = inGroup({ channelId: chat, userId: a, group: 'party', sub: 'neverhaveiever' });
+    await commands.get('community')!.run!(fi.interaction);
     const id = ids(fi.last())[0]!; const k = Number(id.split(':')[2]);
     expect(textOf(fi.last())).toContain(NEVER[k]!);
     const msg = `nhie-${++n}`;
@@ -330,7 +330,7 @@ describe('party games and picking', () => {
   });
   test('would you rather votes with buttons (reactions don\'t work in group chats)', async () => {
     const chat = gdm(), a = uid();
-    const fi = inGroup({ channelId: chat, userId: a, sub: 'wouldyourather' });
+    const fi = inGroup({ channelId: chat, userId: a, group: 'party', sub: 'wouldyourather' });
     await commands.get('community')!.run!(fi.interaction);
     const k = Number(ids(fi.last())[0]!.split(':')[1]);
     const msg = `wyr-${++n}`;
@@ -347,14 +347,14 @@ describe('party games and picking', () => {
     const two = pickSome(['a', 'b', 'c'], 2);
     expect(two).toHaveLength(2); expect(new Set(two).size).toBe(2); expect(pickSome(['a', 'b'], 9)).toHaveLength(2);
     const chat = gdm(), u = uid();
-    const fi = inGroup({ channelId: chat, userId: u, sub: 'pick', options: { options: 'pizza, sushi, tacos' } });
-    await commands.get('group')!.run!(fi.interaction);
+    const fi = inGroup({ channelId: chat, userId: u, group: 'party', sub: 'pick', options: { options: 'pizza, sushi, tacos' } });
+    await commands.get('community')!.run!(fi.interaction);
     expect(['pizza', 'sushi', 'tacos'].some(c => textOf(fi.last()).includes(`## ${c}`))).toBe(true);
     expect(ids(fi.last())).toEqual(['gc:pick:1:pizza|sushi|tacos']);
     const again = press({ customId: 'gc:pick:1:pizza|sushi|tacos', userId: u, channelId: chat }); await again.run();
     expect(textOf(again.rec.updates[0])).toContain('out of 3');
-    const one = inGroup({ channelId: chat, userId: u, sub: 'pick', options: { options: 'only this' } });
-    await commands.get('group')!.run!(one.interaction);
+    const one = inGroup({ channelId: chat, userId: u, group: 'party', sub: 'pick', options: { options: 'only this' } });
+    await commands.get('community')!.run!(one.interaction);
     expect(textOf(one.last())).toContain('at least two');
   });
 });
@@ -370,15 +370,15 @@ describe('server-only features that now work in group chats', () => {
     await commands.get('community')!.run!(soon.interaction);
     expect(textOf(soon.last())).toContain('must wait');
   });
-  test('no /community or /group command refuses to run in a group chat, except levels and roles (which need a server)', async () => {
-    const serverOnly = new Set(['/community rank', '/community level rank', '/community level leaderboard', '/community roles self']);
+  test('no /community command refuses to run in a group chat, except levels and roles (which need a server)', async () => {
+    const serverOnly = new Set(['/community rank', '/community level leaderboard', '/community roles self']);
     const refused: string[] = [];
     // Hermetic: the lookups among these (weather, free games, jokes…) get an instant network failure instead of a real request.
     const realFetch = globalThis.fetch;
     globalThis.fetch = (async () => { throw new Error('offline in tests'); }) as unknown as typeof fetch;
     const realError = console.error; console.error = () => {};
     try {
-      for (const name of ['community', 'group']) {
+      for (const name of ['community']) {
         const j = commands.get(name)!.data.toJSON() as { options?: { type: number; name: string; options?: { type: number; name: string }[] }[] };
         for (const o of j.options ?? []) {
           const leaves = o.type === 2 ? (o.options ?? []).map(s => [o.name, s.name] as const) : [[null, o.name] as const];

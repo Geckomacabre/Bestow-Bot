@@ -9,7 +9,7 @@ import * as store from './store.js';
 import { parseWhen } from './when.js';
 
 /**
- * /group plan: "movie night, friday 8pm". The plan is a panel everyone answers with Going / Maybe / Can't. Its time is a Discord
+ * /community plan new: "movie night, friday 8pm". The plan is a panel everyone answers with Going / Maybe / Can't. Its time is a Discord
  * timestamp, so each person sees it in their own timezone; the time typed is read in the planner's timezone (/timezone set).
  * 🔔 Remind me sets an ordinary reminder (/community reminder) 15 minutes before; in a group chat it arrives as a DM.
  */
@@ -95,7 +95,7 @@ export async function runPlans(i: ChatInputCommandInteraction): Promise<void> {
   }
   await i.reply(panel({
     title: `📅 Plans in ${placeName(placeOf(i))}`,
-    body: lines.length ? lines.join('\n') : 'Nothing planned yet. Make a plan with `/group plan`.',
+    body: lines.length ? lines.join('\n') : 'Nothing planned yet. Make a plan with `/community plan new`.',
     footer: 'Times show in your own timezone',
     color: GREEN,
   }));

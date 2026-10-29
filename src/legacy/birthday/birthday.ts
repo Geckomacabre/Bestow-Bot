@@ -44,7 +44,7 @@ const Birthday: Command = {
         await interaction.reply({ ...cv2Text(`❌ ${e.message}`), flags: IS_CV2 | MessageFlags.Ephemeral });
         return;
       }
-      const where = w.guildId ? 'It\'s on this server\'s birthday list.' : `It's on the birthday board of ${w.place === 'dm' ? 'this DM' : 'this group chat'} (\`/group birthdays\`). Add it to another chat with **🎂 Add mine** there.`;
+      const where = w.guildId ? 'It\'s on this server\'s birthday list.' : `It's on the birthday board of ${w.place === 'dm' ? 'this DM' : 'this group chat'} (\`/community birthday list\`). Add it to another chat with **🎂 Add mine** there.`;
       await interaction.reply({ ...cv2Text(`✅ Your birthday has been set to **${MONTHS[month - 1]} ${ordinal(day)}**.\n${where}`), flags: IS_CV2 | MessageFlags.Ephemeral });
       return;
     }

@@ -1,6 +1,5 @@
 import { defineGroup, foldCommand, fromCommand, groupFromCommand } from '../../framework/group.js';
 import serverinfo from '../../legacy/utility/serverinfo.js';
-import userinfo from '../../legacy/utility/userinfo.js';
 import listroles from '../../legacy/utility/listroles.js';
 import viewperms from '../../legacy/utility/viewperms.js';
 import status from '../../legacy/utility/status.js';
@@ -20,7 +19,7 @@ export default defineGroup({
   name: 'server',
   description: 'Server info and settings (needs the bot added to the server)',
   scope: 'anywhere',
-  subs: [fromCommand(serverinfo), fromCommand(userinfo), fromCommand(listroles), fromCommand(viewperms)],
+  subs: [fromCommand(serverinfo), fromCommand(listroles), fromCommand(viewperms)], // a member's info is /discord user, which adds their roles here
   groups: [
     groupFromCommand(status, 'status'),
     groupFromCommand(sticky, 'sticky'),
