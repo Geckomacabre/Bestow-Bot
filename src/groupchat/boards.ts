@@ -1,4 +1,5 @@
-import { ActionRowBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { createHash } from 'node:crypto';
+import { ActionRowBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, type Client, type GuildTextBasedChannel } from 'discord.js';
 import { onComponent, type ComponentInteraction } from '../framework/router.js';
 import * as db from '../utils/db.js';
 import { resolveZone, validZone } from '../commands/utility/timezone.js';
@@ -13,6 +14,9 @@ import { zonedParts } from './when.js';
  *  • In a group chat or DM, the board shows the people who pressed "Add me" there, using the birthday / timezone they saved once.
  *  • In a server, the birthday board is the server's own birthday list (the one /server birthdays announces), and the time board
  *    also includes anyone who set a time for that server with /config timezone.
+ *  • A server where Bestow is a server bot can also have a live birthday panel (/server birthdays panel): the bot posts it once and
+ *    edits it by itself whenever the day turns over or someone adds or removes their birthday. Group chats can't, because the bot
+ *    can't edit messages there on its own; their boards update when someone presses a button.
  */
 
 const GOLD = 0xf1c40f;
@@ -27,8 +31,9 @@ async function boardBirthdays(w: BoardWhere): Promise<(store.Birthday & { user_i
   return w.guildId ? db.getBirthdays(w.guildId) : store.chatBirthdays(w.scope);
 }
 
+/** `live`: the server's self-updating panel, which says so in its footer. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function birthdayBoard(w: BoardWhere, now = Date.now()): Promise<any> {
+export async function birthdayBoard(w: BoardWhere, now = Date.now(), o: { live?: boolean } = {}): Promise<any> {
   const list = (await boardBirthdays(w))
     .map(b => ({ ...b, days: daysUntil(b.month, b.day, now) }))
     .sort((a, b) => a.days - b.days || a.user_id.localeCompare(b.user_id));
@@ -46,7 +51,7 @@ export async function birthdayBoard(w: BoardWhere, now = Date.now()): Promise<an
   return panel({
     title: `🎂 Birthdays in ${placeName(w.place)}`,
     body: lines.join('\n'),
-    footer: `${n} ${n === 1 ? 'person' : 'people'} · ${w.guildId ? 'Anyone in this server can add theirs.' : 'Your birthday only shows in the chats you add it to.'}`,
+    footer: `${n} ${n === 1 ? 'person' : 'people'} · ${o.live ? 'Updates by itself every day (UTC) · ' : ''}${w.guildId ? 'Anyone in this server can add theirs.' : 'Your birthday only shows in the chats you add it to.'}`,
     color: GOLD,
     rows: [row(
       button('gc:bday:add', 'Add mine', ButtonStyle.Primary, '🎂'),
@@ -88,8 +93,74 @@ onComponent('gc:bday:', async i => {
     if (w.guildId) await db.removeBirthday(w.guildId, i.user.id);
     else await store.leaveBoard(w.scope, 'birthday', i.user.id);
   } else if (action !== 'refresh') return;
-  await repaint(i, await birthdayBoard(w));
+  const live = !!w.guildId && (await store.getBirthdayPanel(w.guildId))?.message_id === i.message?.id;
+  const payload = await birthdayBoard(w, Date.now(), { live });
+  await repaint(i, payload);
+  if (live) await store.setBirthdayPanelHash(w.guildId!, panelHash(payload));
+  else if (w.guildId && action !== 'refresh') await refreshBirthdayPanel(i.client, w.guildId).catch(() => 'failed');
 });
+
+// ─── A server's live birthday panel ───────────────────────────────────────────
+
+/** A fingerprint of what a panel shows, so it is only edited when that changes. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const panelHash = (payload: any): string =>
+  createHash('sha1').update(JSON.stringify(payload.components.map((c: { toJSON(): unknown }) => c.toJSON()))).digest('hex');
+
+/** Discord's "Unknown Channel" and "Unknown Message": the panel is gone, so stop updating it. */
+const GONE = new Set([10003, 10008]);
+
+/** Posts the live birthday panel in a server channel (replacing the server's old one). Throws GroupError when it can't. */
+export async function postBirthdayPanel(client: Client, guildId: string, channelId: string, now = Date.now()): Promise<string> {
+  const channel = await client.channels.fetch(channelId).catch(() => null);
+  if (!channel?.isSendable() || channel.isDMBased()) throw new store.GroupError(`I can't post in <#${channelId}>. Pick a text channel I can see.`);
+  const payload = await birthdayBoard({ scope: guildId, place: 'server', guildId }, now, { live: true });
+  const message = await channel.send(payload).catch(() => null);
+  if (!message) throw new store.GroupError(`I couldn't post in <#${channelId}>. Check that I can view it and send messages there.`);
+  const old = await store.getBirthdayPanel(guildId);
+  await store.setBirthdayPanel(guildId, channelId, message.id, panelHash(payload), now);
+  if (old && old.message_id !== message.id) await deletePanelMessage(client, old);
+  return message.id;
+}
+
+/** Stops the live panel and deletes its message. False when the server had none. */
+export async function stopBirthdayPanel(client: Client, guildId: string): Promise<boolean> {
+  const old = await store.removeBirthdayPanel(guildId);
+  if (!old) return false;
+  await deletePanelMessage(client, old);
+  return true;
+}
+
+async function deletePanelMessage(client: Client, p: store.BirthdayPanel): Promise<void> {
+  const channel = await client.channels.fetch(p.channel_id).catch(() => null);
+  if (channel?.isTextBased() && !channel.isDMBased()) await (channel as GuildTextBasedChannel).messages.delete(p.message_id).catch(() => {});
+}
+
+/** Brings a server's live panel up to date, editing it only when what it shows has changed. */
+export async function refreshBirthdayPanel(client: Client, guildId: string, now = Date.now()): Promise<'none' | 'same' | 'edited' | 'gone' | 'failed'> {
+  const p = await store.getBirthdayPanel(guildId);
+  if (!p) return 'none';
+  const payload = await birthdayBoard({ scope: guildId, place: 'server', guildId }, now, { live: true });
+  const hash = panelHash(payload);
+  if (hash === p.content_hash) return 'same';
+  try {
+    const channel = await client.channels.fetch(p.channel_id);
+    if (!channel?.isTextBased() || channel.isDMBased()) throw Object.assign(new Error('not a server text channel'), { code: 10003 });
+    await (channel as GuildTextBasedChannel).messages.edit(p.message_id, payload);
+  } catch (err) {
+    if (GONE.has((err as { code?: number }).code ?? 0)) { await store.removeBirthdayPanel(guildId); return 'gone'; }
+    return 'failed'; // e.g. a permission was taken away for now: the hash stays old, so the next check tries again
+  }
+  await store.setBirthdayPanelHash(guildId, hash, now);
+  return 'edited';
+}
+
+/** Every server's live panel, checked on a timer so "Today" and the countdowns move on at midnight (UTC). */
+export async function refreshAllBirthdayPanels(client: Client, now = Date.now()): Promise<void> {
+  for (const p of await store.allBirthdayPanels()) {
+    await refreshBirthdayPanel(client, p.guild_id, now).catch(err => console.error(`[birthday panel] ${p.guild_id}: ${err}`));
+  }
+}
 
 // ─── Time board ───────────────────────────────────────────────────────────────
 

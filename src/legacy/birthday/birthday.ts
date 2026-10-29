@@ -6,7 +6,7 @@ import {
 import { Command } from '../../interfaces/command';
 import * as db from '../../utils/db';
 import { cv2Text } from '../../utils/components.js';
-import { addBirthdayHere, birthdayBoard, whereOf } from '../../groupchat/boards.js';
+import { addBirthdayHere, birthdayBoard, refreshBirthdayPanel, whereOf } from '../../groupchat/boards.js';
 import { daysUntil, ordinal } from '../../groupchat/panel.js';
 import { GroupError, MONTHS, getPersonalBirthday, removePersonalBirthday } from '../../groupchat/store.js';
 
@@ -46,6 +46,7 @@ const Birthday: Command = {
       }
       const where = w.guildId ? 'It\'s on this server\'s birthday list.' : `It's on the birthday board of ${w.place === 'dm' ? 'this DM' : 'this group chat'} (\`/community birthday list\`). Add it to another chat with **🎂 Add mine** there.`;
       await interaction.reply({ ...cv2Text(`✅ Your birthday has been set to **${MONTHS[month - 1]} ${ordinal(day)}**.\n${where}`), flags: IS_CV2 | MessageFlags.Ephemeral });
+      if (w.guildId) await refreshBirthdayPanel(interaction.client, w.guildId).catch(() => 'failed');
       return;
     }
 
@@ -54,6 +55,7 @@ const Birthday: Command = {
       if (w.guildId) await db.removeBirthday(w.guildId, interaction.user.id);
       const note = w.guildId ? ' It\'s off this server\'s list and every chat board.' : had ? ' It\'s off every chat board.' : '';
       await interaction.reply({ ...cv2Text(`✅ Your birthday has been removed.${note}`), flags: IS_CV2 | MessageFlags.Ephemeral });
+      if (w.guildId) await refreshBirthdayPanel(interaction.client, w.guildId).catch(() => 'failed');
       return;
     }
 

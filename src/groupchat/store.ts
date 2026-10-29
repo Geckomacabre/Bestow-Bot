@@ -7,6 +7,7 @@ import { db } from '../utils/db.js';
  *    Nobody shows on a chat's board until they press "Add me" there (or set it from that chat).
  *  • Plans with RSVPs, and shared lists, belong to the chat they were made in.
  *  • Button votes (would you rather, never have I ever) are kept per panel message for 30 days.
+ *  • A server can have one birthday panel the bot keeps up to date by itself (it can post there, unlike in a group chat).
  */
 
 export const BOARDS = ['birthday', 'timezone'] as const;
@@ -68,6 +69,13 @@ export async function initGroupSchema(): Promise<void> {
     created_at INTEGER NOT NULL,
     UNIQUE (scope_id, name)
   )`;
+  await db`CREATE TABLE IF NOT EXISTS birthday_panels (
+    guild_id     TEXT    PRIMARY KEY,
+    channel_id   TEXT    NOT NULL,
+    message_id   TEXT    NOT NULL,
+    content_hash TEXT    NOT NULL DEFAULT '',
+    updated_at   INTEGER NOT NULL
+  )`;
   await db`CREATE TABLE IF NOT EXISTS chat_votes (
     message_id TEXT    NOT NULL,
     user_id    TEXT    NOT NULL,
@@ -124,6 +132,31 @@ export async function removePersonalBirthday(userId: string): Promise<boolean> {
   const r = (await db`DELETE FROM user_birthdays WHERE user_id = ${userId} RETURNING 1`) as unknown[];
   await db`DELETE FROM chat_members WHERE board = 'birthday' AND user_id = ${userId}`;
   return r.length > 0;
+}
+
+// ─── A server's self-updating birthday panel ──────────────────────────────────
+
+export interface BirthdayPanel { guild_id: string; channel_id: string; message_id: string; content_hash: string; updated_at: number }
+
+export async function getBirthdayPanel(guildId: string): Promise<BirthdayPanel | null> {
+  return ((await db`SELECT * FROM birthday_panels WHERE guild_id = ${guildId}`) as BirthdayPanel[])[0] ?? null;
+}
+
+export async function allBirthdayPanels(): Promise<BirthdayPanel[]> {
+  return (await db`SELECT * FROM birthday_panels`) as BirthdayPanel[];
+}
+
+export async function setBirthdayPanel(guildId: string, channelId: string, messageId: string, hash: string, now = Date.now()): Promise<void> {
+  await db`INSERT INTO birthday_panels (guild_id, channel_id, message_id, content_hash, updated_at) VALUES (${guildId}, ${channelId}, ${messageId}, ${hash}, ${now})
+    ON CONFLICT (guild_id) DO UPDATE SET channel_id = excluded.channel_id, message_id = excluded.message_id, content_hash = excluded.content_hash, updated_at = excluded.updated_at`;
+}
+
+export async function setBirthdayPanelHash(guildId: string, hash: string, now = Date.now()): Promise<void> {
+  await db`UPDATE birthday_panels SET content_hash = ${hash}, updated_at = ${now} WHERE guild_id = ${guildId}`;
+}
+
+export async function removeBirthdayPanel(guildId: string): Promise<BirthdayPanel | null> {
+  return ((await db`DELETE FROM birthday_panels WHERE guild_id = ${guildId} RETURNING *`) as BirthdayPanel[])[0] ?? null;
 }
 
 // ─── Chat boards (who added themselves) ───────────────────────────────────────

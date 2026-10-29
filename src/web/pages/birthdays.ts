@@ -2,6 +2,7 @@ import { layout, escHtml, channelSelect } from '../layout';
 import type { SessionUser } from '../session';
 import type { APIGuild, APIChannel } from '../discord';
 import * as db from '../../utils/db';
+import { getBirthdayPanel } from '../../groupchat/store';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -9,10 +10,12 @@ export async function birthdaysPage(
   user: SessionUser, guild: APIGuild, channels: APIChannel[],
   flash?: string, flashType?: 'success' | 'error'
 ): Promise<string> {
-  const [cfg, birthdays] = await Promise.all([
+  const [cfg, birthdays, panel] = await Promise.all([
     db.getBirthdayConfig(guild.id),
     db.getBirthdays(guild.id),
+    getBirthdayPanel(guild.id),
   ]);
+  const panelChannel = panel ? channels.find(c => c.id === panel.channel_id) : null;
 
   const content = /* html */`
     <form method="POST" action="/servers/${guild.id}/birthdays">
@@ -31,6 +34,11 @@ export async function birthdaysPage(
             ${channelSelect('channel_id', channels, cfg?.channel_id)}
           </div>
         </div>
+        <p class="text-xs mt-4 ${panel ? 'text-green-400' : 'text-gray-400'}">
+          ${panel
+            ? `✓ Live birthday panel in #${escHtml(panelChannel?.name ?? panel.channel_id)}. It updates by itself; move it with <code>/server birthdays panel</code>.`
+            : 'No live birthday panel. Post one that keeps itself up to date with <code>/server birthdays panel</code> in Discord.'}
+        </p>
       </div>
       <button type="submit" class="btn-primary">Save Changes</button>
     </form>

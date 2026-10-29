@@ -5,7 +5,7 @@ import * as udb from '../src/utils/db';
 import { routeFor } from '../src/framework/router';
 import { parseWhen, zonedToUtc } from '../src/groupchat/when';
 import * as store from '../src/groupchat/store';
-import { birthdayBoard, offsetLabel, timeBoard } from '../src/groupchat/boards';
+import { birthdayBoard, offsetLabel, refreshAllBirthdayPanels, refreshBirthdayPanel, timeBoard } from '../src/groupchat/boards';
 import { botCanPost, placeOf, scopeOf } from '../src/groupchat/scope';
 import { pickSome, splitChoices, NEVER, WOULD_YOU_RATHER } from '../src/groupchat/party';
 import { zoneMatters } from '../src/groupchat/plans';
@@ -45,13 +45,13 @@ function inGroup(o: { channelId: string; userId: string; sub: string; group?: st
 }
 
 /** A button press, menu choice or pop-up on a panel in a group chat. */
-function press(o: { customId: string; userId: string; channelId: string; guildId?: string | null; values?: string[]; fields?: Record<string, string>; messageId?: string; kind?: 'button' | 'select' | 'modal' }) {
+function press(o: { customId: string; userId: string; channelId: string; guildId?: string | null; values?: string[]; fields?: Record<string, string>; messageId?: string; kind?: 'button' | 'select' | 'modal'; client?: unknown }) {
   const kind = o.kind ?? 'button';
   const rec = { updates: [] as any[], replies: [] as any[], modals: [] as any[] };
   const i: any = {
     customId: o.customId, user: { id: o.userId }, guildId: o.guildId ?? null, channelId: o.channelId,
     context: o.guildId ? InteractionContextType.Guild : InteractionContextType.PrivateChannel, channel: { type: ChannelType.GroupDM },
-    authorizingIntegrationOwners: { 1: o.userId }, message: { id: o.messageId ?? 'panel-msg' }, values: o.values ?? [],
+    authorizingIntegrationOwners: { 1: o.userId }, message: { id: o.messageId ?? 'panel-msg' }, values: o.values ?? [], client: o.client,
     fields: { getTextInputValue: (k: string) => o.fields?.[k] ?? '' },
     isButton: () => kind === 'button', isStringSelectMenu: () => kind === 'select', isModalSubmit: () => kind === 'modal', isFromMessage: () => true,
     update: async (p: any) => { rec.updates.push(p); }, reply: async (p: any) => { rec.replies.push(p); }, showModal: async (m: any) => { rec.modals.push(m); },
@@ -178,6 +178,99 @@ describe('birthdays in a group chat', () => {
     const l = inGroup({ channelId: chat, userId: u, group: 'birthday', sub: 'list' });
     await commands.get('community')!.run!(l.interaction);
     expect(ids(l.last())).toContain('gc:bday:add');
+  });
+});
+
+describe('a server\'s live birthday panel', () => {
+  /** A bot client with two channels that records what is posted, edited and deleted. */
+  function fakeBot() {
+    const messages = new Map<string, any>(), log: string[] = [];
+    let seq = 0;
+    const channel = (id: string) => ({
+      id, isSendable: () => true, isDMBased: () => false, isTextBased: () => true,
+      send: async (p: any) => { const mid = `live-${++n}-${++seq}`; messages.set(mid, p); log.push(`send ${id}`); return { id: mid }; },
+      messages: {
+        edit: async (mid: string, p: any) => { if (!messages.has(mid)) throw Object.assign(new Error('Unknown Message'), { code: 10008 }); messages.set(mid, p); log.push(`edit ${mid}`); },
+        delete: async (mid: string) => { messages.delete(mid); log.push(`delete ${mid}`); },
+      },
+    });
+    const channels = new Map([['chan-a', channel('chan-a')], ['chan-b', channel('chan-b')]]);
+    const client = { channels: { fetch: async (id: string) => channels.get(id) ?? Promise.reject(Object.assign(new Error('Unknown Channel'), { code: 10003 })) } };
+    return { client: client as any, messages, log };
+  }
+  /** /server birthdays <sub> run by an admin in a server where Bestow is a server bot. */
+  function admin(g: string, bot: ReturnType<typeof fakeBot>, sub: string, o: { channel?: string; serverBot?: boolean; manage?: boolean } = {}) {
+    const fi = fakeInteraction({ guildId: g, userId: uid(), group: 'birthdays', sub, manageGuild: o.manage ?? true });
+    (fi.interaction.options as any).getChannel = () => (o.channel ? { id: o.channel } : null);
+    Object.assign(fi.interaction, { client: bot.client, channelId: 'chan-a', context: InteractionContextType.Guild, authorizingIntegrationOwners: o.serverBot === false ? { 1: 'u' } : { 0: g } });
+    return fi;
+  }
+  const textOfMsg = (bot: ReturnType<typeof fakeBot>, id: string) => textOf(bot.messages.get(id));
+
+  test('posts once, then edits itself only when a birthday changes or the day turns over', async () => {
+    const g = `gc-guild-${++n}`, bot = fakeBot(), friend = uid();
+    const post = admin(g, bot, 'panel');
+    await commands.get('server')!.run!(post.interaction);
+    expect(textOf(post.last())).toContain('Birthday panel posted in <#chan-a>');
+    const panel = (await store.getBirthdayPanel(g))!;
+    expect(panel.channel_id).toBe('chan-a'); expect(bot.log).toEqual(['send chan-a']);
+    expect(textOfMsg(bot, panel.message_id)).toContain('Updates by itself every day'); expect(ids(bot.messages.get(panel.message_id))).toContain('gc:bday:add');
+
+    expect(await refreshBirthdayPanel(bot.client, g)).toBe('same'); // nothing changed: no edit
+    const set = fakeInteraction({ guildId: g, userId: friend, group: 'birthday', sub: 'set', options: { month: 12, day: 25 } });
+    (set.interaction as any).client = bot.client;
+    await commands.get('community')!.run!(set.interaction);
+    expect(bot.log).toEqual(['send chan-a', `edit ${panel.message_id}`]);
+    expect(textOfMsg(bot, panel.message_id)).toContain(`<@${friend}> — **December 25th**`);
+
+    const tomorrow = Date.now() + 86_400_000;
+    expect(await refreshBirthdayPanel(bot.client, g, tomorrow)).toBe('edited'); // the countdown moved on
+    expect(await refreshBirthdayPanel(bot.client, g, tomorrow)).toBe('same');
+  });
+  test('its own buttons keep it live; a button on another board in that server updates it too', async () => {
+    const g = `gc-guild-${++n}`, bot = fakeBot(), u = uid();
+    await commands.get('server')!.run!(admin(g, bot, 'panel').interaction);
+    const panel = (await store.getBirthdayPanel(g))!;
+    await store.setPersonalBirthday(u, 3, 3);
+    const add = press({ customId: 'gc:bday:add', userId: u, channelId: 'chan-a', guildId: g, messageId: panel.message_id, client: bot.client }); await add.run();
+    expect(textOf(add.rec.updates[0])).toContain('Updates by itself'); expect(textOf(add.rec.updates[0])).toContain(`<@${u}>`);
+    expect(await refreshBirthdayPanel(bot.client, g)).toBe('same'); // the press already brought it up to date
+    const elsewhere = press({ customId: 'gc:bday:leave', userId: u, channelId: 'chan-b', guildId: g, messageId: 'some-other-board', client: bot.client }); await elsewhere.run();
+    expect(textOf(elsewhere.rec.updates[0])).not.toContain('Updates by itself'); // a one-off board doesn't claim to update itself
+    expect(textOfMsg(bot, panel.message_id)).not.toContain(`<@${u}>`);
+  });
+  test('running it again moves it; panel-stop removes it; a deleted panel is forgotten', async () => {
+    const g = `gc-guild-${++n}`, bot = fakeBot();
+    await commands.get('server')!.run!(admin(g, bot, 'panel').interaction);
+    const first = (await store.getBirthdayPanel(g))!;
+    await commands.get('server')!.run!(admin(g, bot, 'panel', { channel: 'chan-b' }).interaction);
+    const second = (await store.getBirthdayPanel(g))!;
+    expect(second.channel_id).toBe('chan-b'); expect(bot.log).toContain(`delete ${first.message_id}`); expect(bot.messages.has(first.message_id)).toBe(false);
+
+    const view = admin(g, bot, 'view'); await commands.get('server')!.run!(view.interaction);
+    expect(textOf(view.last())).toContain('**Live panel:** <#chan-b>');
+
+    const stop = admin(g, bot, 'panel-stop'); await commands.get('server')!.run!(stop.interaction);
+    expect(textOf(stop.last())).toContain('removed'); expect(await store.getBirthdayPanel(g)).toBeNull(); expect(bot.messages.has(second.message_id)).toBe(false);
+    const again = admin(g, bot, 'panel-stop'); await commands.get('server')!.run!(again.interaction);
+    expect(textOf(again.last())).toContain('no birthday panel');
+
+    await commands.get('server')!.run!(admin(g, bot, 'panel').interaction);
+    const third = (await store.getBirthdayPanel(g))!;
+    bot.messages.delete(third.message_id); // someone deleted the message
+    await store.setPersonalBirthday(`gc-del-${n}`, 6, 6); await udb.setBirthday(g, `gc-del-${n}`, 6, 6);
+    await refreshAllBirthdayPanels(bot.client);
+    expect(await store.getBirthdayPanel(g)).toBeNull();
+  });
+  test('needs Manage Server, a channel it can post in, and the bot added to the server', async () => {
+    const g = `gc-guild-${++n}`, bot = fakeBot();
+    const member = admin(g, bot, 'panel', { manage: false }); await commands.get('server')!.run!(member.interaction);
+    expect(textOf(member.last())).toContain('Manage Server');
+    const userInstall = admin(g, bot, 'panel', { serverBot: false }); await commands.get('server')!.run!(userInstall.interaction);
+    expect(textOf(userInstall.last())).toContain('added to this server as a bot');
+    const missing = admin(g, bot, 'panel', { channel: 'chan-gone' }); await commands.get('server')!.run!(missing.interaction);
+    expect(textOf(missing.last())).toContain('can\'t post in <#chan-gone>');
+    expect(await store.getBirthdayPanel(g)).toBeNull(); expect(bot.log).toEqual([]);
   });
 });
 
