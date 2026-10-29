@@ -2,6 +2,7 @@ import {
   ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, FileBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags,
   SectionBuilder, TextDisplayBuilder, ThumbnailBuilder,
 } from 'discord.js';
+import { spice } from '../utils/spice.js';
 
 /**
  * One look for every card, modelled on Dank Memer's: a "### title" (blue when it is a link) and its text, each field as a bold label
@@ -73,14 +74,15 @@ export function card(o: CardOpts): any {
   const author = o.author ? `-# ${o.author.url ? `[${trunc(o.author.name, 100)}](${o.author.url})` : trunc(o.author.name, 100)}` : null;
   const title = o.title ? `### ${o.url ? `[${trunc(o.title, 200)}](${o.url})` : trunc(o.title, 200)}` : null;
   // A message's text can't pass 4000 characters in all: the heading and text come first, the fields get what is left.
-  const head = trunc([author, title, o.description ? trunc(o.description, 3300) : null].filter(Boolean).join('\n'), 3500);
-  const fields = trunc(fieldText(o.fields), Math.max(0, 3500 - head.length));
+  const head = spice(trunc([author, title, o.description ? trunc(o.description, 3300) : null].filter(Boolean).join('\n'), 3500), 3500);
+  const fieldRoom = Math.max(0, 3500 - head.length);
+  const fields = spice(trunc(fieldText(o.fields), fieldRoom), fieldRoom);
   const texts = [head, fields].filter(Boolean).map(t => new TextDisplayBuilder().setContent(t));
   if (!texts.length) texts.push(new TextDisplayBuilder().setContent('\u200b'));
 
   const c = new ContainerBuilder();
   if (o.color !== undefined) c.setAccentColor(o.color);
-  if (o.lead) c.addTextDisplayComponents(new TextDisplayBuilder().setContent(trunc(o.lead, 300)));
+  if (o.lead) c.addTextDisplayComponents(new TextDisplayBuilder().setContent(spice(trunc(o.lead, 300), 400)));
   const thumb = isHttp(o.thumbnail ?? undefined) ? o.thumbnail! : isHttp(o.author?.icon ?? undefined) ? o.author!.icon! : null;
   if (thumb) c.addSectionComponents(new SectionBuilder().addTextDisplayComponents(...texts).setThumbnailAccessory(new ThumbnailBuilder().setURL(thumb)));
   else c.addTextDisplayComponents(...texts);

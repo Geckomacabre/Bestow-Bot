@@ -1,3 +1,4 @@
+import { spice } from './spice.js';
 import { AttachmentBuilder, ContainerBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags, SeparatorBuilder, TextDisplayBuilder } from 'discord.js';
 
 export const IS_CV2 = MessageFlags.IsComponentsV2;
@@ -13,7 +14,7 @@ export function cv2Panel(header: string, body: string): { flags: MessageFlags.Is
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cv2Text(content: string, accentColor?: number): any {
-  const c = new ContainerBuilder().addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+  const c = new ContainerBuilder().addTextDisplayComponents(new TextDisplayBuilder().setContent(spice(content)));
   if (accentColor !== undefined) c.setAccentColor(accentColor);
   return { flags: IS_CV2, components: [c] };
 }
@@ -27,7 +28,7 @@ export function cv2Box(content: string, accentColor: number): any {
 // Ephemeral Components-V2 text — handy for permission/validation errors.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cv2Err(content: string): any {
-  return { flags: IS_CV2 | MessageFlags.Ephemeral, components: [new ContainerBuilder().addTextDisplayComponents(new TextDisplayBuilder().setContent(content))] };
+  return { flags: IS_CV2 | MessageFlags.Ephemeral, components: [new ContainerBuilder().addTextDisplayComponents(new TextDisplayBuilder().setContent(spice(content)))] };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

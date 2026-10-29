@@ -7,6 +7,7 @@ import { getBotConfig } from '../utils/db';
 import { staffCommand, staffGuildId } from '../staff/index';
 import { syncJuulEmojis } from '../fun/juulEmoji';
 import { syncCashEmoji } from '../eco/cashEmoji';
+import { syncSpiceEmojis } from '../utils/spice';
 
 /**
  * Registers every command GLOBALLY. Bestow is a user-install app: people add it to their own account and use it in any
@@ -28,10 +29,12 @@ export const onReady = async (Bot: Client) => {
         .catch(err => logger.warn(`Couldn't register /staff in the support server (is the bot in it?): ${err}`));
     }
     logger.info(`Logged in as ${Bot.user?.tag}!`);
-    // The cash and juul/battery art as application emojis (plain emoji until they're there); never holds up startup. Cash goes
-    // first: it is one upload and shows in every money amount, while the batteries can take a while.
+    // The cash, spice and juul/battery art as application emojis (plain emoji until they're there); never holds up startup. Cash
+    // and spice go first: they are few uploads and show in most replies, while the batteries can take a while.
     syncCashEmoji(Bot)
       .catch(err => logger.warn(`Couldn't sync the cash emoji: ${err}`))
+      .then(() => syncSpiceEmojis(Bot))
+      .catch(err => logger.warn(`Couldn't sync the spice emojis: ${err}`))
       .then(() => syncJuulEmojis(Bot))
       .catch(err => logger.warn(`Couldn't sync the juul emojis: ${err}`));
 
