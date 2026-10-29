@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
+import { MessageFlags } from 'discord.js';
 import { initDb } from '../src/utils/db';
 import * as j from '../src/fun/juul';
 import * as s from '../src/fun/social';
@@ -239,5 +240,35 @@ describe('tools commands (offline paths)', () => {
       const fi = fakeInteraction({ options }); await find(subs, name).run(fi.interaction);
       expect(textOf(fi.last()), `${name} ${JSON.stringify(options)}`).toContain(want);
     }
+  });
+});
+
+describe('/8ball', () => {
+  test('a cv2 card like Dank Memer\'s: the title, Question and Answer in bold over their text, and the ball on the right', async () => {
+    const { eightBallCard } = await import('../src/commands/random/8ball');
+    const out = eightBallCard('will it work?', 'Yes.');
+    expect(out.flags).toBe(MessageFlags.IsComponentsV2);
+    const card = out.components[0]!.toJSON() as any;
+    expect(card.accent_color).toBeUndefined(); // the plain grey card, no coloured bar
+    const section = card.components[0];
+    expect(section.components[0].content).toBe('### [Magic 8ball](https://en.wikipedia.org/wiki/Magic_8_Ball)\n**Question**\nwill it work?\n**Answer**\nYes.');
+    expect(section.accessory.media.url).toBe('attachment://8ball.png');
+    expect(out.files.map(f => f.name)).toEqual(['8ball.png']);
+    expect((await Bun.file((out.files[0]!.attachment as string)).arrayBuffer()).byteLength).toBeGreaterThan(1000); // the picture ships with the bot
+  });
+
+  test('the question shows as typed: no headings, lists or masked links from it, and no pings', async () => {
+    const { eightBallCard } = await import('../src/commands/random/8ball');
+    const out = eightBallCard('# am I *cool* [x](https://e.com) @everyone', 'No.');
+    expect((out.components[0]!.toJSON() as any).components[0].components[0].content).toContain('\\# am I \\*cool\\* \\[x](https://e.com) @everyone'); // an escaped [ is enough to stop the masked link
+    expect(out.allowedMentions).toEqual({ parse: [] });
+  });
+
+  test('the command replies with that card', async () => {
+    const cmd = (await import('../src/commands/random/8ball')).default;
+    const fi = fakeInteraction({ guildId: null, options: { question: 'is it friday?' } });
+    await cmd.run!(fi.interaction as any);
+    expect(textOf(fi.sent[0])).toContain('**Question**\nis it friday?\n**Answer**\n');
+    expect(fi.sent[0].files[0].name).toBe('8ball.png');
   });
 });
